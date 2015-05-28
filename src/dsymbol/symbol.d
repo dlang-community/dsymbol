@@ -247,7 +247,7 @@ public:
 
 	/**
 	 * Symbols that compose this symbol, such as enum members, class variables,
-	 * methods, etc.
+	 * methods, parameters, etc.
 	 */
 	TTree!(DSymbol*, true, "a < b", false) parts;
 
