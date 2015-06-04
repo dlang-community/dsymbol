@@ -185,7 +185,7 @@ struct ModuleCache
 
 		assert (symbolAllocator);
 		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
-			semanticAllocator);
+			semanticAllocator, includeParameterSymbols);
 		first.run();
 
 		SecondPass second = SecondPass(first);
@@ -228,26 +228,26 @@ struct ModuleCache
 	{
 		if (isRooted(moduleName))
 			return moduleName;
-		string[] alternatives;
+		UnrolledList!string alternatives;
 		foreach (path; importPaths[])
 		{
 			string dotDi = buildPath(path, moduleName) ~ ".di";
 			string dotD = dotDi[0 .. $ - 1];
 			string withoutSuffix = dotDi[0 .. $ - 3];
 			if (exists(dotD) && isFile(dotD))
-				alternatives = (dotD) ~ alternatives;
+				alternatives.insert(alternatives);
 			else if (exists(dotDi) && isFile(dotDi))
-				alternatives ~= dotDi;
+				alternatives.insert(dotDi);
 			else if (exists(withoutSuffix) && isDir(withoutSuffix))
 			{
 				string packagePath = buildPath(withoutSuffix, "package.di");
 				if (exists(packagePath) && isFile(packagePath))
 				{
-					alternatives ~= packagePath;
+					alternatives.insert(packagePath);
 					continue;
 				}
 				if (exists(packagePath[0 .. $ - 1]) && isFile(packagePath[0 .. $ - 1]))
-					alternatives ~= packagePath[0 .. $ - 1];
+					alternatives.insert(packagePath[0 .. $ - 1]);
 			}
 		}
 		return alternatives.length > 0 ? alternatives[0] : null;
@@ -265,6 +265,8 @@ struct ModuleCache
 
 	/// Count of autocomplete symbols that have been allocated
 	static uint symbolsAllocated;
+
+	static bool includeParameterSymbols = false;
 
 private:
 

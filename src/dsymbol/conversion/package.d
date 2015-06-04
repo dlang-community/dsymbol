@@ -43,7 +43,7 @@ Scope* generateAutocompleteTrees(const(Token)[] tokens, CAllocator symbolAllocat
 /// ditto
 Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
 {
-	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator);
+	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator, true);
 	first.run();
 
 	SecondPass second = SecondPass(first);

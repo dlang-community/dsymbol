@@ -56,9 +56,11 @@ final class FirstPass : ASTVisitor
 	 *     symbolFile = path to the file being converted
 	 *     symbolAllocator = allocator used for the auto-complete symbols
 	 *     semanticAllocator = allocator used for semantic symbols
+	 *     includeParameterSymbols = include parameter symbols as children of
+	 *         function decalarations and constructors
 	 */
 	this(const Module mod, istring symbolFile, CAllocator symbolAllocator,
-		CAllocator semanticAllocator)
+		CAllocator semanticAllocator, bool includeParameterSymbols)
 	in
 	{
 		assert (mod);
@@ -71,6 +73,7 @@ final class FirstPass : ASTVisitor
 		this.symbolFile = symbolFile;
 		this.symbolAllocator = symbolAllocator;
 		this.semanticAllocator = semanticAllocator;
+		this.includeParameterSymbols = includeParameterSymbols;
 	}
 
 	/**
@@ -595,7 +598,7 @@ private:
 		const TemplateParameters templateParameters)
 	{
 		processTemplateParameters(symbol, templateParameters);
-		if (parameters !is null)
+		if (includeParameterSymbols && parameters !is null)
 		{
 			foreach (const Parameter p; parameters.parameters)
 			{
@@ -723,6 +726,8 @@ private:
 	CAllocator semanticAllocator;
 
 	Rebindable!(const ExpressionNode) feExpression;
+
+	bool includeParameterSymbols;
 }
 
 void formatNode(A, T)(ref A appender, const T node)
