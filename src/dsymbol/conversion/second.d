@@ -163,7 +163,7 @@ private:
 		foreach (importInfo; currentScope.importInformation[])
 		{
 			// Get symbol for the imported module
-			immutable string moduleAbsPath = ModuleCache.resolveImportLoctation(
+			immutable string moduleAbsPath = ModuleCache.resolveImportLocation(
 				importInfo.modulePath);
 			DSymbol* symbol = moduleAbsPath is null ? null
 				: ModuleCache.getModuleSymbol(moduleAbsPath);
