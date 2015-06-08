@@ -224,33 +224,33 @@ struct ModuleCache
 	 *     The absolute path to the file that contains the module, or null if
 	 *     not found.
 	 */
-	static string resolveImportLoctation(string moduleName)
+	static string resolveImportLocation(string moduleName)
 	{
 		if (isRooted(moduleName))
 			return moduleName;
-		UnrolledList!string alternatives;
+		string[] alternatives;
 		foreach (path; importPaths[])
 		{
 			string dotDi = buildPath(path, moduleName) ~ ".di";
 			string dotD = dotDi[0 .. $ - 1];
 			string withoutSuffix = dotDi[0 .. $ - 3];
 			if (exists(dotD) && isFile(dotD))
-				alternatives.insert(alternatives);
+				alternatives = dotD ~ alternatives;
 			else if (exists(dotDi) && isFile(dotDi))
-				alternatives.insert(dotDi);
+				alternatives ~= dotDi;
 			else if (exists(withoutSuffix) && isDir(withoutSuffix))
 			{
 				string packagePath = buildPath(withoutSuffix, "package.di");
 				if (exists(packagePath) && isFile(packagePath))
 				{
-					alternatives.insert(packagePath);
+					alternatives ~= packagePath;
 					continue;
 				}
 				if (exists(packagePath[0 .. $ - 1]) && isFile(packagePath[0 .. $ - 1]))
-					alternatives.insert(packagePath[0 .. $ - 1]);
+					alternatives ~= packagePath[0 .. $ - 1];
 			}
 		}
-		return alternatives.length > 0 ? alternatives.front : null;
+		return alternatives.length > 0 ? alternatives[0] : null;
 	}
 
 	static auto getImportPaths()
