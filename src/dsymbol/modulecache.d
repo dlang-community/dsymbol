@@ -250,7 +250,7 @@ struct ModuleCache
 					alternatives.insert(packagePath[0 .. $ - 1]);
 			}
 		}
-		return alternatives.length > 0 ? alternatives[0] : null;
+		return alternatives.length > 0 ? alternatives.front : null;
 	}
 
 	static auto getImportPaths()
