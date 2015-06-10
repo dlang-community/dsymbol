@@ -185,7 +185,7 @@ struct ModuleCache
 
 		assert (symbolAllocator);
 		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
-			semanticAllocator, includeParameterSymbols);
+			semanticAllocator, false);
 		first.run();
 
 		SecondPass second = SecondPass(first);
@@ -265,8 +265,6 @@ struct ModuleCache
 
 	/// Count of autocomplete symbols that have been allocated
 	static uint symbolsAllocated;
-
-	static bool includeParameterSymbols = false;
 
 private:
 

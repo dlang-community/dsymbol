@@ -40,12 +40,12 @@ private StringCache stringCache = void;
 
 private struct InternedString
 {
-    void opAssign(T)(T other) if (is(Unqual!T == istring))
-    {
-        this.data = other.data;
-    }
+	void opAssign(T)(T other) if (is(Unqual!T == istring))
+	{
+		this.data = other.data;
+	}
 	string data;
-    alias data this;
+	alias data this;
 private:
 	import std.traits : Unqual;
 }

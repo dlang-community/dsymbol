@@ -18,11 +18,8 @@
 
 module dsymbol.symbol;
 
-import std.algorithm;
-import std.array;
-import std.container;
-import std.typecons;
 import std.allocator;
+import std.array;
 
 import containers.ttree;
 import containers.unrolledlist;
