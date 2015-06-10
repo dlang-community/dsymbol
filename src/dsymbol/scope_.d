@@ -29,6 +29,9 @@ import containers.unrolledlist;
  */
 struct Scope
 {
+	@disable this(this);
+	@disable this();
+
 	/**
 	 * Params:
 	 *     begin = the beginning byte index
@@ -46,6 +49,8 @@ struct Scope
 			typeid(ImportInformation).destroy(info);
 		foreach (child; children[])
 			typeid(Scope).destroy(child);
+		foreach (symbol; symbols[])
+			typeid(DSymbol).destroy(symbol);
 	}
 
 	/**
@@ -54,7 +59,7 @@ struct Scope
 	 * Returns:
 	 *     the innermost scope that contains the given cursor position
 	 */
-	Scope* getScopeByCursor(size_t cursorPosition) const
+	Scope* getScopeByCursor(size_t cursorPosition) const pure @nogc
 	{
 		if (cursorPosition < startLocation) return null;
 		if (cursorPosition > endLocation) return null;
