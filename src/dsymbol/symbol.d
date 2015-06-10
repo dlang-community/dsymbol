@@ -189,6 +189,12 @@ public:
 		this.type = type;
 	}
 
+	~this()
+	{
+		foreach (part; parts[])
+			typeid(DSymbol).destroy(part);
+	}
+
 	int opCmp(ref const DSymbol other) const pure nothrow @safe
 	{
 		// Compare the pointers because the strings have been interned.
