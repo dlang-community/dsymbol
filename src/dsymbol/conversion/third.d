@@ -234,7 +234,6 @@ private:
 			slice.popFront();
 			literal = false;
 		}
-		immutable string leftmostType = literal ? slice.front[1 .. $] : slice.front;
 		auto symbols = moduleScope.getSymbolsByNameAndCursor(internString(
 			literal ? slice.front[1 .. $] : slice.front), location);
 
@@ -252,7 +251,6 @@ private:
 			s = s.type;
 			if (slice.front == "foreach")
 			{
-//				Log.trace("foreach");
 				if (s.qualifier == SymbolQualifier.array)
 					s = s.type;
 				else
