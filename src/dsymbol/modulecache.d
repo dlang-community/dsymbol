@@ -42,6 +42,8 @@ import std.file;
 import std.lexer;
 import std.path;
 
+private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(n => Region!Mallocator(1024 * 64)));
+
 private struct CacheEntry
 {
 	DSymbol* symbol;
@@ -50,7 +52,7 @@ private struct CacheEntry
 
 	int opCmp(ref const CacheEntry other) const
 	{
-		int r = path > other.path;
+		immutable int r = path > other.path;
 		if (path < other.path)
 			return -1;
 		return r;
@@ -86,7 +88,7 @@ bool existanceCheck(A)(A path)
 
 static this()
 {
-	ModuleCache.symbolAllocator = new CAllocatorImpl!(BlockAllocator!(1024 * 16));
+	ModuleCache.symbolAllocator = new ASTAllocator;
 }
 
 /**
@@ -180,7 +182,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		auto semanticAllocator = scoped!(CAllocatorImpl!(BlockAllocator!(1024 * 64)));
+		auto semanticAllocator = scoped!(ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
 
 		assert (symbolAllocator);
