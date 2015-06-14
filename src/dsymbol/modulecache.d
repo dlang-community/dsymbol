@@ -31,7 +31,7 @@ import dsymbol.semantic;
 import dsymbol.symbol;
 import memory.allocators;
 import std.algorithm;
-import std.allocator;
+import std.experimental.allocator;
 import std.conv;
 import std.d.ast;
 import std.datetime;
@@ -206,7 +206,7 @@ struct ModuleCache
 		CacheEntry e;
 		e.path = cachedLocation;
 		const r = cache.equalRange(&e);
-		CacheEntry* c = r.empty ? allocate!CacheEntry(Mallocator.it)
+		CacheEntry* c = r.empty ? make!CacheEntry(Mallocator.it)
 			: r.front;
 		c.symbol = symbol;
 		c.modificationTime = modification;
@@ -299,5 +299,5 @@ private:
 	// Listing of paths to check for imports
 	static UnrolledList!string importPaths;
 
-	static CAllocator symbolAllocator;
+	static IAllocator symbolAllocator;
 }

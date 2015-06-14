@@ -29,7 +29,7 @@ import dsymbol.string_interning;
 import dsymbol.symbol;
 import memory.allocators;
 import memory.appender;
-import std.allocator;
+import std.experimental.allocator;
 import std.d.ast;
 import std.d.formatter;
 import std.d.lexer;
@@ -59,8 +59,8 @@ final class FirstPass : ASTVisitor
 	 *     includeParameterSymbols = include parameter symbols as children of
 	 *         function decalarations and constructors
 	 */
-	this(const Module mod, istring symbolFile, CAllocator symbolAllocator,
-		CAllocator semanticAllocator, bool includeParameterSymbols)
+	this(const Module mod, istring symbolFile, IAllocator symbolAllocator,
+		IAllocator semanticAllocator, bool includeParameterSymbols)
 	in
 	{
 		assert (mod);
@@ -292,8 +292,8 @@ final class FirstPass : ASTVisitor
 		currentSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
 			symbolFile);
 		rootSymbol = currentSymbol;
-		currentScope = allocate!Scope(semanticAllocator, 0, size_t.max);
-		auto i = allocate!ImportInformation(semanticAllocator);
+		currentScope = make!Scope(semanticAllocator, 0, size_t.max);
+		auto i = make!ImportInformation(semanticAllocator);
 		i.modulePath = internString("object");
 		i.importParts.insert(i.modulePath);
 		currentScope.importInformation.insert(i);
@@ -328,10 +328,10 @@ final class FirstPass : ASTVisitor
 	override void visit(const StructBody structBody)
 	{
 //		Log.trace(__FUNCTION__, " ", typeof(structBody).stringof);
-		Scope* s = allocate!Scope(semanticAllocator, structBody.startLocation, structBody.endLocation);
+		Scope* s = make!Scope(semanticAllocator, structBody.startLocation, structBody.endLocation);
 //		Log.trace("Added scope ", s.startLocation, " ", s.endLocation);
 
-		DSymbol* thisSymbol = allocate!DSymbol(symbolAllocator,
+		DSymbol* thisSymbol = make!DSymbol(symbolAllocator,
 			THIS_SYMBOL_NAME, CompletionKind.variableName, currentSymbol.acSymbol);
 		thisSymbol.location = s.startLocation;
 		thisSymbol.symbolFile = symbolFile;
@@ -353,7 +353,7 @@ final class FirstPass : ASTVisitor
 		foreach (single; importDeclaration.singleImports.filter!(
 			a => a !is null && a.identifierChain !is null))
 		{
-			auto info = allocate!ImportInformation(semanticAllocator);
+			auto info = make!ImportInformation(semanticAllocator);
 			foreach (identifier; single.identifierChain.identifiers)
 				info.importParts.insert(internString(identifier.text));
 			info.modulePath = convertChainToImportPath(single.identifierChain);
@@ -362,7 +362,7 @@ final class FirstPass : ASTVisitor
 		}
 		if (importDeclaration.importBindings is null) return;
 		if (importDeclaration.importBindings.singleImport.identifierChain is null) return;
-		auto info = allocate!ImportInformation(semanticAllocator);
+		auto info = make!ImportInformation(semanticAllocator);
 
 		info.modulePath = convertChainToImportPath(
 			importDeclaration.importBindings.singleImport.identifierChain);
@@ -393,7 +393,7 @@ final class FirstPass : ASTVisitor
 	override void visit(const BlockStatement blockStatement)
 	{
 //		Log.trace(__FUNCTION__, " ", typeof(blockStatement).stringof);
-		Scope* s = allocate!Scope(semanticAllocator, blockStatement.startLocation,
+		Scope* s = make!Scope(semanticAllocator, blockStatement.startLocation,
 			blockStatement.endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
@@ -424,7 +424,7 @@ final class FirstPass : ASTVisitor
 		{
 			const BlockStatement bs =
 				feStatement.declarationOrStatement.statement.statementNoCaseNoDefault.blockStatement;
-			Scope* s = allocate!Scope(semanticAllocator, feStatement.startIndex, bs.endLocation);
+			Scope* s = make!Scope(semanticAllocator, feStatement.startIndex, bs.endLocation);
 			s.parent = currentScope;
 			currentScope.children.insert(s);
 			currentScope = s;
@@ -460,7 +460,7 @@ final class FirstPass : ASTVisitor
 		if (withStatement.expression !is null
 			&& withStatement.statementNoCaseNoDefault !is null)
 		{
-			Scope* s = allocate!Scope(semanticAllocator,
+			Scope* s = make!Scope(semanticAllocator,
 				withStatement.statementNoCaseNoDefault.startLocation,
 				withStatement.statementNoCaseNoDefault.endLocation);
 			s.parent = currentScope;
@@ -489,7 +489,7 @@ final class FirstPass : ASTVisitor
 	SemanticSymbol* rootSymbol;
 
 	/// Allocator used for symbol allocation
-	CAllocator symbolAllocator;
+	IAllocator symbolAllocator;
 
 	/// Number of symbols allocated
 	uint symbolsAllocated;
@@ -533,7 +533,7 @@ private:
 			immutable size_t scopeEnd = dec.endLocation;
 		else
 			immutable size_t scopeEnd = dec.structBody is null ? scopeBegin : dec.structBody.endLocation;
-		Scope* s = allocate!Scope(semanticAllocator, scopeBegin, scopeEnd);
+		Scope* s = make!Scope(semanticAllocator, scopeBegin, scopeEnd);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
@@ -670,9 +670,9 @@ private:
 	istring formatCallTip(const Type returnType, string name,
 		const Parameters parameters, const TemplateParameters templateParameters)
 	{
-		QuickAllocator!1024 q;
-		auto app = Appender!(char, typeof(q), 1024)(q);
-		scope(exit) q.deallocate(app.mem);
+		import std.array : appender;
+
+		auto app = appender!(char[])();
 		if (returnType !is null)
 		{
 			app.formatNode(returnType);
@@ -685,7 +685,7 @@ private:
 			app.put("()");
 		else
 			app.formatNode(parameters);
-		return internString(cast(string) app[]);
+		return internString(cast(string) app.data);
 	}
 
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
@@ -703,11 +703,11 @@ private:
 	}
 	body
 	{
-		DSymbol* acSymbol = allocate!DSymbol(symbolAllocator, name, kind);
+		DSymbol* acSymbol = make!DSymbol(symbolAllocator, name, kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
 		symbolsAllocated++;
-		return allocate!SemanticSymbol(semanticAllocator, acSymbol, type);
+		return make!SemanticSymbol(semanticAllocator, acSymbol, type);
 	}
 
 	/// Current protection type
@@ -724,7 +724,7 @@ private:
 
 	const Module mod;
 
-	CAllocator semanticAllocator;
+	IAllocator semanticAllocator;
 
 	Rebindable!(const ExpressionNode) feExpression;
 
@@ -741,7 +741,7 @@ void formatNode(A, T)(ref A appender, const T node)
 
 private:
 
-Scope* createFunctionScope(const FunctionBody functionBody, CAllocator semanticAllocator,
+Scope* createFunctionScope(const FunctionBody functionBody, IAllocator semanticAllocator,
 	size_t scopeBegin)
 {
 	import std.algorithm : max;
@@ -750,7 +750,7 @@ Scope* createFunctionScope(const FunctionBody functionBody, CAllocator semanticA
 		functionBody.outStatement is null ? 0 : functionBody.outStatement.blockStatement.endLocation,
 		functionBody.blockStatement is null ? 0 : functionBody.blockStatement.endLocation,
 		functionBody.bodyStatement is null ? 0 : functionBody.bodyStatement.blockStatement.endLocation);
-	return allocate!Scope(semanticAllocator, scopeBegin, scopeEnd);
+	return make!Scope(semanticAllocator, scopeBegin, scopeEnd);
 }
 
 istring[] iotcToStringArray(A)(ref A allocator, const IdentifierOrTemplateChain iotc)
@@ -770,16 +770,15 @@ istring[] iotcToStringArray(A)(ref A allocator, const IdentifierOrTemplateChain 
 static istring convertChainToImportPath(const IdentifierChain ic)
 {
 	import std.path : dirSeparator;
-	QuickAllocator!1024 q;
-	auto app = Appender!(char, typeof(q), 1024)(q);
-	scope(exit) q.deallocate(app.mem);
+	import std.array : appender;
+	auto app = appender!(char[])();
 	foreach (i, ident; ic.identifiers)
 	{
-		app.append(ident.text);
+		app.put(ident.text);
 		if (i + 1 < ic.identifiers.length)
-			app.append(dirSeparator);
+			app.put(dirSeparator);
 	}
-	return internString(cast(string) app[]);
+	return internString(cast(string) app.data);
 }
 
 class InitializerVisitor : ASTVisitor

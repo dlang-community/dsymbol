@@ -25,7 +25,7 @@ import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import memory.allocators;
-import std.allocator;
+import std.experimental.allocator;
 import std.d.ast;
 import std.d.lexer;
 import std.d.parser;
@@ -34,14 +34,14 @@ import std.typecons;
 /**
  * Used by autocompletion.
  */
-Scope* generateAutocompleteTrees(const(Token)[] tokens, CAllocator symbolAllocator)
+Scope* generateAutocompleteTrees(const(Token)[] tokens, IAllocator symbolAllocator)
 {
 	Module m = parseModule(tokens, internString("stdin"), symbolAllocator, &doesNothing);
 	return generateAutocompleteTrees(m, symbolAllocator);
 }
 
 /// ditto
-Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
+Scope* generateAutocompleteTrees(const Module mod, IAllocator symbolAllocator)
 {
 	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator, true);
 	first.run();
@@ -64,7 +64,7 @@ Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
  *     parseAllocator = the allocator to use for the AST
  * Returns: the parsed module
  */
-Module parseModuleSimple(const(Token)[] tokens, string fileName, CAllocator parseAllocator)
+Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator parseAllocator)
 {
 	auto parser = scoped!SimpleParser();
 	parser.fileName = fileName;

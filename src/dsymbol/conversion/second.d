@@ -26,7 +26,7 @@ import dsymbol.scope_;
 import dsymbol.import_;
 import dsymbol.builtin.symbols;
 import dsymbol.builtin.names;
-import std.allocator;
+import std.experimental.allocator;
 
 /**
  * Second pass handles the following:
@@ -64,7 +64,7 @@ public:
 	/**
 	 * Allocator used for allocating autocomplete symbols.
 	 */
-	CAllocator symbolAllocator;
+	IAllocator symbolAllocator;
 
 	/**
 	 * The root symbol from the first pass
@@ -123,7 +123,7 @@ private:
 		if (symbols.length > 0)
 			firstSymbol = symbols[0];
 		else
-			firstSymbol = allocate!DSymbol(symbolAllocator, firstPart,
+			firstSymbol = make!DSymbol(symbolAllocator, firstPart,
 				CompletionKind.packageName);
 		DSymbol* currentSymbol = firstSymbol;
 		size_t i = 0;
@@ -145,7 +145,7 @@ private:
 				}
 			}
 			if (s is null)
-				s = allocate!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
+				s = make!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
 			currentSymbol.parts.insert(s);
 			currentSymbol = s;
 		}
@@ -177,7 +177,7 @@ private:
 			{
 				// if this import is at module scope
 				if (importInfo.isPublic && currentScope.parent is null)
-					rootSymbol.acSymbol.parts.insert(allocate!DSymbol(symbolAllocator,
+					rootSymbol.acSymbol.parts.insert(make!DSymbol(symbolAllocator,
 						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol));
 				else
 					currentScope.symbols.insert(symbol.parts[]);
@@ -206,7 +206,7 @@ private:
 					continue;
 				if (tup[0] !is null)
 				{
-					DSymbol* s = allocate!DSymbol(symbolAllocator, tup[0],
+					DSymbol* s = make!DSymbol(symbolAllocator, tup[0],
 						sym.kind, sym.type);
 					s.parts.insert(sym.parts[]);
 					s.callTip = sym.callTip;

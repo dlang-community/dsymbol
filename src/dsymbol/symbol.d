@@ -18,7 +18,7 @@
 
 module dsymbol.symbol;
 
-import std.allocator;
+import std.experimental.allocator;
 import std.array;
 
 import containers.ttree;

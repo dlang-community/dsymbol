@@ -105,28 +105,30 @@ Type argumentsType;
 static this()
 {
 	import dsymbol.string_interning : internString;
-	import std.allocator : allocate, Mallocator;
+	import std.experimental.allocator : make;
+	import std.experimental.allocator.mallocator : Mallocator;
+
 	// _argptr has type void*
-	argptrType = allocate!Type(Mallocator.it);
-	argptrType.type2 = allocate!Type2(Mallocator.it);
+	argptrType = make!Type(Mallocator.it);
+	argptrType.type2 = make!Type2(Mallocator.it);
 	argptrType.type2.builtinType = tok!"void";
-	TypeSuffix argptrTypeSuffix = allocate!TypeSuffix(Mallocator.it);
+	TypeSuffix argptrTypeSuffix = make!TypeSuffix(Mallocator.it);
 	argptrTypeSuffix.star = Token(tok!"*");
 	argptrType.typeSuffixes = cast(TypeSuffix[]) Mallocator.it.allocate(TypeSuffix.sizeof);
 	argptrType.typeSuffixes[0] = argptrTypeSuffix;
 
 	// _arguments has type TypeInfo[]
-	argumentsType = allocate!Type(Mallocator.it);
-	argumentsType.type2 = allocate!Type2(Mallocator.it);
-	argumentsType.type2.symbol = allocate!Symbol(Mallocator.it);
-	argumentsType.type2.symbol.identifierOrTemplateChain = allocate!IdentifierOrTemplateChain(Mallocator.it);
-	IdentifierOrTemplateInstance i = allocate!IdentifierOrTemplateInstance(Mallocator.it);
+	argumentsType = make!Type(Mallocator.it);
+	argumentsType.type2 = make!Type2(Mallocator.it);
+	argumentsType.type2.symbol = make!Symbol(Mallocator.it);
+	argumentsType.type2.symbol.identifierOrTemplateChain = make!IdentifierOrTemplateChain(Mallocator.it);
+	IdentifierOrTemplateInstance i = make!IdentifierOrTemplateInstance(Mallocator.it);
 	i.identifier.text = internString("TypeInfo");
 	i.identifier.type = tok!"identifier";
 	argumentsType.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances =
 		cast(IdentifierOrTemplateInstance[]) Mallocator.it.allocate(IdentifierOrTemplateInstance.sizeof);
 	argumentsType.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances[0] = i;
-	TypeSuffix argumentsTypeSuffix = allocate!TypeSuffix(Mallocator.it);
+	TypeSuffix argumentsTypeSuffix = make!TypeSuffix(Mallocator.it);
 	argumentsTypeSuffix.array = true;
 	argumentsType.typeSuffixes = cast(TypeSuffix[]) Mallocator.it.allocate(TypeSuffix.sizeof);
 	argumentsType.typeSuffixes[0] = argumentsTypeSuffix;

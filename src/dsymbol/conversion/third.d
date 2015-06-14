@@ -25,7 +25,7 @@ import dsymbol.symbol;
 import dsymbol.scope_;
 import dsymbol.builtin.names;
 import dsymbol.builtin.symbols;
-import std.allocator;
+import std.experimental.allocator;
 import std.d.ast;
 import std.d.lexer;
 
@@ -76,7 +76,7 @@ public:
 	/**
 	 * The symbol allocator
 	 */
-	CAllocator symbolAllocator;
+	IAllocator symbolAllocator;
 
 private:
 
@@ -178,7 +178,7 @@ private:
 				a => a.name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr));
 			if (baseClass.kind == CompletionKind.className)
 			{
-				auto s = allocate!DSymbol(symbolAllocator,
+				auto s = make!DSymbol(symbolAllocator,
 					SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass);
 				symbolScope.symbols.insert(s);
 			}
@@ -192,7 +192,7 @@ private:
 			auto parts = currentSymbol.acSymbol.getPartsByName(aliasThis);
 			if (parts.length == 0 || parts[0].type is null)
 				continue;
-			DSymbol* s = allocate!DSymbol(symbolAllocator, IMPORT_SYMBOL_NAME,
+			DSymbol* s = make!DSymbol(symbolAllocator, IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol);
 			s.type = parts[0].type;
 			currentSymbol.acSymbol.parts.insert(s);
@@ -338,7 +338,7 @@ private:
 			return symbol;
 		if (suffix.array || suffix.type)
 		{
-			DSymbol* s = allocate!DSymbol(symbolAllocator, istring(null));
+			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
 			s.parts.insert(suffix.array ? arraySymbols[]
 				: assocArraySymbols[]);
 			s.type = symbol;
@@ -348,16 +348,13 @@ private:
 		if (suffix.parameters)
 		{
 			import dsymbol.conversion.first : formatNode;
-			import memory.allocators : QuickAllocator;
-			import memory.appender : Appender;
-			DSymbol* s = allocate!DSymbol(symbolAllocator, istring(null));
+			import std.array : appender;
+			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
 			s.type = symbol;
 			s.qualifier = SymbolQualifier.func;
-			QuickAllocator!1024 q;
-			auto app = Appender!(char, typeof(q), 2048)(q);
-			scope(exit) q.deallocate(app.mem);
+			auto app = appender!(char[]);
 			app.formatNode(t);
-			s.callTip = internString(cast(string) app[]);
+			s.callTip = internString(cast(string) app.data);
 			return s;
 		}
 		return null;
