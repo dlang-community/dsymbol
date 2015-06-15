@@ -96,14 +96,14 @@ static this()
 
 	foreach (s; integralTypeArray)
 	{
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("init"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("min"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("max"), CompletionKind.keyword, s));
-		s.parts.insert(alignof_);
-		s.parts.insert(sizeof_);
-		s.parts.insert(stringof_);
-		s.parts.insert(mangleof_);
-		s.parts.insert(init);
+		s.addChild(make!DSymbol(Mallocator.it, internString("init"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("min"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("max"), CompletionKind.keyword, s), true);
+		s.addChild(alignof_, false);
+		s.addChild(sizeof_, false);
+		s.addChild(stringof_, false);
+		s.addChild(mangleof_, false);
+		s.addChild(init, false);
 	}
 
 	auto cdouble_ = make!DSymbol(Mallocator.it, builtinTypeNames[21], CompletionKind.keyword);
@@ -133,23 +133,23 @@ static this()
 
 	foreach (s; floatTypeArray)
 	{
-		s.parts.insert(alignof_);
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("dig"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("epsilon"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("infinity"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("init"), CompletionKind.keyword, s));
-		s.parts.insert(mangleof_);
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("mant_dig"), CompletionKind.keyword, int_));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("max"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("max_10_exp"), CompletionKind.keyword, int_));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("max_exp"), CompletionKind.keyword, int_));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("min"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("min_exp"), CompletionKind.keyword, int_));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("min_10_exp"), CompletionKind.keyword, int_));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("min_normal"), CompletionKind.keyword, s));
-		s.parts.insert(make!DSymbol(Mallocator.it, internString("nan"), CompletionKind.keyword, s));
-		s.parts.insert(sizeof_);
-		s.parts.insert(stringof_);
+		s.addChild(alignof_, false);
+		s.addChild(make!DSymbol(Mallocator.it, internString("dig"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("epsilon"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("infinity"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("init"), CompletionKind.keyword, s), true);
+		s.addChild(mangleof_, false);
+		s.addChild(make!DSymbol(Mallocator.it, internString("mant_dig"), CompletionKind.keyword, int_), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("max"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("max_10_exp"), CompletionKind.keyword, int_), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("max_exp"), CompletionKind.keyword, int_), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("min"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("min_exp"), CompletionKind.keyword, int_), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("min_10_exp"), CompletionKind.keyword, int_), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("min_normal"), CompletionKind.keyword, s), true);
+		s.addChild(make!DSymbol(Mallocator.it, internString("nan"), CompletionKind.keyword, s), true);
+		s.addChild(sizeof_, false);
+		s.addChild(stringof_, false);
 	}
 
 	aggregateSymbols.insert(make!DSymbol(Mallocator.it, internString("tupleof"), CompletionKind.keyword));
@@ -169,12 +169,12 @@ static this()
 	classSymbols.insert(stringof_);
 	classSymbols.insert(init);
 
-	ireal_.parts.insert(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, real_));
-	ifloat_.parts.insert(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, float_));
-	idouble_.parts.insert(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, double_));
-	ireal_.parts.insert(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, real_));
-	ifloat_.parts.insert(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, float_));
-	idouble_.parts.insert(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, double_));
+	ireal_.addChild(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, real_), true);
+	ifloat_.addChild(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, float_), true);
+	idouble_.addChild(make!DSymbol(Mallocator.it, internString("im"), CompletionKind.keyword, double_), true);
+	ireal_.addChild(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, real_), true);
+	ifloat_.addChild(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, float_), true);
+	idouble_.addChild(make!DSymbol(Mallocator.it, internString("re"), CompletionKind.keyword, double_), true);
 
 	auto void_ = make!DSymbol(Mallocator.it, builtinTypeNames[14], CompletionKind.keyword);
 

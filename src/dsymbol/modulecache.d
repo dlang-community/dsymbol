@@ -42,7 +42,8 @@ import std.file;
 import std.lexer;
 import std.path;
 
-private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(n => Region!Mallocator(1024 * 64)));
+private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
+	n => Region!Mallocator(1024 * 64)));
 
 private struct CacheEntry
 {
@@ -183,6 +184,7 @@ struct ModuleCache
 		}
 
 		auto semanticAllocator = scoped!(ASTAllocator);
+		pragma(msg, ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
 
 		assert (symbolAllocator);

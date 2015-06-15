@@ -55,6 +55,11 @@ public:
 		this.symbolAllocator = second.symbolAllocator;
 	}
 
+	~this()
+	{
+		typeid(*rootSymbol).destroy(rootSymbol);
+	}
+
 	/**
 	 * Runs the third pass.
 	 */
@@ -172,10 +177,11 @@ private:
 					continue outer;
 				baseClass = symbols[0];
 			}
-			currentSymbol.acSymbol.parts.insert(baseClass.parts[].filter!(
-				a => a.name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr));
-			symbolScope.symbols.insert(baseClass.parts[].filter!(
-				a => a.name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr));
+			foreach (_; baseClass.opSlice().filter!(a => a.name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr))
+			{
+				currentSymbol.acSymbol.addChild(_, false);
+				symbolScope.symbols.insert(_);
+			}
 			if (baseClass.kind == CompletionKind.className)
 			{
 				auto s = make!DSymbol(symbolAllocator,
@@ -195,7 +201,7 @@ private:
 			DSymbol* s = make!DSymbol(symbolAllocator, IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol);
 			s.type = parts[0].type;
-			currentSymbol.acSymbol.parts.insert(s);
+			currentSymbol.acSymbol.addChild(s, true);
 		}
 	}
 
@@ -219,7 +225,8 @@ private:
 				else
 					symbol = s[0];
 			}
-			currentSymbol.acSymbol.parts.insert(symbol.parts[]);
+			foreach (_; symbol.opSlice)
+				currentSymbol.acSymbol.addChild(_, false);
 		}
 	}
 
@@ -339,8 +346,8 @@ private:
 		if (suffix.array || suffix.type)
 		{
 			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
-			s.parts.insert(suffix.array ? arraySymbols[]
-				: assocArraySymbols[]);
+			foreach (_; suffix.array ? arraySymbols[]: assocArraySymbols[])
+				s.addChild(_, false);
 			s.type = symbol;
 			s.qualifier = suffix.array ? SymbolQualifier.array : SymbolQualifier.assocArray;
 			return s;

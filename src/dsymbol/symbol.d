@@ -136,13 +136,13 @@ public:
 	 * Params:
 	 *     name = the symbol's name
 	 */
-	this(string name) nothrow @safe
+	this(string name) /+nothrow+/ /+@safe+/
 	{
 		this.name = name is null ? istring(null) : internString(name);
 	}
 
 	/// ditto
-	this(istring name) nothrow @safe
+	this(istring name) /+nothrow+/ /+@safe+/
 	{
 		this.name = name;
 	}
@@ -152,14 +152,14 @@ public:
 	 *     name = the symbol's name
 	 *     kind = the symbol's completion kind
 	 */
-	this(string name, CompletionKind kind) nothrow @safe @nogc
+	this(string name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
 	{
 		this.name = name is null ? istring(name) : internString(name);
 		this.kind = kind;
 	}
 
 	/// ditto
-	this(istring name, CompletionKind kind) nothrow @safe @nogc
+	this(istring name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
 	{
 		this.name = name;
 		this.kind = kind;
@@ -189,7 +189,8 @@ public:
 	~this()
 	{
 		foreach (part; parts[])
-			typeid(DSymbol).destroy(part);
+			if (part.owned)
+				typeid(DSymbol).destroy(part.ptr);
 	}
 
 	int opCmp(ref const DSymbol other) const pure nothrow @safe
@@ -221,9 +222,9 @@ public:
 		DSymbol s = DSymbol(name);
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		auto app = appender!(DSymbol*[])();
-		foreach (part; parts.equalRange(&s))
+		foreach (part; parts.equalRange(SymbolOwnership(&s)))
 			app.put(part);
-		foreach (im; parts.equalRange(&p))
+		foreach (im; parts.equalRange(SymbolOwnership(&p)))
 			app.put(im.type.getPartsByName(name));
 		return app.data();
 	}
@@ -243,16 +244,27 @@ public:
 		}
 	}
 
+	void addChild(DSymbol* symbol, bool owns)
+	{
+		parts.insert(SymbolOwnership(symbol, owns));
+	}
+
+	void addChildren(R)(R symbols, bool owns)
+	{
+		foreach (symbol; symbols)
+			parts.insert(SymbolOwnership(symbol, owns));
+	}
+
+	void addChildren(DSymbol*[] symbols, bool owns)
+	{
+		foreach (symbol; symbols)
+			parts.insert(SymbolOwnership(symbol, owns));
+	}
+
 	/**
 	 * DSymbol's name
 	 */
 	istring name;
-
-	/**
-	 * Symbols that compose this symbol, such as enum members, class variables,
-	 * methods, parameters, etc.
-	 */
-	TTree!(DSymbol*, true, "a < b", false) parts;
 
 	/**
 	 * Calltip to display if this is a function
@@ -288,4 +300,29 @@ public:
 	 * DSymbol qualifier
 	 */
 	SymbolQualifier qualifier;
+
+	auto opSlice() const
+	{
+		return parts[];
+	}
+
+private:
+
+	/**
+	 * Symbols that compose this symbol, such as enum members, class variables,
+	 * methods, parameters, etc.
+	 */
+	TTree!(SymbolOwnership, true, "a < b", false) parts;
+}
+
+struct SymbolOwnership
+{
+	int opCmp(ref const SymbolOwnership other) const
+	{
+		return this.ptr.opCmp(*other.ptr);
+	}
+
+	DSymbol* ptr;
+	bool owned;
+	alias ptr this;
 }

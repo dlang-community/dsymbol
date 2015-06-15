@@ -521,9 +521,9 @@ private:
 		SemanticSymbol* symbol = allocateSemanticSymbol(dec.name.text,
 			kind, symbolFile, dec.name.index);
 		if (kind == CompletionKind.className)
-			symbol.acSymbol.parts.insert(classSymbols[]);
+			symbol.acSymbol.addChildren(classSymbols[], false);
 		else
-			symbol.acSymbol.parts.insert(aggregateSymbols[]);
+			symbol.acSymbol.addChildren(aggregateSymbols[], false);
 		symbol.parent = currentSymbol;
 		symbol.protection = protection;
 		symbol.acSymbol.doc = internString(dec.comment);

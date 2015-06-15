@@ -52,16 +52,16 @@ public:
 	~this()
 	{
 		foreach (child; children[])
-			typeid(typeof(*child)).destroy(child);
+			typeid(*child).destroy(child);
 	}
 
 	/**
 	 * Adds a child to the children field and updates the acSymbol's parts field
 	 */
-	void addChild(SemanticSymbol* child)
+	void addChild(SemanticSymbol* child, bool owns = true)
 	{
 		children.insert(child);
-		acSymbol.parts.insert(child.acSymbol);
+		acSymbol.addChild(child.acSymbol, owns);
 	}
 
 	/// Autocompletion symbol

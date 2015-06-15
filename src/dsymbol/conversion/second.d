@@ -88,7 +88,7 @@ private:
 			Scope* s = moduleScope.getScopeByCursor(currentSymbol.location);
 			s.symbols.insert(currentSymbol);
 		}
-		foreach (part; currentSymbol.parts[])
+		foreach (part; currentSymbol.opSlice())
 		{
 			if (part.kind != CompletionKind.keyword)
 				assignToScopes(part);
@@ -146,10 +146,10 @@ private:
 			}
 			if (s is null)
 				s = make!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
-			currentSymbol.parts.insert(s);
+			currentSymbol.addChild(s, true); // TODO: This 'true' is probably wrong
 			currentSymbol = s;
 		}
-		currentSymbol.parts.insert(moduleSymbol);
+		currentSymbol.addChild(moduleSymbol, false);
 		return currentSymbol;
 	}
 
@@ -177,10 +177,11 @@ private:
 			{
 				// if this import is at module scope
 				if (importInfo.isPublic && currentScope.parent is null)
-					rootSymbol.acSymbol.parts.insert(make!DSymbol(symbolAllocator,
-						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol));
+					rootSymbol.acSymbol.addChild(make!DSymbol(symbolAllocator,
+						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol), true);
 				else
-					currentScope.symbols.insert(symbol.parts[]);
+					foreach (s; symbol.opSlice())
+						currentScope.symbols.insert(s);
 				currentScope.symbols.insert(moduleSymbol);
 				continue;
 			}
@@ -188,14 +189,13 @@ private:
 			{
 				// Handle selective and renamed imports
 
-				DSymbol needle = DSymbol(tup[1]);
 				DSymbol* sym;
-				auto r = symbol.parts.equalRange(&needle);
-				if (r.empty) foreach (sy; symbol.parts[])
+				auto r = symbol.getPartsByName(tup[1]);
+				if (r.empty) foreach (sy; symbol.opSlice())
 				{
 					if (sy.kind != CompletionKind.importSymbol || sy.type is null)
 						continue;
-					auto ra = sy.type.parts.equalRange(&needle);
+					auto ra = sy.type.getPartsByName(tup[1]);
 					if (ra.empty)
 						continue;
 					sym = ra.front;
@@ -208,7 +208,8 @@ private:
 				{
 					DSymbol* s = make!DSymbol(symbolAllocator, tup[0],
 						sym.kind, sym.type);
-					s.parts.insert(sym.parts[]);
+					foreach (_; sym.opSlice())
+						s.addChild(_, false);
 					s.callTip = sym.callTip;
 					s.doc = sym.doc;
 					s.qualifier = sym.qualifier;
@@ -216,10 +217,10 @@ private:
 					s.symbolFile = sym.symbolFile;
 					sym = s;
 				}
-				moduleSymbol.parts.insert(sym);
+				moduleSymbol.addChild(sym, false);
 				currentScope.symbols.insert(sym);
 				if (importInfo.isPublic && currentScope.parent is null)
-					rootSymbol.acSymbol.parts.insert(sym);
+					rootSymbol.acSymbol.addChild(sym, false);
 			}
 		}
 

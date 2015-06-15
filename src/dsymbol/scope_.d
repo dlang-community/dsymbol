@@ -43,14 +43,18 @@ struct Scope
 		this.endLocation = end;
 	}
 
+	void destroySymbols()
+	{
+		foreach (symbol; symbols[])
+			typeid(DSymbol).destroy(symbol);
+	}
+
 	~this()
 	{
 		foreach (info; importInformation[])
 			typeid(ImportInformation).destroy(info);
 		foreach (child; children[])
 			typeid(Scope).destroy(child);
-		foreach (symbol; symbols[])
-			typeid(DSymbol).destroy(symbol);
 	}
 
 	/**
@@ -95,7 +99,7 @@ struct Scope
 				if (item.type !is null && (item.kind == CompletionKind.importSymbol
 					|| item.kind == CompletionKind.withSymbol))
 				{
-					foreach (i; item.type.parts[])
+					foreach (i; item.type.opSlice())
 						symbols.insert(i);
 				}
 				else
@@ -131,7 +135,7 @@ struct Scope
 			{
 				if (e.type is null)
 					continue;
-				foreach (withSymbol; e.type.parts.equalRange(&s))
+				foreach (withSymbol; e.type.getPartsByName(s.name))
 					app.put(withSymbol);
 			}
 			if (app.data.length > 0)
@@ -145,7 +149,7 @@ struct Scope
 		{
 			auto app = appender!(DSymbol*[])();
 			foreach (e; r)
-				foreach (importedSymbol; e.type.parts.equalRange(&s))
+				foreach (importedSymbol; e.type.getPartsByName(s.name))
 					app.put(importedSymbol);
 			if (app.data.length > 0)
 				return app.data;
