@@ -184,7 +184,6 @@ struct ModuleCache
 		}
 
 		auto semanticAllocator = scoped!(ASTAllocator);
-		pragma(msg, ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
 
 		assert (symbolAllocator);
