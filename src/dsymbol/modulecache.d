@@ -51,6 +51,12 @@ private struct CacheEntry
 	SysTime modificationTime;
 	string path;
 
+	~this()
+	{
+		if (symbol !is null)
+			typeid(DSymbol).destroy(symbol);
+	}
+
 	int opCmp(ref const CacheEntry other) const
 	{
 		immutable int r = path > other.path;
@@ -90,6 +96,12 @@ bool existanceCheck(A)(A path)
 static this()
 {
 	ModuleCache.symbolAllocator = new ASTAllocator;
+}
+
+static ~this()
+{
+	foreach (entry; ModuleCache.cache[])
+		typeid(CacheEntry).destroy(entry);
 }
 
 /**
