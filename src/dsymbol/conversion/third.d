@@ -55,17 +55,17 @@ public:
 		this.symbolAllocator = second.symbolAllocator;
 	}
 
-	~this()
-	{
-		typeid(*rootSymbol).destroy(rootSymbol);
-	}
-
 	/**
 	 * Runs the third pass.
 	 */
 	void run()
 	{
 		thirdPass(rootSymbol);
+	}
+
+	~this()
+	{
+		typeid(SemanticSymbol).destroy(rootSymbol);
 	}
 
 	/**
@@ -85,17 +85,16 @@ public:
 
 private:
 
-	bool shouldFollowtype(const DSymbol* t, const SemanticSymbol* currentSymbol)
+	bool shouldFollowType(const DSymbol* t, const SemanticSymbol* currentSymbol) const pure nothrow @nogc
 	{
 		if (t is null)
 			return false;
-		if (currentSymbol.acSymbol.kind == CompletionKind.withSymbol
-			&& (t.kind == CompletionKind.variableName
-				|| t.kind == CompletionKind.aliasName))
-		{
-			return true;
-		}
+		if (t.type is t)
+			return false;
 		if (t.kind == CompletionKind.aliasName)
+			return true;
+		if (currentSymbol.acSymbol.kind == CompletionKind.withSymbol
+				&& t.kind == CompletionKind.variableName)
 			return true;
 		return false;
 	}
@@ -113,11 +112,8 @@ private:
 		case memberVariableName:
 		case functionName:
 		case aliasName:
-			DSymbol* t = resolveType(currentSymbol.initializer,
-				currentSymbol.type, currentSymbol.acSymbol.location);
-			while (shouldFollowtype(t, currentSymbol))
-				t = t.type;
-			currentSymbol.acSymbol.type = t;
+			resolveType(currentSymbol.initializer, currentSymbol.type,
+				currentSymbol.acSymbol.location, currentSymbol);
 			break;
 		case structName:
 		case unionName:
@@ -136,9 +132,7 @@ private:
 		}
 
 		foreach (child; currentSymbol.children)
-		{
 			thirdPass(child);
-		}
 
 		// Alias this and mixin templates are resolved after child nodes are
 		// resolved so that the correct symbol information will be available.
@@ -177,16 +171,32 @@ private:
 					continue outer;
 				baseClass = symbols[0];
 			}
-			foreach (_; baseClass.opSlice().filter!(a => a.name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr))
+
+			static bool shouldSkipFromBase(const DSymbol* d) pure nothrow @nogc
+			{
+				if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
+					return false;
+				if (d.name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr)
+					return false;
+				if (d.name.ptr == UNITTEST_SYMBOL_NAME.ptr)
+					return false;
+				if (d.name.ptr == THIS_SYMBOL_NAME.ptr)
+					return false;
+				if (d.kind == CompletionKind.keyword)
+					return false;
+				return true;
+			}
+
+			foreach (_; baseClass.opSlice().filter!shouldSkipFromBase())
 			{
 				currentSymbol.acSymbol.addChild(_, false);
-				symbolScope.symbols.insert(_);
+				symbolScope.addSymbol(_, false);
 			}
 			if (baseClass.kind == CompletionKind.className)
 			{
 				auto s = make!DSymbol(symbolAllocator,
 					SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass);
-				symbolScope.symbols.insert(s);
+				symbolScope.addSymbol(s, true);
 			}
 		}
 	}
@@ -286,41 +296,56 @@ private:
 		return s;
 	}
 
-	DSymbol* resolveType(I)(ref const I initializer, const Type t, size_t location)
+	void resolveType(I)(ref const I initializer, const Type t, size_t location,
+		SemanticSymbol* semantic)
 	{
 		if (t is null)
-			return resolveInitializerType(initializer, location);
-		if (t.type2 is null)
-			return null;
-		DSymbol* s;
-		if (t.type2.builtinType != tok!"")
-			s = convertBuiltinType(t.type2);
+		{
+			semantic.acSymbol.type = resolveInitializerType(initializer, location);
+			goto followTypes;
+		}
+		else if (t.type2 is null)
+			goto followTypes;
+		else if (t.type2.builtinType != tok!"")
+			semantic.acSymbol.type = convertBuiltinType(t.type2);
 		else if (t.type2.typeConstructor != tok!"")
-			s = resolveType(initializer, t.type2.type, location);
+			resolveType(initializer, t.type2.type, location, semantic);
 		else if (t.type2.symbol !is null)
 		{
 			// TODO: global scoped symbol handling
 			size_t l = t.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances.length;
-			istring[] symbolParts = (cast(istring*) Mallocator.it.allocate(l * istring.sizeof))[0 .. l];
+			istring[] symbolParts = (cast(istring*) Mallocator.it.allocate(
+				l * istring.sizeof))[0 .. l];
 			scope(exit) Mallocator.it.deallocate(symbolParts);
 			expandSymbol(symbolParts, t.type2.symbol.identifierOrTemplateChain);
 			auto symbols = moduleScope.getSymbolsByNameAndCursor(
 				symbolParts[0], location);
 			if (symbols.length == 0)
 				goto resolveSuffixes;
-			s = symbols[0];
+			semantic.acSymbol.type = symbols[0];
 			foreach (symbolPart; symbolParts[1..$])
 			{
-				auto parts = s.getPartsByName(symbolPart);
+				auto parts = semantic.acSymbol.type.getPartsByName(symbolPart);
 				if (parts.length == 0)
 					goto resolveSuffixes;
-				s = parts[0];
+				semantic.acSymbol.type = parts[0];
 			}
 		}
+
 	resolveSuffixes:
 		foreach (suffix; t.typeSuffixes)
-			s = processSuffix(s, suffix, t);
-		return s;
+			processSuffix(semantic.acSymbol, suffix, t);
+
+	followTypes:
+		while (shouldFollowType(semantic.acSymbol.type, semantic))
+		{
+			auto oldType = semantic.acSymbol.type;
+			immutable oldOwn = semantic.acSymbol.ownType;
+			semantic.acSymbol.ownType = oldType.ownType;
+			semantic.acSymbol.type = oldType.type;
+			if (oldOwn)
+				typeid(DSymbol).destroy(oldType);
+		}
 	}
 
 	static void expandSymbol(istring[] strings, const IdentifierOrTemplateChain chain)
@@ -339,32 +364,38 @@ private:
 		}
 	}
 
-	DSymbol* processSuffix(DSymbol* symbol, const TypeSuffix suffix, const Type t)
+	void processSuffix(ref DSymbol* symbol, const TypeSuffix suffix, const Type t)
 	{
 		if (suffix.star.type != tok!"")
-			return symbol;
+			return;
 		if (suffix.array || suffix.type)
 		{
 			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
-			foreach (_; suffix.array ? arraySymbols[]: assocArraySymbols[])
+			foreach (_; suffix.array ? arraySymbols[] : assocArraySymbols[])
 				s.addChild(_, false);
-			s.type = symbol;
+			s.type = symbol.type;
+			s.ownType = symbol.ownType;
+			symbol.ownType = true;
+			symbol.type = s;
 			s.qualifier = suffix.array ? SymbolQualifier.array : SymbolQualifier.assocArray;
-			return s;
+			return;
 		}
 		if (suffix.parameters)
 		{
 			import dsymbol.conversion.first : formatNode;
 			import std.array : appender;
 			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
-			s.type = symbol;
+			s.type = symbol.type;
+			s.ownType = symbol.ownType;
+			symbol.ownType = true;
+			symbol.type = s;
 			s.qualifier = SymbolQualifier.func;
 			auto app = appender!(char[]);
 			app.formatNode(t);
 			s.callTip = internString(cast(string) app.data);
-			return s;
+			return;
 		}
-		return null;
+		assert(false);
 	}
 
 	DSymbol* convertBuiltinType(const Type2 type2)

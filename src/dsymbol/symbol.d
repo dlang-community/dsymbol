@@ -132,15 +132,6 @@ public:
 	/// ditto
 	@disable this(this);
 
-	/**
-	 * Params:
-	 *     name = the symbol's name
-	 */
-	this(string name) /+nothrow+/ /+@safe+/
-	{
-		this.name = name is null ? istring(null) : internString(name);
-	}
-
 	/// ditto
 	this(istring name) /+nothrow+/ /+@safe+/
 	{
@@ -191,6 +182,8 @@ public:
 		foreach (part; parts[])
 			if (part.owned)
 				typeid(DSymbol).destroy(part.ptr);
+		if (ownType)
+			typeid(DSymbol).destroy(type);
 	}
 
 	int opCmp(ref const DSymbol other) const pure nothrow @safe
@@ -300,6 +293,8 @@ public:
 	 * DSymbol qualifier
 	 */
 	SymbolQualifier qualifier;
+
+	bool ownType;
 
 	auto opSlice() const
 	{

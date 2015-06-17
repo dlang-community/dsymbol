@@ -57,7 +57,8 @@ public:
 	void run()
 	{
 		assignToScopes(rootSymbol.acSymbol);
-		moduleScope.symbols.insert(builtinSymbols[]);
+		foreach (symbol; builtinSymbols[])
+			moduleScope.addSymbol(symbol, false);
 		resolveImports(moduleScope);
 	}
 
@@ -86,7 +87,7 @@ private:
 		if (currentSymbol.kind != CompletionKind.moduleName)
 		{
 			Scope* s = moduleScope.getScopeByCursor(currentSymbol.location);
-			s.symbols.insert(currentSymbol);
+			s.addSymbol(currentSymbol, true);
 		}
 		foreach (part; currentSymbol.opSlice())
 		{
@@ -146,7 +147,7 @@ private:
 			}
 			if (s is null)
 				s = make!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
-			currentSymbol.addChild(s, true); // TODO: This 'true' is probably wrong
+			currentSymbol.addChild(s, false);
 			currentSymbol = s;
 		}
 		currentSymbol.addChild(moduleSymbol, false);
@@ -181,8 +182,8 @@ private:
 						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol), true);
 				else
 					foreach (s; symbol.opSlice())
-						currentScope.symbols.insert(s);
-				currentScope.symbols.insert(moduleSymbol);
+						currentScope.addSymbol(s, false);
+				currentScope.addSymbol(moduleSymbol, true);
 				continue;
 			}
 			else foreach (tup; importInfo.importedSymbols[])
@@ -218,7 +219,7 @@ private:
 					sym = s;
 				}
 				moduleSymbol.addChild(sym, false);
-				currentScope.symbols.insert(sym);
+				currentScope.addSymbol(sym, false);
 				if (importInfo.isPublic && currentScope.parent is null)
 					rootSymbol.acSymbol.addChild(sym, false);
 			}

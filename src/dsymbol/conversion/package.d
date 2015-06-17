@@ -34,14 +34,14 @@ import std.typecons;
 /**
  * Used by autocompletion.
  */
-Scope* generateAutocompleteTrees(const(Token)[] tokens, IAllocator symbolAllocator)
+ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens, IAllocator symbolAllocator)
 {
 	Module m = parseModule(tokens, internString("stdin"), symbolAllocator, &doesNothing);
 	return generateAutocompleteTrees(m, symbolAllocator);
 }
 
 /// ditto
-Scope* generateAutocompleteTrees(const Module mod, IAllocator symbolAllocator)
+ScopeSymbolPair generateAutocompleteTrees(const Module mod, IAllocator symbolAllocator)
 {
 	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator, true);
 	first.run();
@@ -51,8 +51,19 @@ Scope* generateAutocompleteTrees(const Module mod, IAllocator symbolAllocator)
 
 	ThirdPass third = ThirdPass(second);
 	third.run();
-	typeid(typeof(third.rootSymbol)).destroy(third.rootSymbol);
-	return third.moduleScope;
+	return ScopeSymbolPair(third.rootSymbol.acSymbol, third.moduleScope);
+}
+
+struct ScopeSymbolPair
+{
+	void destroy()
+	{
+		typeid(DSymbol).destroy(symbol);
+		typeid(Scope).destroy(scope_);
+	}
+
+	DSymbol* symbol;
+	Scope* scope_;
 }
 
 /**

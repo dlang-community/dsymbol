@@ -52,13 +52,13 @@ public:
 	~this()
 	{
 		foreach (child; children[])
-			typeid(*child).destroy(child);
+			typeid(SemanticSymbol).destroy(child);
 	}
 
 	/**
 	 * Adds a child to the children field and updates the acSymbol's parts field
 	 */
-	void addChild(SemanticSymbol* child, bool owns = true)
+	void addChild(SemanticSymbol* child, bool owns)
 	{
 		children.insert(child);
 		acSymbol.addChild(child.acSymbol, owns);
