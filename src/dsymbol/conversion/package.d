@@ -34,16 +34,14 @@ import std.typecons;
 /**
  * Used by autocompletion.
  */
-ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens, IAllocator symbolAllocator)
+ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
+	IAllocator symbolAllocator, size_t cursorPosition)
 {
-	Module m = parseModule(tokens, internString("stdin"), symbolAllocator, &doesNothing);
-	return generateAutocompleteTrees(m, symbolAllocator);
-}
+	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
+		symbolAllocator, cursorPosition);
 
-/// ditto
-ScopeSymbolPair generateAutocompleteTrees(const Module mod, IAllocator symbolAllocator)
-{
-	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator, true);
+	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
+		symbolAllocator, true);
 	first.run();
 
 	SecondPass second = SecondPass(first);
@@ -86,6 +84,52 @@ Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator pars
 }
 
 private:
+
+Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
+	IAllocator parseAllocator, size_t cursorPosition)
+{
+	auto parser = scoped!AutocompleteParser();
+	parser.fileName = fileName;
+	parser.tokens = tokens;
+	parser.messageFunction = &doesNothing;
+	parser.allocator = parseAllocator;
+	parser.cursorPosition = cursorPosition;
+	return parser.parseModule();
+}
+
+class AutocompleteParser : Parser
+{
+	override BlockStatement parseBlockStatement()
+	{
+		if (current.index > cursorPosition)
+		{
+			BlockStatement bs = allocate!(BlockStatement);
+			bs.startLocation = current.index;
+			skipBraces();
+			bs.endLocation = tokens[index - 1].index;
+			return bs;
+		}
+		immutable start = current.index;
+		auto b = setBookmark();
+		skipBraces();
+		if (tokens[index - 1].index < cursorPosition)
+		{
+			abandonBookmark(b);
+			BlockStatement bs = allocate!BlockStatement();
+			bs.startLocation = start;
+			bs.endLocation = tokens[index - 1].index;
+			return bs;
+		}
+		else
+		{
+			goToBookmark(b);
+			return super.parseBlockStatement();
+		}
+	}
+
+private:
+	size_t cursorPosition;
+}
 
 class SimpleParser : Parser
 {
