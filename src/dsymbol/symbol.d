@@ -294,8 +294,14 @@ public:
 	 */
 	SymbolQualifier qualifier;
 
+	/**
+	 * If true, this symbol owns its type and will free it on destruction
+	 */
 	bool ownType;
 
+	/**
+	 * Returns: a range over this symbol's parts.
+	 */
 	auto opSlice() const
 	{
 		return parts[];

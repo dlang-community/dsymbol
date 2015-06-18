@@ -43,7 +43,7 @@ import std.lexer;
 import std.path;
 
 private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 64)));
+	n => Region!Mallocator(1024 * 32)));
 
 private struct CacheEntry
 {
