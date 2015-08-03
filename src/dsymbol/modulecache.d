@@ -24,11 +24,14 @@ import containers.ttree;
 import containers.unrolledlist;
 import dsymbol.conversion;
 import dsymbol.conversion.first;
-import dsymbol.conversion.second;
+//import dsymbol.conversion.second;
 import dsymbol.conversion.third;
+import dsymbol.cache_entry;
 import dsymbol.scope_;
 import dsymbol.semantic;
 import dsymbol.symbol;
+import dsymbol.string_interning;
+import dsymbol.deferred;
 import memory.allocators;
 import std.algorithm;
 import std.experimental.allocator;
@@ -42,45 +45,8 @@ import std.file;
 import std.lexer;
 import std.path;
 
-private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 32)));
-
-private struct CacheEntry
-{
-	DSymbol* symbol;
-	SysTime modificationTime;
-	string path;
-
-	~this()
-	{
-		if (symbol !is null)
-			typeid(DSymbol).destroy(symbol);
-	}
-
-	int opCmp(ref const CacheEntry other) const
-	{
-		immutable int r = path > other.path;
-		if (path < other.path)
-			return -1;
-		return r;
-	}
-
-	bool opEquals(ref const CacheEntry other) const
-	{
-		return path == other.path;
-	}
-
-	size_t toHash() const nothrow @safe
-	{
-		import core.internal.hash : hashOf;
-		return hashOf(path);
-	}
-
-	void opAssign(ref const CacheEntry other)
-	{
-		assert(false);
-	}
-}
+alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
+	n => Region!Mallocator(1024 * 64)));
 
 /**
  * Returns: true if a file exists at the given path.
@@ -93,17 +59,6 @@ bool existanceCheck(A)(A path)
 	return false;
 }
 
-static this()
-{
-	ModuleCache.symbolAllocator = new ASTAllocator;
-}
-
-static ~this()
-{
-	foreach (entry; ModuleCache.cache[])
-		typeid(CacheEntry).destroy(entry);
-}
-
 /**
  * Caches pre-parsed module information.
  */
@@ -112,12 +67,23 @@ struct ModuleCache
 	/// No copying.
 	@disable this(this);
 
+	this(IAllocator symbolAllocator)
+	{
+		this.symbolAllocator = symbolAllocator;
+	}
+
+	~this()
+	{
+		foreach (entry; ModuleCache.cache[])
+			typeid(CacheEntry).destroy(entry);
+	}
+
 	/**
 	 * Adds the given path to the list of directories checked for imports.
 	 * Performs duplicate checking, so multiple instances of the same path will
 	 * not be present.
 	 */
-	static void addImportPaths(const string[] paths)
+	void addImportPaths(const string[] paths)
 	{
 		import dsymbol.string_interning : internString;
 		import std.path : baseName;
@@ -133,24 +99,21 @@ struct ModuleCache
 			{
 				if (fileName.baseName.startsWith(".#"))
 					continue;
-				getModuleSymbol(fileName);
+				cacheModule(fileName);
 			}
 		}
 	}
 
 	/// TODO: Implement
-	static void clear()
+	void clear()
 	{
 		info("ModuleCache.clear is not yet implemented.");
 	}
 
 	/**
-	 * Params:
-	 *     moduleName = the name of the module in "a/b/c" form
-	 * Returns:
-	 *     The symbols defined in the given module
+	 * Caches the module at the given location
 	 */
-	static DSymbol* getModuleSymbol(string location)
+	DSymbol* cacheModule(string location)
 	{
 		import dsymbol.string_interning : internString;
 		import std.stdio : File;
@@ -160,19 +123,12 @@ struct ModuleCache
 
 		istring cachedLocation = internString(location);
 
+
 		if (!needsReparsing(cachedLocation))
-		{
-			CacheEntry e;
-			e.path = cachedLocation;
-			auto r = cache.equalRange(&e);
-			if (!r.empty)
-				return r.front.symbol;
-			return null;
-		}
+			return getModuleSymbol(cachedLocation);
 
 		recursionGuard.insert(cachedLocation);
 
-		DSymbol* symbol;
 		File f = File(cachedLocation);
 		immutable fileSize = cast(size_t) f.size;
 		if (fileSize == 0)
@@ -195,41 +151,95 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
+		CacheEntry* newEntry = Mallocator.it.make!CacheEntry();
+
 		auto semanticAllocator = scoped!(ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
 
 		assert (symbolAllocator);
 		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
-			semanticAllocator, false);
+			semanticAllocator, false, &this, newEntry);
 		first.run();
 
-		SecondPass second = SecondPass(first);
-		second.run();
+//		secondPass(first.moduleScope, this);
 
-		ThirdPass third = ThirdPass(second);
-		third.run();
+		thirdPass(first.rootSymbol, first.moduleScope, this);
 
-		symbol = third.rootSymbol.acSymbol;
-
-		typeid(Scope).destroy(third.moduleScope);
+		typeid(Scope).destroy(first.moduleScope);
 		symbolsAllocated += first.symbolsAllocated;
 
 		SysTime access;
 		SysTime modification;
 		getTimes(cachedLocation, access, modification);
 
-		CacheEntry e;
-		e.path = cachedLocation;
-		const r = cache.equalRange(&e);
-		CacheEntry* c = r.empty ? make!CacheEntry(Mallocator.it)
-			: r.front;
-		c.symbol = symbol;
-		c.modificationTime = modification;
-		c.path = cachedLocation;
-		if (r.empty)
-			cache.insert(c);
+		newEntry.symbol = first.rootSymbol.acSymbol;
+		newEntry.modificationTime = modification;
+		newEntry.path = cachedLocation;
+
+		CacheEntry* oldEntry = getEntryFor(cachedLocation);
+		if (oldEntry !is null)
+		{
+			// Generate update mapping from the old symbol to the new one
+			UpdatePairCollection updatePairs;
+			generateUpdatePairs(oldEntry.symbol, newEntry.symbol, updatePairs);
+
+			// Apply updates to all symbols in modules that depend on this one
+			cache[].filter!(a => a.dependencies.contains(cachedLocation)).each!(
+				upstream => upstream.symbol.updateTypes(updatePairs));
+
+			// Remove the old symbol.
+			cache.remove(oldEntry, entry => Mallocator.it.dispose(entry));
+		}
+
+		cache.insert(newEntry);
 		recursionGuard.remove(cachedLocation);
-		return symbol;
+
+		resolveDeferredTypes(cachedLocation);
+
+		return newEntry.symbol;
+	}
+
+	/**
+	 * Resolves types for deferred symbols
+	 */
+	void resolveDeferredTypes(istring location)
+	{
+		UnrolledList!(DeferredSymbol*) temp;
+		temp.insert(deferredSymbols[]);
+		deferredSymbols.clear();
+		foreach (deferred; temp[])
+		{
+			if (!deferred.imports.empty && !deferred.dependsOn(location))
+			{
+				deferredSymbols.insert(deferred);
+				continue;
+			}
+			assert(deferred.symbol.type is null);
+			if (deferred.symbol.kind == CompletionKind.importSymbol)
+			{
+				resolveImport(deferred.symbol, deferred.typeLookups, this);
+				Mallocator.it.dispose(deferred);
+			}
+			else if (!deferred.typeLookups.empty)
+			{
+				// TODO: Is .front the right thing to do here?
+				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
+					this, &deferred.imports);
+			}
+		}
+	}
+
+	/**
+	 * Params:
+	 *     moduleName = the name of the module in "a/b/c" form
+	 * Returns:
+	 *     The symbols defined in the given module, or null if the module is
+	 *     not cached yet.
+	 */
+	DSymbol* getModuleSymbol(istring location)
+	{
+		auto existing = getEntryFor(location);
+		return existing is null ? null : existing.symbol;
 	}
 
 	/**
@@ -239,10 +249,11 @@ struct ModuleCache
 	 *     The absolute path to the file that contains the module, or null if
 	 *     not found.
 	 */
-	static string resolveImportLocation(string moduleName)
+	istring resolveImportLocation(string moduleName)
 	{
+		assert(moduleName !is null, "module name is null");
 		if (isRooted(moduleName))
-			return moduleName;
+			return internString(moduleName);
 		string[] alternatives;
 		foreach (path; importPaths[])
 		{
@@ -265,23 +276,35 @@ struct ModuleCache
 					alternatives ~= packagePath[0 .. $ - 1];
 			}
 		}
-		return alternatives.length > 0 ? alternatives[0] : null;
+		return alternatives.length > 0 ? internString(alternatives[0]) : istring(null);
 	}
 
-	static auto getImportPaths()
+	auto getImportPaths()
 	{
 		return importPaths[];
 	}
 
-	static auto getAllSymbols()
+	auto getAllSymbols()
 	{
 		return cache[];
 	}
 
+	IAllocator symbolAllocator;
+
+	UnrolledList!(DeferredSymbol*) deferredSymbols;
+
 	/// Count of autocomplete symbols that have been allocated
-	static uint symbolsAllocated;
+	uint symbolsAllocated;
 
 private:
+
+	CacheEntry* getEntryFor(istring cachedLocation)
+	{
+		CacheEntry dummy;
+		dummy.path = cachedLocation;
+		auto r = cache.equalRange(&dummy);
+		return r.empty ? null : r.front;
+	}
 
 	/**
 	 * Params:
@@ -289,7 +312,7 @@ private:
 	 * Returns:
 	 *     true  if the module needs to be reparsed, false otherwise
 	 */
-	static bool needsReparsing(string mod)
+	bool needsReparsing(istring mod)
 	{
 		if (recursionGuard.contains(mod))
 			return false;
@@ -307,12 +330,10 @@ private:
 	}
 
 	// Mapping of file paths to their cached symbols.
-	static TTree!(CacheEntry*) cache;
+	TTree!(CacheEntry*) cache;
 
-	static HashSet!string recursionGuard;
+	HashSet!string recursionGuard;
 
 	// Listing of paths to check for imports
-	static UnrolledList!string importPaths;
-
-	static IAllocator symbolAllocator;
+	UnrolledList!string importPaths;
 }

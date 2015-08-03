@@ -16,21 +16,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module dsymbol.import_;
+module dsymbol.deferred;
 
 import containers.unrolledlist;
+import containers.openhashset;
 import dsymbol.string_interning;
-import std.typecons;
+import dsymbol.import_;
+import dsymbol.symbol;
+import dsymbol.type_lookup;
+import std.experimental.allocator;
 
 /**
- * Import information
+ * Contains information for deferred type resolution
  */
-//struct ImportInformation
-//{
-//	/// module resolved path
-//	istring modulePath;
-//	/// symbols to import from this module
-//	UnrolledList!(Tuple!(istring, istring), false) importedSymbols;
-//	/// true if the import is public
-//	bool isPublic;
-//}
+struct DeferredSymbol
+{
+	~this()
+	{
+		foreach (l; typeLookups[])
+			Mallocator.it.dispose(l);
+//		foreach (i; imports[])
+//			Mallocator.it.dispose(i);
+	}
+
+	bool dependsOn(istring modulePath)
+	{
+		foreach (i; imports[])
+			if (i.symbolFile.ptr == modulePath.ptr)
+				return true;
+		return false;
+	}
+
+	/// The symbol that needs its type resolved
+	DSymbol* symbol;
+	/// The imports that were in scope for the symbol's declaration'
+	UnrolledList!(DSymbol*) imports;
+	/// The type lookup information
+	UnrolledList!(TypeLookup*) typeLookups;
+}

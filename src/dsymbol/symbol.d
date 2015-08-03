@@ -25,6 +25,7 @@ import containers.ttree;
 import containers.unrolledlist;
 import containers.slist;
 import std.d.lexer;
+import std.bitmanip;
 
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
@@ -85,12 +86,6 @@ enum CompletionKind : char
 	/// module name
 	moduleName = 'M',
 
-	/// array
-	array = 'a',
-
-	/// associative array
-	assocArray = 'A',
-
 	/// alias name
 	aliasName = 'l',
 
@@ -114,7 +109,9 @@ enum SymbolQualifier : ubyte
 	/// the symbol is a associative array
 	assocArray,
 	/// the symbol is a function or delegate pointer
-	func
+	func,
+	/// selective import
+	selectiveImport
 }
 
 /**
@@ -179,9 +176,16 @@ public:
 
 	~this()
 	{
-		foreach (part; parts[])
+		foreach (ref part; parts[])
+		{
 			if (part.owned)
+			{
+				assert (part.ptr !is null);
 				typeid(DSymbol).destroy(part.ptr);
+			}
+			else
+				part = null;
+		}
 		if (ownType)
 			typeid(DSymbol).destroy(type);
 	}
@@ -209,17 +213,37 @@ public:
 	/**
 	 * Gets all parts whose name matches the given string.
 	 */
-	DSymbol*[] getPartsByName(istring name) const
+	DSymbol*[] getPartsByName(istring name)
 	{
-		import std.range : chain;
 		DSymbol s = DSymbol(name);
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		auto app = appender!(DSymbol*[])();
-		foreach (part; parts.equalRange(SymbolOwnership(&s)))
-			app.put(part);
-		foreach (im; parts.equalRange(SymbolOwnership(&p)))
-			app.put(im.type.getPartsByName(name));
+		if (qualifier == SymbolQualifier.selectiveImport && type !is null
+				&& type.name.ptr == name.ptr)
+			app.put(type);
+		else
+		{
+			foreach (part; parts.equalRange(SymbolOwnership(&s)))
+				app.put(part);
+			foreach (im; parts.equalRange(SymbolOwnership(&p)))
+				if (im.type !is null && !im.skipOver)
+					foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
+						app.put(part);
+		}
 		return app.data();
+	}
+
+	DSymbol* getFirstPartNamed(istring name) const
+	{
+		DSymbol s = DSymbol(name);
+		foreach (part; parts.equalRange(SymbolOwnership(&s)))
+			return part;
+		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
+		foreach (im; parts.equalRange(SymbolOwnership(&p)))
+			if (im.type !is null && !im.skipOver)
+				foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
+					return part;
+		return null;
 	}
 
 	/**
@@ -231,7 +255,7 @@ public:
 	{
 		foreach (part; parts[])
 		{
-			if (part.name == name)
+			if (part.name == name && !part.skipOver)
 				outputRange.put(part);
 			part.getAllPartsNamed(name, outputRange);
 		}
@@ -239,20 +263,54 @@ public:
 
 	void addChild(DSymbol* symbol, bool owns)
 	{
+		assert (symbol !is null);
 		parts.insert(SymbolOwnership(symbol, owns));
 	}
 
 	void addChildren(R)(R symbols, bool owns)
 	{
 		foreach (symbol; symbols)
+		{
+			assert (symbol !is null);
 			parts.insert(SymbolOwnership(symbol, owns));
+		}
 	}
 
 	void addChildren(DSymbol*[] symbols, bool owns)
 	{
 		foreach (symbol; symbols)
+		{
+			assert(symbol !is null);
 			parts.insert(SymbolOwnership(symbol, owns));
+		}
 	}
+
+	/**
+	 * Updates the type field based on the mappings contained in the given
+	 * collection.
+	 */
+	void updateTypes(ref UpdatePairCollection collection)
+	{
+		auto r = collection.equalRange(UpdatePair(type, null));
+		if (!r.empty)
+			type = r.front.newSymbol;
+		foreach (part; parts[])
+			part.updateTypes(collection);
+	}
+
+	/**
+	 * Returns: a range over this symbol's parts.
+	 */
+	auto opSlice() const
+	{
+		return parts[];
+	}
+
+	/**
+	 * Symbols that compose this symbol, such as enum members, class variables,
+	 * methods, parameters, etc.
+	 */
+	private TTree!(SymbolOwnership, true, "a < b", false) parts;
 
 	/**
 	 * DSymbol's name
@@ -277,12 +335,24 @@ public:
 	/**
 	 * The symbol that represents the type.
 	 */
+	// TODO: assert that the type is not a function
 	DSymbol* type;
+
+	private uint _location;
 
 	/**
 	 * DSymbol location
 	 */
-	size_t location;
+	size_t location() const pure nothrow @nogc @property
+	{
+		return _location;
+	}
+
+	void location(size_t location) pure nothrow @nogc @property
+	{
+		assert(location < uint.max);
+		_location = cast(uint) location;
+	}
 
 	/**
 	 * The kind of symbol
@@ -297,23 +367,43 @@ public:
 	/**
 	 * If true, this symbol owns its type and will free it on destruction
 	 */
-	bool ownType;
+	// dfmt off
+	mixin(bitfields!(bool, "ownType", 1,
+		bool, "skipOver", 1,
+		ubyte, "", 6));
 
-	/**
-	 * Returns: a range over this symbol's parts.
-	 */
-	auto opSlice() const
+}
+
+struct UpdatePair
+{
+	int opCmp(ref const UpdatePair other) const
 	{
-		return parts[];
+		immutable size_t otherOld = cast(size_t) other.oldSymbol;
+		immutable size_t thisOld = cast(size_t) this.oldSymbol;
+		if (otherOld < thisOld)
+			return -1;
+		if (otherOld > thisOld)
+			return 1;
+		return 0;
 	}
 
-private:
+	DSymbol* oldSymbol;
+	DSymbol* newSymbol;
+}
 
-	/**
-	 * Symbols that compose this symbol, such as enum members, class variables,
-	 * methods, parameters, etc.
-	 */
-	TTree!(SymbolOwnership, true, "a < b", false) parts;
+alias UpdatePairCollection = TTree!(UpdatePair,false, "a < b", false);
+
+void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results)
+{
+	results.insert(UpdatePair(oldSymbol, newSymbol));
+	foreach (part; oldSymbol.parts[])
+	{
+		auto temp = DSymbol(oldSymbol.name);
+		auto r = newSymbol.parts.equalRange(SymbolOwnership(&temp));
+		if (r.empty)
+			continue;
+		generateUpdatePairs(part, r.front, results);
+	}
 }
 
 struct SymbolOwnership

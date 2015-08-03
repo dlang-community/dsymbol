@@ -159,7 +159,7 @@ static this()
 	aggregateSymbols.insert(stringof_);
 	aggregateSymbols.insert(init);
 
-	classSymbols.insert(make!DSymbol(Mallocator.it, internString("classInfo"), CompletionKind.variableName));
+	classSymbols.insert(make!DSymbol(Mallocator.it, internString("classinfo"), CompletionKind.variableName));
 	classSymbols.insert(make!DSymbol(Mallocator.it, internString("tupleof"), CompletionKind.variableName));
 	classSymbols.insert(make!DSymbol(Mallocator.it, internString("__vptr"), CompletionKind.variableName));
 	classSymbols.insert(make!DSymbol(Mallocator.it, internString("__monitor"), CompletionKind.variableName));

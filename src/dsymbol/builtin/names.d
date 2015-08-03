@@ -8,6 +8,12 @@ package immutable(istring[24]) builtinTypeNames;
 /// Constants for buit-in or dummy symbol names
 immutable istring IMPORT_SYMBOL_NAME;
 /// ditto
+immutable istring ARRAY_SYMBOL_NAME;
+/// ditto
+immutable istring ASSOC_ARRAY_SYMBOL_NAME;
+/// ditto
+immutable istring PARAMETERS_SYMBOL_NAME;
+/// ditto
 immutable istring WITH_SYMBOL_NAME;
 /// ditto
 immutable istring CONSTRUCTOR_SYMBOL_NAME;
@@ -118,7 +124,10 @@ static this()
 	builtinTypeNames[22] = internString("cfloat");
 	builtinTypeNames[23] = internString("creal");
 
-	IMPORT_SYMBOL_NAME = internString("public");
+	IMPORT_SYMBOL_NAME = internString("import");
+	ARRAY_SYMBOL_NAME = internString("*arr*");
+	ASSOC_ARRAY_SYMBOL_NAME = internString("*aa*");
+	PARAMETERS_SYMBOL_NAME = internString("*parameters*");
 	WITH_SYMBOL_NAME = internString("with");
 	CONSTRUCTOR_SYMBOL_NAME = internString("*constructor*");
 	DESTRUCTOR_SYMBOL_NAME = internString("~this");
@@ -141,4 +150,37 @@ static this()
 	DSTRING_LITERAL_SYMBOL_NAME = internString("*dstring");
 	STRING_LITERAL_SYMBOL_NAME = internString("*string");
 	WSTRING_LITERAL_SYMBOL_NAME = internString("*wstring");
+}
+
+istring symbolNameToTypeName(istring name)
+{
+	if (name.ptr == DOUBLE_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[2];
+	if (name.ptr == FLOAT_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[4];
+	if (name.ptr == IDOUBLE_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[3];
+	if (name.ptr == IFLOAT_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[5];
+	if (name.ptr == INT_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[0];
+	if (name.ptr == LONG_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[8];
+	if (name.ptr == REAL_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[17];
+	if (name.ptr == IREAL_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[18];
+	if (name.ptr == UINT_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[1];
+	if (name.ptr == ULONG_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[9];
+	if (name.ptr == CHAR_LITERAL_SYMBOL_NAME.ptr)
+		return builtinTypeNames[10];
+	if (name.ptr == DSTRING_LITERAL_SYMBOL_NAME.ptr)
+		return internString("dstring");
+	if (name.ptr == STRING_LITERAL_SYMBOL_NAME.ptr)
+		return internString("string");
+	if (name.ptr == WSTRING_LITERAL_SYMBOL_NAME.ptr)
+		return internString("wstring");
+	return name;
 }

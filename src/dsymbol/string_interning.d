@@ -44,6 +44,12 @@ private struct InternedString
 	{
 		this.data = other.data;
 	}
+
+	size_t toHash() const nothrow @safe
+	{
+		return typeid(string).getHash(&data);
+	}
+
 	string data;
 	alias data this;
 private:
