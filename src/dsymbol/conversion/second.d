@@ -26,7 +26,7 @@ import dsymbol.scope_;
 import dsymbol.import_;
 import dsymbol.builtin.symbols;
 import dsymbol.builtin.names;
-import std.allocator;
+import std.experimental.allocator;
 
 /**
  * Second pass handles the following:
@@ -57,14 +57,15 @@ public:
 	void run()
 	{
 		assignToScopes(rootSymbol.acSymbol);
-		moduleScope.symbols.insert(builtinSymbols[]);
+		foreach (symbol; builtinSymbols[])
+			moduleScope.addSymbol(symbol, false);
 		resolveImports(moduleScope);
 	}
 
 	/**
 	 * Allocator used for allocating autocomplete symbols.
 	 */
-	CAllocator symbolAllocator;
+	IAllocator symbolAllocator;
 
 	/**
 	 * The root symbol from the first pass
@@ -86,9 +87,9 @@ private:
 		if (currentSymbol.kind != CompletionKind.moduleName)
 		{
 			Scope* s = moduleScope.getScopeByCursor(currentSymbol.location);
-			s.symbols.insert(currentSymbol);
+			s.addSymbol(currentSymbol, true);
 		}
-		foreach (part; currentSymbol.parts[])
+		foreach (part; currentSymbol.opSlice())
 		{
 			if (part.kind != CompletionKind.keyword)
 				assignToScopes(part);
@@ -123,7 +124,7 @@ private:
 		if (symbols.length > 0)
 			firstSymbol = symbols[0];
 		else
-			firstSymbol = allocate!DSymbol(symbolAllocator, firstPart,
+			firstSymbol = make!DSymbol(symbolAllocator, firstPart,
 				CompletionKind.packageName);
 		DSymbol* currentSymbol = firstSymbol;
 		size_t i = 0;
@@ -145,11 +146,11 @@ private:
 				}
 			}
 			if (s is null)
-				s = allocate!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
-			currentSymbol.parts.insert(s);
+				s = make!DSymbol(symbolAllocator, importPart, CompletionKind.packageName);
+			currentSymbol.addChild(s, false);
 			currentSymbol = s;
 		}
-		currentSymbol.parts.insert(moduleSymbol);
+		currentSymbol.addChild(moduleSymbol, false);
 		return currentSymbol;
 	}
 
@@ -177,25 +178,25 @@ private:
 			{
 				// if this import is at module scope
 				if (importInfo.isPublic && currentScope.parent is null)
-					rootSymbol.acSymbol.parts.insert(allocate!DSymbol(symbolAllocator,
-						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol));
+					rootSymbol.acSymbol.addChild(make!DSymbol(symbolAllocator,
+						IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, symbol), true);
 				else
-					currentScope.symbols.insert(symbol.parts[]);
-				currentScope.symbols.insert(moduleSymbol);
+					foreach (s; symbol.opSlice())
+						currentScope.addSymbol(s, false);
+				currentScope.addSymbol(moduleSymbol, true);
 				continue;
 			}
 			else foreach (tup; importInfo.importedSymbols[])
 			{
 				// Handle selective and renamed imports
 
-				DSymbol needle = DSymbol(tup[1]);
 				DSymbol* sym;
-				auto r = symbol.parts.equalRange(&needle);
-				if (r.empty) foreach (sy; symbol.parts[])
+				auto r = symbol.getPartsByName(tup[1]);
+				if (r.empty) foreach (sy; symbol.opSlice())
 				{
 					if (sy.kind != CompletionKind.importSymbol || sy.type is null)
 						continue;
-					auto ra = sy.type.parts.equalRange(&needle);
+					auto ra = sy.type.getPartsByName(tup[1]);
 					if (ra.empty)
 						continue;
 					sym = ra.front;
@@ -206,9 +207,10 @@ private:
 					continue;
 				if (tup[0] !is null)
 				{
-					DSymbol* s = allocate!DSymbol(symbolAllocator, tup[0],
+					DSymbol* s = make!DSymbol(symbolAllocator, tup[0],
 						sym.kind, sym.type);
-					s.parts.insert(sym.parts[]);
+					foreach (_; sym.opSlice())
+						s.addChild(_, false);
 					s.callTip = sym.callTip;
 					s.doc = sym.doc;
 					s.qualifier = sym.qualifier;
@@ -216,10 +218,10 @@ private:
 					s.symbolFile = sym.symbolFile;
 					sym = s;
 				}
-				moduleSymbol.parts.insert(sym);
-				currentScope.symbols.insert(sym);
+				moduleSymbol.addChild(sym, false);
+				currentScope.addSymbol(sym, false);
 				if (importInfo.isPublic && currentScope.parent is null)
-					rootSymbol.acSymbol.parts.insert(sym);
+					rootSymbol.acSymbol.addChild(sym, false);
 			}
 		}
 

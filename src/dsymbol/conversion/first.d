@@ -29,7 +29,7 @@ import dsymbol.string_interning;
 import dsymbol.symbol;
 import memory.allocators;
 import memory.appender;
-import std.allocator;
+import std.experimental.allocator;
 import std.d.ast;
 import std.d.formatter;
 import std.d.lexer;
@@ -59,8 +59,8 @@ final class FirstPass : ASTVisitor
 	 *     includeParameterSymbols = include parameter symbols as children of
 	 *         function decalarations and constructors
 	 */
-	this(const Module mod, istring symbolFile, CAllocator symbolAllocator,
-		CAllocator semanticAllocator, bool includeParameterSymbols)
+	this(const Module mod, istring symbolFile, IAllocator symbolAllocator,
+		IAllocator semanticAllocator, bool includeParameterSymbols)
 	in
 	{
 		assert (mod);
@@ -89,12 +89,12 @@ final class FirstPass : ASTVisitor
 		// Create a dummy symbol because we don't want unit test symbols leaking
 		// into the symbol they're declared in.
 		SemanticSymbol* s = allocateSemanticSymbol(UNITTEST_SYMBOL_NAME,
-			CompletionKind.dummy, istring(null), 0);
+			CompletionKind.dummy, istring(null));
 		s.parent = currentSymbol;
-		currentSymbol.addChild(s);
+		currentSymbol.addChild(s, true);
 		currentSymbol = s;
 		u.accept(this);
-		currentSymbol = s.parent;
+		currentSymbol = currentSymbol.parent;
 	}
 
 	override void visit(const Constructor con)
@@ -139,12 +139,12 @@ final class FirstPass : ASTVisitor
 		SemanticSymbol* symbol = allocateSemanticSymbol(dec.name.text,
 			CompletionKind.functionName, symbolFile, dec.name.index,
 			dec.returnType);
+		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
 		processParameters(symbol, dec.returnType, symbol.acSymbol.name,
 			dec.parameters, dec.templateParameters);
 		symbol.protection = protection;
-		symbol.parent = currentSymbol;
 		symbol.acSymbol.doc = internString(dec.comment);
-		currentSymbol.addChild(symbol);
 		if (dec.functionBody !is null)
 		{
 			Scope* s = createFunctionScope(dec.functionBody, semanticAllocator,
@@ -154,7 +154,7 @@ final class FirstPass : ASTVisitor
 			currentScope = s;
 			currentSymbol = symbol;
 			dec.functionBody.accept(this);
-			currentSymbol = symbol.parent;
+			currentSymbol = currentSymbol.parent;
 			currentScope = s.parent;
 		}
 	}
@@ -209,10 +209,10 @@ final class FirstPass : ASTVisitor
 			SemanticSymbol* symbol = allocateSemanticSymbol(
 				declarator.name.text, CompletionKind.variableName,
 				symbolFile, declarator.name.index, t);
-			symbol.protection = protection;
 			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
+			symbol.protection = protection;
 			symbol.acSymbol.doc = internString(dec.comment);
-			currentSymbol.addChild(symbol);
 		}
 		if (dec.autoDeclaration !is null)
 		{
@@ -221,11 +221,11 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					identifier.text, CompletionKind.variableName,
 					symbolFile, identifier.index, null);
+				symbol.parent = currentSymbol;
+				currentSymbol.addChild(symbol, true);
 				populateInitializer(symbol, dec.autoDeclaration.initializers[i]);
 				symbol.protection = protection;
-				symbol.parent = currentSymbol;
 				symbol.acSymbol.doc = internString(dec.comment);
-				currentSymbol.addChild(symbol);
 			}
 		}
 	}
@@ -239,10 +239,10 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					name.text, CompletionKind.aliasName, symbolFile, name.index,
 					aliasDeclaration.type);
-				symbol.protection = protection;
 				symbol.parent = currentSymbol;
+				currentSymbol.addChild(symbol, true);
+				symbol.protection = protection;
 				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
-				currentSymbol.addChild(symbol);
 			}
 		}
 		else
@@ -252,10 +252,10 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					initializer.name.text, CompletionKind.aliasName,
 					symbolFile, initializer.name.index, initializer.type);
-				symbol.protection = protection;
 				symbol.parent = currentSymbol;
+				currentSymbol.addChild(symbol, true);
+				symbol.protection = protection;
 				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
-				currentSymbol.addChild(symbol);
 			}
 		}
 	}
@@ -289,15 +289,15 @@ final class FirstPass : ASTVisitor
 	{
 //		Log.trace(__FUNCTION__, " ", typeof(mod).stringof);
 //
-		currentSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
+		rootSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
 			symbolFile);
-		rootSymbol = currentSymbol;
-		currentScope = allocate!Scope(semanticAllocator, 0, size_t.max);
-		auto i = allocate!ImportInformation(semanticAllocator);
+		currentSymbol = rootSymbol;
+		moduleScope = make!Scope(semanticAllocator, 0, size_t.max);
+		currentScope = moduleScope;
+		auto i = make!ImportInformation(semanticAllocator);
 		i.modulePath = internString("object");
 		i.importParts.insert(i.modulePath);
 		currentScope.importInformation.insert(i);
-		moduleScope = currentScope;
 		mod.accept(this);
 	}
 
@@ -308,12 +308,12 @@ final class FirstPass : ASTVisitor
 		SemanticSymbol* symbol = allocateSemanticSymbol(dec.name.text,
 			CompletionKind.enumName, symbolFile, dec.name.index, dec.type);
 		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
 		symbol.acSymbol.doc = internString(dec.comment);
 		currentSymbol = symbol;
 		if (dec.enumBody !is null)
 			dec.enumBody.accept(this);
-		currentSymbol = symbol.parent;
-		currentSymbol.addChild(symbol);
+		currentSymbol = currentSymbol.parent;
 	}
 
 	mixin visitEnumMember!EnumMember;
@@ -321,28 +321,25 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const ModuleDeclaration moduleDeclaration)
 	{
-//		Log.trace(__FUNCTION__, " ", typeof(dec).stringof);
 		rootSymbol.acSymbol.name = internString(moduleDeclaration.moduleName.identifiers[$ - 1].text);
 	}
 
 	override void visit(const StructBody structBody)
 	{
-//		Log.trace(__FUNCTION__, " ", typeof(structBody).stringof);
-		Scope* s = allocate!Scope(semanticAllocator, structBody.startLocation, structBody.endLocation);
-//		Log.trace("Added scope ", s.startLocation, " ", s.endLocation);
+		Scope* s = make!Scope(semanticAllocator, structBody.startLocation, structBody.endLocation);
+		s.parent = currentScope;
+		currentScope.children.insert(s);
 
-		DSymbol* thisSymbol = allocate!DSymbol(symbolAllocator,
+		DSymbol* thisSymbol = make!DSymbol(symbolAllocator,
 			THIS_SYMBOL_NAME, CompletionKind.variableName, currentSymbol.acSymbol);
 		thisSymbol.location = s.startLocation;
 		thisSymbol.symbolFile = symbolFile;
-		s.symbols.insert(thisSymbol);
+		s.addSymbol(thisSymbol, true);
 
-		s.parent = currentScope;
 		currentScope = s;
 		foreach (dec; structBody.declarations)
 			visit(dec);
-		currentScope = s.parent;
-		currentScope.children.insert(s);
+		currentScope = currentScope.parent;
 	}
 
 	override void visit(const ImportDeclaration importDeclaration)
@@ -353,7 +350,7 @@ final class FirstPass : ASTVisitor
 		foreach (single; importDeclaration.singleImports.filter!(
 			a => a !is null && a.identifierChain !is null))
 		{
-			auto info = allocate!ImportInformation(semanticAllocator);
+			auto info = make!ImportInformation(semanticAllocator);
 			foreach (identifier; single.identifierChain.identifiers)
 				info.importParts.insert(internString(identifier.text));
 			info.modulePath = convertChainToImportPath(single.identifierChain);
@@ -362,7 +359,7 @@ final class FirstPass : ASTVisitor
 		}
 		if (importDeclaration.importBindings is null) return;
 		if (importDeclaration.importBindings.singleImport.identifierChain is null) return;
-		auto info = allocate!ImportInformation(semanticAllocator);
+		auto info = make!ImportInformation(semanticAllocator);
 
 		info.modulePath = convertChainToImportPath(
 			importDeclaration.importBindings.singleImport.identifierChain);
@@ -393,7 +390,7 @@ final class FirstPass : ASTVisitor
 	override void visit(const BlockStatement blockStatement)
 	{
 //		Log.trace(__FUNCTION__, " ", typeof(blockStatement).stringof);
-		Scope* s = allocate!Scope(semanticAllocator, blockStatement.startLocation,
+		Scope* s = make!Scope(semanticAllocator, blockStatement.startLocation,
 			blockStatement.endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
@@ -424,7 +421,7 @@ final class FirstPass : ASTVisitor
 		{
 			const BlockStatement bs =
 				feStatement.declarationOrStatement.statement.statementNoCaseNoDefault.blockStatement;
-			Scope* s = allocate!Scope(semanticAllocator, feStatement.startIndex, bs.endLocation);
+			Scope* s = make!Scope(semanticAllocator, feStatement.startIndex, bs.endLocation);
 			s.parent = currentScope;
 			currentScope.children.insert(s);
 			currentScope = s;
@@ -449,10 +446,11 @@ final class FirstPass : ASTVisitor
 		SemanticSymbol* symbol = allocateSemanticSymbol(
 				feType.identifier.text, CompletionKind.variableName,
 				symbolFile, feType.identifier.index, feType.type);
+		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
 		if (symbol.type is null && feExpression !is null)
 			populateInitializer(symbol, feExpression, true);
-		symbol.parent = currentSymbol;
-		currentSymbol.addChild(symbol);
+
 	}
 
 	override void visit(const WithStatement withStatement)
@@ -460,20 +458,23 @@ final class FirstPass : ASTVisitor
 		if (withStatement.expression !is null
 			&& withStatement.statementNoCaseNoDefault !is null)
 		{
-			Scope* s = allocate!Scope(semanticAllocator,
+			Scope* s = make!Scope(semanticAllocator,
 				withStatement.statementNoCaseNoDefault.startLocation,
 				withStatement.statementNoCaseNoDefault.endLocation);
 			s.parent = currentScope;
 			currentScope.children.insert(s);
 			currentScope = s;
+
 			SemanticSymbol* symbol = allocateSemanticSymbol(WITH_SYMBOL_NAME,
 				CompletionKind.withSymbol, symbolFile, s.startLocation, null);
 			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
 			currentSymbol = symbol;
+
 			populateInitializer(symbol, withStatement.expression, false);
 			withStatement.accept(this);
+
 			currentSymbol = currentSymbol.parent;
-			currentSymbol.addChild(symbol);
 			currentScope = currentScope.parent;
 		}
 		else
@@ -489,7 +490,7 @@ final class FirstPass : ASTVisitor
 	SemanticSymbol* rootSymbol;
 
 	/// Allocator used for symbol allocation
-	CAllocator symbolAllocator;
+	IAllocator symbolAllocator;
 
 	/// Number of symbols allocated
 	uint symbolsAllocated;
@@ -505,8 +506,8 @@ private:
 				member.name.text, CompletionKind.enumMember, symbolFile,
 				member.name.index, member.type);
 			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
 			symbol.acSymbol.doc = internString(member.comment);
-			currentSymbol.addChild(symbol);
 		}
 	}
 
@@ -520,11 +521,12 @@ private:
 		}
 		SemanticSymbol* symbol = allocateSemanticSymbol(dec.name.text,
 			kind, symbolFile, dec.name.index);
-		if (kind == CompletionKind.className)
-			symbol.acSymbol.parts.insert(classSymbols[]);
-		else
-			symbol.acSymbol.parts.insert(aggregateSymbols[]);
 		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
+		if (kind == CompletionKind.className)
+			symbol.acSymbol.addChildren(classSymbols[], false);
+		else
+			symbol.acSymbol.addChildren(aggregateSymbols[], false);
 		symbol.protection = protection;
 		symbol.acSymbol.doc = internString(dec.comment);
 
@@ -533,15 +535,14 @@ private:
 			immutable size_t scopeEnd = dec.endLocation;
 		else
 			immutable size_t scopeEnd = dec.structBody is null ? scopeBegin : dec.structBody.endLocation;
-		Scope* s = allocate!Scope(semanticAllocator, scopeBegin, scopeEnd);
+		Scope* s = make!Scope(semanticAllocator, scopeBegin, scopeEnd);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
 		currentSymbol = symbol;
 		processTemplateParameters(currentSymbol, dec.templateParameters);
 		dec.accept(this);
-		currentSymbol = symbol.parent;
-		currentSymbol.addChild(symbol);
+		currentSymbol = currentSymbol.parent;
 		currentScope = currentScope.parent;
 	}
 
@@ -551,11 +552,11 @@ private:
 	{
 		SemanticSymbol* symbol = allocateSemanticSymbol(CONSTRUCTOR_SYMBOL_NAME,
 			CompletionKind.functionName, symbolFile, location);
+		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
 		processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
 		symbol.protection = protection;
-		symbol.parent = currentSymbol;
 		symbol.acSymbol.doc = internString(doc);
-		currentSymbol.addChild(symbol);
 		if (functionBody !is null)
 		{
 			Scope* s = createFunctionScope(functionBody, semanticAllocator,
@@ -565,7 +566,7 @@ private:
 			currentScope = s;
 			currentSymbol = symbol;
 			functionBody.accept(this);
-			currentSymbol = symbol.parent;
+			currentSymbol = currentSymbol.parent;
 			currentScope = s.parent;
 		}
 	}
@@ -574,11 +575,11 @@ private:
 	{
 		SemanticSymbol* symbol = allocateSemanticSymbol(DESTRUCTOR_SYMBOL_NAME,
 			CompletionKind.functionName, symbolFile, location);
+		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
 		symbol.acSymbol.callTip = internString("~this()");
 		symbol.protection = protection;
-		symbol.parent = currentSymbol;
 		symbol.acSymbol.doc = internString(doc);
-		currentSymbol.addChild(symbol);
 		if (functionBody !is null)
 		{
 			Scope* s = createFunctionScope(functionBody, semanticAllocator,
@@ -588,7 +589,7 @@ private:
 			currentScope = s;
 			currentSymbol = symbol;
 			functionBody.accept(this);
-			currentSymbol = symbol.parent;
+			currentSymbol = currentSymbol.parent;
 			currentScope = s.parent;
 		}
 	}
@@ -605,8 +606,8 @@ private:
 				SemanticSymbol* parameter = allocateSemanticSymbol(
 					p.name.text, CompletionKind.variableName, symbolFile,
 					p.name.index, p.type);
-				symbol.addChild(parameter);
 				parameter.parent = symbol;
+				symbol.addChild(parameter, true);
 			}
 			if (parameters.hasVarargs)
 			{
@@ -614,13 +615,13 @@ private:
 					CompletionKind.variableName, istring(null), size_t.max,
 					argptrType);
 				argptr.parent = symbol;
-				symbol.addChild(argptr);
+				symbol.addChild(argptr, true);
 
 				SemanticSymbol* arguments = allocateSemanticSymbol(
 					ARGUMENTS_SYMBOL_NAME, CompletionKind.variableName,
 					istring(null), size_t.max, argumentsType);
 				arguments.parent = symbol;
-				symbol.addChild(arguments);
+				symbol.addChild(arguments, true);
 			}
 		}
 		symbol.acSymbol.callTip = formatCallTip(returnType, functionName,
@@ -661,8 +662,8 @@ private:
 					continue;
 				SemanticSymbol* templateParameter = allocateSemanticSymbol(name,
 					kind, symbolFile, index, type);
-				symbol.addChild(templateParameter);
 				templateParameter.parent = symbol;
+				symbol.addChild(templateParameter, true);
 			}
 		}
 	}
@@ -670,9 +671,9 @@ private:
 	istring formatCallTip(const Type returnType, string name,
 		const Parameters parameters, const TemplateParameters templateParameters)
 	{
-		QuickAllocator!1024 q;
-		auto app = Appender!(char, typeof(q), 1024)(q);
-		scope(exit) q.deallocate(app.mem);
+		import std.array : appender;
+
+		auto app = appender!(char[])();
 		if (returnType !is null)
 		{
 			app.formatNode(returnType);
@@ -685,7 +686,7 @@ private:
 			app.put("()");
 		else
 			app.formatNode(parameters);
-		return internString(cast(string) app[]);
+		return internString(cast(string) app.data);
 	}
 
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
@@ -703,11 +704,11 @@ private:
 	}
 	body
 	{
-		DSymbol* acSymbol = allocate!DSymbol(symbolAllocator, name, kind);
+		DSymbol* acSymbol = make!DSymbol(symbolAllocator, name, kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
 		symbolsAllocated++;
-		return allocate!SemanticSymbol(semanticAllocator, acSymbol, type);
+		return make!SemanticSymbol(semanticAllocator, acSymbol, type);
 	}
 
 	/// Current protection type
@@ -724,7 +725,7 @@ private:
 
 	const Module mod;
 
-	CAllocator semanticAllocator;
+	IAllocator semanticAllocator;
 
 	Rebindable!(const ExpressionNode) feExpression;
 
@@ -741,7 +742,7 @@ void formatNode(A, T)(ref A appender, const T node)
 
 private:
 
-Scope* createFunctionScope(const FunctionBody functionBody, CAllocator semanticAllocator,
+Scope* createFunctionScope(const FunctionBody functionBody, IAllocator semanticAllocator,
 	size_t scopeBegin)
 {
 	import std.algorithm : max;
@@ -750,7 +751,7 @@ Scope* createFunctionScope(const FunctionBody functionBody, CAllocator semanticA
 		functionBody.outStatement is null ? 0 : functionBody.outStatement.blockStatement.endLocation,
 		functionBody.blockStatement is null ? 0 : functionBody.blockStatement.endLocation,
 		functionBody.bodyStatement is null ? 0 : functionBody.bodyStatement.blockStatement.endLocation);
-	return allocate!Scope(semanticAllocator, scopeBegin, scopeEnd);
+	return make!Scope(semanticAllocator, scopeBegin, scopeEnd);
 }
 
 istring[] iotcToStringArray(A)(ref A allocator, const IdentifierOrTemplateChain iotc)
@@ -770,16 +771,15 @@ istring[] iotcToStringArray(A)(ref A allocator, const IdentifierOrTemplateChain 
 static istring convertChainToImportPath(const IdentifierChain ic)
 {
 	import std.path : dirSeparator;
-	QuickAllocator!1024 q;
-	auto app = Appender!(char, typeof(q), 1024)(q);
-	scope(exit) q.deallocate(app.mem);
+	import std.array : appender;
+	auto app = appender!(char[])();
 	foreach (i, ident; ic.identifiers)
 	{
-		app.append(ident.text);
+		app.put(ident.text);
 		if (i + 1 < ic.identifiers.length)
-			app.append(dirSeparator);
+			app.put(dirSeparator);
 	}
-	return internString(cast(string) app[]);
+	return internString(cast(string) app.data);
 }
 
 class InitializerVisitor : ASTVisitor

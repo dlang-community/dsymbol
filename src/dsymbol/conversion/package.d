@@ -25,7 +25,7 @@ import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import memory.allocators;
-import std.allocator;
+import std.experimental.allocator;
 import std.d.ast;
 import std.d.lexer;
 import std.d.parser;
@@ -34,16 +34,14 @@ import std.typecons;
 /**
  * Used by autocompletion.
  */
-Scope* generateAutocompleteTrees(const(Token)[] tokens, CAllocator symbolAllocator)
+ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
+	IAllocator symbolAllocator, size_t cursorPosition)
 {
-	Module m = parseModule(tokens, internString("stdin"), symbolAllocator, &doesNothing);
-	return generateAutocompleteTrees(m, symbolAllocator);
-}
+	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
+		symbolAllocator, cursorPosition);
 
-/// ditto
-Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
-{
-	auto first = scoped!FirstPass(mod, internString("stdin"), symbolAllocator, symbolAllocator, true);
+	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
+		symbolAllocator, true);
 	first.run();
 
 	SecondPass second = SecondPass(first);
@@ -51,8 +49,19 @@ Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
 
 	ThirdPass third = ThirdPass(second);
 	third.run();
-	typeid(typeof(third.rootSymbol)).destroy(third.rootSymbol);
-	return third.moduleScope;
+	return ScopeSymbolPair(third.rootSymbol.acSymbol, third.moduleScope);
+}
+
+struct ScopeSymbolPair
+{
+	void destroy()
+	{
+		typeid(DSymbol).destroy(symbol);
+		typeid(Scope).destroy(scope_);
+	}
+
+	DSymbol* symbol;
+	Scope* scope_;
 }
 
 /**
@@ -64,7 +73,7 @@ Scope* generateAutocompleteTrees(const Module mod, CAllocator symbolAllocator)
  *     parseAllocator = the allocator to use for the AST
  * Returns: the parsed module
  */
-Module parseModuleSimple(const(Token)[] tokens, string fileName, CAllocator parseAllocator)
+Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator parseAllocator)
 {
 	auto parser = scoped!SimpleParser();
 	parser.fileName = fileName;
@@ -75,6 +84,52 @@ Module parseModuleSimple(const(Token)[] tokens, string fileName, CAllocator pars
 }
 
 private:
+
+Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
+	IAllocator parseAllocator, size_t cursorPosition)
+{
+	auto parser = scoped!AutocompleteParser();
+	parser.fileName = fileName;
+	parser.tokens = tokens;
+	parser.messageFunction = &doesNothing;
+	parser.allocator = parseAllocator;
+	parser.cursorPosition = cursorPosition;
+	return parser.parseModule();
+}
+
+class AutocompleteParser : Parser
+{
+	override BlockStatement parseBlockStatement()
+	{
+		if (current.index > cursorPosition)
+		{
+			BlockStatement bs = allocate!(BlockStatement);
+			bs.startLocation = current.index;
+			skipBraces();
+			bs.endLocation = tokens[index - 1].index;
+			return bs;
+		}
+		immutable start = current.index;
+		auto b = setBookmark();
+		skipBraces();
+		if (tokens[index - 1].index < cursorPosition)
+		{
+			abandonBookmark(b);
+			BlockStatement bs = allocate!BlockStatement();
+			bs.startLocation = start;
+			bs.endLocation = tokens[index - 1].index;
+			return bs;
+		}
+		else
+		{
+			goToBookmark(b);
+			return super.parseBlockStatement();
+		}
+	}
+
+private:
+	size_t cursorPosition;
+}
 
 class SimpleParser : Parser
 {

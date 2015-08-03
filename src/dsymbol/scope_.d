@@ -45,12 +45,10 @@ struct Scope
 
 	~this()
 	{
-		foreach (info; importInformation[])
-			typeid(ImportInformation).destroy(info);
 		foreach (child; children[])
 			typeid(Scope).destroy(child);
-		foreach (symbol; symbols[])
-			typeid(DSymbol).destroy(symbol);
+		foreach (info; importInformation[])
+			typeid(ImportInformation).destroy(info);
 	}
 
 	/**
@@ -79,9 +77,10 @@ struct Scope
 	 *     all symbols in the scope containing the cursor position, as well as
 	 *     the symbols in parent scopes of that scope.
 	 */
-	DSymbol*[] getSymbolsInCursorScope(size_t cursorPosition) const
+	DSymbol*[] getSymbolsInCursorScope(size_t cursorPosition)
 	{
 		import std.array : array;
+		import std.algorithm.iteration : map;
 
 		auto s = getScopeByCursor(cursorPosition);
 		if (s is null)
@@ -90,20 +89,20 @@ struct Scope
 		Scope* sc = s;
 		while (sc !is null)
 		{
-			foreach (item; sc.symbols[])
+			foreach (item; sc._symbols[])
 			{
-				if (item.type !is null && (item.kind == CompletionKind.importSymbol
-					|| item.kind == CompletionKind.withSymbol))
+				if (item.ptr.type !is null && (item.ptr.kind == CompletionKind.importSymbol
+					|| item.ptr.kind == CompletionKind.withSymbol))
 				{
-					foreach (i; item.type.parts[])
+					foreach (i; item.ptr.type.opSlice())
 						symbols.insert(i);
 				}
 				else
-					symbols.insert(item);
+					symbols.insert(item.ptr);
 			}
 			sc = sc.parent;
 		}
-		return array(symbols[]);
+		return array(_symbols[].map!(a => a.ptr));
 	}
 
 	/**
@@ -112,18 +111,19 @@ struct Scope
 	 * Returns:
 	 *     all symbols in this scope or parent scopes with the given name
 	 */
-	DSymbol*[] getSymbolsByName(istring name) const
+	DSymbol*[] getSymbolsByName(istring name)
 	{
 		import std.array : array, appender;
+		import std.algorithm.iteration : map;
 
 		DSymbol s = DSymbol(name);
-		auto er = symbols.equalRange(&s);
+		auto er = _symbols.equalRange(SymbolOwnership(&s));
 		if (!er.empty)
-			return array(er);
+			return array(er.map!(a => a.ptr));
 
 		// Check symbols from "with" statement
 		DSymbol ir2 = DSymbol(WITH_SYMBOL_NAME);
-		auto r2 = symbols.equalRange(&ir2);
+		auto r2 = _symbols.equalRange(SymbolOwnership(&ir2));
 		if (!r2.empty)
 		{
 			auto app = appender!(DSymbol*[])();
@@ -131,7 +131,7 @@ struct Scope
 			{
 				if (e.type is null)
 					continue;
-				foreach (withSymbol; e.type.parts.equalRange(&s))
+				foreach (withSymbol; e.type.getPartsByName(s.name))
 					app.put(withSymbol);
 			}
 			if (app.data.length > 0)
@@ -140,12 +140,12 @@ struct Scope
 
 		// Check imported symbols
 		DSymbol ir = DSymbol(IMPORT_SYMBOL_NAME);
-		auto r = symbols.equalRange(&ir);
+		auto r = _symbols.equalRange(SymbolOwnership(&ir));
 		if (!r.empty)
 		{
 			auto app = appender!(DSymbol*[])();
 			foreach (e; r)
-				foreach (importedSymbol; e.type.parts.equalRange(&s))
+				foreach (importedSymbol; e.type.getPartsByName(s.name))
 					app.put(importedSymbol);
 			if (app.data.length > 0)
 				return app.data;
@@ -174,7 +174,7 @@ struct Scope
 	/**
 	 * Returns an array of symbols that are present at global scope
 	 */
-	DSymbol*[] getSymbolsAtGlobalScope(istring name) const
+	DSymbol*[] getSymbolsAtGlobalScope(istring name)
 	{
 		if (parent !is null)
 			return parent.getSymbolsAtGlobalScope(name);
@@ -196,6 +196,17 @@ struct Scope
 	/// End location of this scope in bytes
 	size_t endLocation;
 
+	auto symbols() @property
+	{
+		return _symbols[];
+	}
+
+	void addSymbol(DSymbol* symbol, bool owns)
+	{
+		_symbols.insert(SymbolOwnership(symbol, owns));
+	}
+
+private:
 	/// Symbols contained in this scope
-	TTree!(DSymbol*, true, "a < b", false) symbols;
+	TTree!(SymbolOwnership, true, "a < b", false) _symbols;
 }

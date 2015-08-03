@@ -31,7 +31,7 @@ import dsymbol.semantic;
 import dsymbol.symbol;
 import memory.allocators;
 import std.algorithm;
-import std.allocator;
+import std.experimental.allocator;
 import std.conv;
 import std.d.ast;
 import std.datetime;
@@ -42,15 +42,24 @@ import std.file;
 import std.lexer;
 import std.path;
 
+private alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
+	n => Region!Mallocator(1024 * 32)));
+
 private struct CacheEntry
 {
 	DSymbol* symbol;
 	SysTime modificationTime;
 	string path;
 
+	~this()
+	{
+		if (symbol !is null)
+			typeid(DSymbol).destroy(symbol);
+	}
+
 	int opCmp(ref const CacheEntry other) const
 	{
-		int r = path > other.path;
+		immutable int r = path > other.path;
 		if (path < other.path)
 			return -1;
 		return r;
@@ -86,7 +95,13 @@ bool existanceCheck(A)(A path)
 
 static this()
 {
-	ModuleCache.symbolAllocator = new CAllocatorImpl!(BlockAllocator!(1024 * 16));
+	ModuleCache.symbolAllocator = new ASTAllocator;
+}
+
+static ~this()
+{
+	foreach (entry; ModuleCache.cache[])
+		typeid(CacheEntry).destroy(entry);
 }
 
 /**
@@ -180,7 +195,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		auto semanticAllocator = scoped!(CAllocatorImpl!(BlockAllocator!(1024 * 64)));
+		auto semanticAllocator = scoped!(ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
 
 		assert (symbolAllocator);
@@ -206,7 +221,7 @@ struct ModuleCache
 		CacheEntry e;
 		e.path = cachedLocation;
 		const r = cache.equalRange(&e);
-		CacheEntry* c = r.empty ? allocate!CacheEntry(Mallocator.it)
+		CacheEntry* c = r.empty ? make!CacheEntry(Mallocator.it)
 			: r.front;
 		c.symbol = symbol;
 		c.modificationTime = modification;
@@ -299,5 +314,5 @@ private:
 	// Listing of paths to check for imports
 	static UnrolledList!string importPaths;
 
-	static CAllocator symbolAllocator;
+	static IAllocator symbolAllocator;
 }
