@@ -18,38 +18,38 @@
 
 module dsymbol.conversion;
 
+import dsymbol.cache_entry;
 import dsymbol.conversion.first;
-import dsymbol.conversion.second;
+//import dsymbol.conversion.second;
 import dsymbol.conversion.third;
+import dsymbol.modulecache;
 import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import memory.allocators;
-import std.experimental.allocator;
 import std.d.ast;
 import std.d.lexer;
 import std.d.parser;
+import std.experimental.allocator;
 import std.typecons;
 
 /**
  * Used by autocompletion.
  */
 ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
-	IAllocator symbolAllocator, size_t cursorPosition)
+	IAllocator symbolAllocator, size_t cursorPosition, ref ModuleCache cache)
 {
 	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
 		symbolAllocator, cursorPosition);
 
 	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
-		symbolAllocator, true);
+		symbolAllocator, true, &cache);
 	first.run();
 
-	SecondPass second = SecondPass(first);
-	second.run();
+//	secondPass(first.moduleScope, cache);
 
-	ThirdPass third = ThirdPass(second);
-	third.run();
-	return ScopeSymbolPair(third.rootSymbol.acSymbol, third.moduleScope);
+	thirdPass(first.rootSymbol, first.moduleScope, cache);
+	return ScopeSymbolPair(first.rootSymbol.acSymbol, first.moduleScope);
 }
 
 struct ScopeSymbolPair
@@ -75,6 +75,7 @@ struct ScopeSymbolPair
  */
 Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator parseAllocator)
 {
+	assert (parseAllocator !is null);
 	auto parser = scoped!SimpleParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;

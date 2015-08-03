@@ -22,6 +22,14 @@ import dsymbol.symbol;
 import std.d.ast;
 import std.d.lexer;
 import containers.unrolledlist;
+import dsymbol.type_lookup;
+
+enum ResolutionFlags : ubyte
+{
+	inheritance = 0b0000_0001,
+	type = 0b0000_0010,
+	mixinTemplates = 0b0000_0100,
+}
 
 /**
  * Intermediate form between DSymbol and the AST classes. Stores enough
@@ -39,14 +47,10 @@ public:
 	/**
 	 * Params:
 	 *    name = the name
-	 *    kind = the completion kind
-	 *    symbolFile = the file name for this symbol
-	 *    location = the location of this symbol
 	 */
-	this(DSymbol* acSymbol, const Type type = null)
+	this(DSymbol* acSymbol)
 	{
 		this.acSymbol = acSymbol;
-		this.type = type;
 	}
 
 	~this()
@@ -64,32 +68,20 @@ public:
 		acSymbol.addChild(child.acSymbol, owns);
 	}
 
-	/// Autocompletion symbol
-	DSymbol* acSymbol;
-
-	/// Base classes
-	UnrolledList!(istring[]) baseClasses;
-
-	/// Variable type or function return type
-	const Type type;
-
-	/// Alias this symbols
-	UnrolledList!(istring) aliasThis;
-
-	/// MixinTemplates
-	UnrolledList!(istring[]) mixinTemplates;
-
-	/// Protection level for this symobol
-	IdType protection;
-
-	/// Parent symbol
-	SemanticSymbol* parent;
+	/// Information used to do type resolution, inheritance, mixins, and alias this
+	UnrolledList!(TypeLookup*) typeLookups;
 
 	/// Child symbols
 	UnrolledList!(SemanticSymbol*) children;
 
-	/// Assign expression identifier chain used for auto declarations
-	UnrolledList!(istring) initializer;
+	/// Autocompletion symbol
+	DSymbol* acSymbol;
+
+	/// Parent symbol
+	SemanticSymbol* parent;
+
+	/// Protection level for this symobol
+	IdType protection;
 }
 
 /**
@@ -107,6 +99,8 @@ static this()
 	import dsymbol.string_interning : internString;
 	import std.experimental.allocator : make;
 	import std.experimental.allocator.mallocator : Mallocator;
+
+	// TODO: Replace these with DSymbols
 
 	// _argptr has type void*
 	argptrType = make!Type(Mallocator.it);

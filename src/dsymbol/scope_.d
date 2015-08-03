@@ -23,6 +23,7 @@ import dsymbol.import_;
 import dsymbol.builtin.names;
 import containers.ttree;
 import containers.unrolledlist;
+import std.experimental.logger;
 
 /**
  * Contains symbols and supports lookup of symbols by cursor position.
@@ -37,7 +38,7 @@ struct Scope
 	 *     begin = the beginning byte index
 	 *     end = the ending byte index
 	 */
-	this (size_t begin, size_t end)
+	this (uint begin, uint end)
 	{
 		this.startLocation = begin;
 		this.endLocation = end;
@@ -47,8 +48,11 @@ struct Scope
 	{
 		foreach (child; children[])
 			typeid(Scope).destroy(child);
-		foreach (info; importInformation[])
-			typeid(ImportInformation).destroy(info);
+		foreach (symbol; _symbols)
+		{
+			if (symbol.owned)
+				typeid(DSymbol).destroy(symbol.ptr);
+		}
 	}
 
 	/**
@@ -83,26 +87,39 @@ struct Scope
 		import std.algorithm.iteration : map;
 
 		auto s = getScopeByCursor(cursorPosition);
+
 		if (s is null)
 			return [];
-		UnrolledList!(DSymbol*) symbols;
+
+		UnrolledList!(DSymbol*) retVal;
 		Scope* sc = s;
 		while (sc !is null)
 		{
 			foreach (item; sc._symbols[])
 			{
-				if (item.ptr.type !is null && (item.ptr.kind == CompletionKind.importSymbol
-					|| item.ptr.kind == CompletionKind.withSymbol))
+				if (item.ptr.kind == CompletionKind.withSymbol)
 				{
-					foreach (i; item.ptr.type.opSlice())
-						symbols.insert(i);
+					trace("Found a withSymbol ", item.type.name);
+					if (item.ptr.type !is null)
+						foreach (i; item.ptr.type.opSlice())
+							retVal.insert(i);
+				}
+				else if (item.ptr.type !is null && item.ptr.kind == CompletionKind.importSymbol)
+				{
+					if (item.ptr.qualifier != SymbolQualifier.selectiveImport)
+					{
+						foreach (i; item.ptr.type.opSlice())
+							retVal.insert(i);
+					}
+					else if (item.ptr !is null)
+						retVal.insert(item.ptr.type);
 				}
 				else
-					symbols.insert(item.ptr);
+					retVal.insert(item.ptr);
 			}
 			sc = sc.parent;
 		}
-		return array(_symbols[].map!(a => a.ptr));
+		return array(retVal[]);
 	}
 
 	/**
@@ -145,8 +162,16 @@ struct Scope
 		{
 			auto app = appender!(DSymbol*[])();
 			foreach (e; r)
-				foreach (importedSymbol; e.type.getPartsByName(s.name))
-					app.put(importedSymbol);
+			{
+				if (e.type is null)
+					continue;
+				if (e.qualifier == SymbolQualifier.selectiveImport &&
+						e.type.name.ptr == name.ptr)
+					app.put(e.type);
+				else
+					foreach (importedSymbol; e.type.getPartsByName(s.name))
+						app.put(importedSymbol);
+			}
 			if (app.data.length > 0)
 				return app.data;
 		}
@@ -165,10 +190,19 @@ struct Scope
 	 */
 	DSymbol*[] getSymbolsByNameAndCursor(istring name, size_t cursorPosition) const
 	{
+		import std.algorithm:map;
+		import std.array:array;
+
 		auto s = getScopeByCursor(cursorPosition);
 		if (s is null)
 			return [];
 		return s.getSymbolsByName(name);
+	}
+
+	DSymbol* getFirstSymbolByNameAndCursor(istring name, size_t cursorPosition) const
+	{
+		auto s = getSymbolsByNameAndCursor(name, cursorPosition);
+		return s.length > 0 ? s[0] : null;
 	}
 
 	/**
@@ -181,9 +215,6 @@ struct Scope
 		return getSymbolsByName(name);
 	}
 
-	/// Imports contained in this scope
-	UnrolledList!(ImportInformation*) importInformation;
-
 	/// The scope that contains this one
 	Scope* parent;
 
@@ -191,18 +222,26 @@ struct Scope
 	UnrolledList!(Scope*, false) children;
 
 	/// Start location of this scope in bytes
-	size_t startLocation;
+	uint startLocation;
 
 	/// End location of this scope in bytes
-	size_t endLocation;
+	uint endLocation;
 
 	auto symbols() @property
 	{
 		return _symbols[];
 	}
 
+	/**
+	 * Adds the given symbol to this scope.
+	 * Params:
+	 *     symbol = the symbol to add
+	 *     owns = if true, the symbol's destructor will be called when this
+	 *         scope's destructor is called.
+	 */
 	void addSymbol(DSymbol* symbol, bool owns)
 	{
+		assert(symbol !is null);
 		_symbols.insert(SymbolOwnership(symbol, owns));
 	}
 

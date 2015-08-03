@@ -18,391 +18,451 @@
 
 module dsymbol.conversion.third;
 
-import dsymbol.conversion.second;
 import dsymbol.semantic;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.scope_;
 import dsymbol.builtin.names;
 import dsymbol.builtin.symbols;
+import dsymbol.type_lookup;
+import dsymbol.deferred;
+import dsymbol.import_;
+import dsymbol.modulecache;
+import containers.unrolledlist;
 import std.experimental.allocator;
+import std.experimental.logger;
 import std.d.ast;
 import std.d.lexer;
 
-/**
- * Third pass handles the following:
- * $(UL
- *      $(LI types)
- *      $(LI base classes)
- *      $(LI mixin templates)
- *      $(LI alias this)
- *      $(LI alias declarations)
- * )
- */
-struct ThirdPass
+void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {
-public:
-
-	/**
-	 * Params:
-	 *     second = The second conversion pass. Results are taken from this to
-	 *         run the third pass.
-	 */
-	this(ref SecondPass second) pure
+	with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
 	{
-		this.rootSymbol = second.rootSymbol;
-		this.moduleScope = second.moduleScope;
-		this.symbolAllocator = second.symbolAllocator;
+	case className:
+	case interfaceName:
+		resolveInheritance(currentSymbol.acSymbol, currentSymbol.typeLookups,
+			moduleScope, cache);
+		break;
+	case withSymbol:
+	case variableName:
+	case memberVariableName:
+	case functionName:
+	case aliasName:
+		resolveType(currentSymbol.acSymbol, currentSymbol.typeLookups,
+			moduleScope, cache);
+		break;
+	case importSymbol:
+		if (currentSymbol.acSymbol.type is null)
+			resolveImport(currentSymbol.acSymbol, currentSymbol.typeLookups, cache);
+		break;
+	case structName:
+	case unionName:
+	case enumName:
+	case keyword:
+	case enumMember:
+	case packageName:
+	case moduleName:
+	case dummy:
+	case templateName:
+	case mixinTemplateName:
+		break;
 	}
 
-	/**
-	 * Runs the third pass.
-	 */
-	void run()
+	foreach (child; currentSymbol.children)
+		thirdPass(child, moduleScope, cache);
+
+	// Alias this and mixin templates are resolved after child nodes are
+	// resolved so that the correct symbol information will be available.
+	with (CompletionKind) switch (currentSymbol.acSymbol.kind)
 	{
-		thirdPass(rootSymbol);
+	case className:
+	case interfaceName:
+	case structName:
+	case unionName:
+		resolveAliasThis(currentSymbol.acSymbol, currentSymbol.typeLookups, cache);
+		resolveMixinTemplates(currentSymbol.acSymbol, currentSymbol.typeLookups,
+			moduleScope, cache);
+		break;
+	default:
+		break;
 	}
+}
 
-	~this()
+void resolveInheritance(DSymbol* symbol,
+	ref UnrolledList!(TypeLookup*) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+{
+	import std.algorithm : filter;
+
+	outer: foreach (TypeLookup* lookup; typeLookups[])
 	{
-		typeid(SemanticSymbol).destroy(rootSymbol);
-	}
+		if (lookup.kind != TypeLookupKind.inherit)
+			continue;
+		DSymbol* baseClass;
+		assert(lookup.breadcrumbs.length > 0);
 
-	/**
-	 * The module-level symbol
-	 */
-	SemanticSymbol* rootSymbol;
-
-	/**
-	 * The module-level scope
-	 */
-	Scope* moduleScope;
-
-	/**
-	 * The symbol allocator
-	 */
-	IAllocator symbolAllocator;
-
-private:
-
-	bool shouldFollowType(const DSymbol* t, const SemanticSymbol* currentSymbol) const pure nothrow @nogc
-	{
-		if (t is null)
-			return false;
-		if (t.type is t)
-			return false;
-		if (t.kind == CompletionKind.aliasName)
-			return true;
-		if (currentSymbol.acSymbol.kind == CompletionKind.withSymbol
-				&& t.kind == CompletionKind.variableName)
-			return true;
-		return false;
-	}
-
-	void thirdPass(SemanticSymbol* currentSymbol)
-	{
-		with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
-		{
-		case className:
-		case interfaceName:
-			resolveInheritance(currentSymbol);
-			break;
-		case withSymbol:
-		case variableName:
-		case memberVariableName:
-		case functionName:
-		case aliasName:
-			resolveType(currentSymbol.initializer, currentSymbol.type,
-				currentSymbol.acSymbol.location, currentSymbol);
-			break;
-		case structName:
-		case unionName:
-		case enumName:
-		case keyword:
-		case enumMember:
-		case packageName:
-		case moduleName:
-		case dummy:
-		case array:
-		case assocArray:
-		case templateName:
-		case mixinTemplateName:
-		case importSymbol:
-			break;
-		}
-
-		foreach (child; currentSymbol.children)
-			thirdPass(child);
-
-		// Alias this and mixin templates are resolved after child nodes are
-		// resolved so that the correct symbol information will be available.
-		with (CompletionKind) switch (currentSymbol.acSymbol.kind)
-		{
-		case className:
-		case interfaceName:
-		case structName:
-		case unionName:
-			resolveAliasThis(currentSymbol);
-			resolveMixinTemplates(currentSymbol);
-			break;
-		default:
-			break;
-		}
-	}
-
-	void resolveInheritance(SemanticSymbol* currentSymbol)
-	{
-		import std.algorithm : filter;
-		outer: foreach (istring[] base; currentSymbol.baseClasses)
-		{
-			DSymbol* baseClass;
-			if (base.length == 0)
-				continue;
-			auto symbolScope = moduleScope.getScopeByCursor(currentSymbol.acSymbol.location);
-			auto symbols = moduleScope.getSymbolsByNameAndCursor(
-				base[0], currentSymbol.acSymbol.location);
-			if (symbols.length == 0)
-				continue;
-			baseClass = symbols[0];
-			foreach (part; base[1..$])
-			{
-				symbols = baseClass.getPartsByName(part);
-				if (symbols.length == 0)
-					continue outer;
-				baseClass = symbols[0];
-			}
-
-			static bool shouldSkipFromBase(const DSymbol* d) pure nothrow @nogc
-			{
-				if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
-					return false;
-				if (d.name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr)
-					return false;
-				if (d.name.ptr == UNITTEST_SYMBOL_NAME.ptr)
-					return false;
-				if (d.name.ptr == THIS_SYMBOL_NAME.ptr)
-					return false;
-				if (d.kind == CompletionKind.keyword)
-					return false;
-				return true;
-			}
-
-			foreach (_; baseClass.opSlice().filter!shouldSkipFromBase())
-			{
-				currentSymbol.acSymbol.addChild(_, false);
-				symbolScope.addSymbol(_, false);
-			}
-			if (baseClass.kind == CompletionKind.className)
-			{
-				auto s = make!DSymbol(symbolAllocator,
-					SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass);
-				symbolScope.addSymbol(s, true);
-			}
-		}
-	}
-
-	void resolveAliasThis(SemanticSymbol* currentSymbol)
-	{
-		foreach (aliasThis; currentSymbol.aliasThis)
-		{
-			auto parts = currentSymbol.acSymbol.getPartsByName(aliasThis);
-			if (parts.length == 0 || parts[0].type is null)
-				continue;
-			DSymbol* s = make!DSymbol(symbolAllocator, IMPORT_SYMBOL_NAME,
-				CompletionKind.importSymbol);
-			s.type = parts[0].type;
-			currentSymbol.acSymbol.addChild(s, true);
-		}
-	}
-
-	void resolveMixinTemplates(SemanticSymbol* currentSymbol)
-	{
-		foreach (mix; currentSymbol.mixinTemplates[])
-		{
-			auto symbols = moduleScope.getSymbolsByNameAndCursor(mix[0],
-				currentSymbol.acSymbol.location);
-			if (symbols.length == 0)
-				continue;
-			auto symbol = symbols[0];
-			foreach (m; mix[1 .. $])
-			{
-				auto s = symbol.getPartsByName(m);
-				if (s.length == 0)
-				{
-					symbol = null;
-					break;
-				}
-				else
-					symbol = s[0];
-			}
-			foreach (_; symbol.opSlice)
-				currentSymbol.acSymbol.addChild(_, false);
-		}
-	}
-
-	DSymbol* resolveInitializerType(I)(ref const I initializer, size_t location)
-	{
-		if (initializer.empty)
-			return null;
-		auto slice = initializer[];
-		bool literal = slice.front[0] == '*';
-		if (literal && initializer.length > 1)
-		{
-			slice.popFront();
-			literal = false;
-		}
-		auto symbols = moduleScope.getSymbolsByNameAndCursor(internString(
-			literal ? slice.front[1 .. $] : slice.front), location);
-
+		// TODO: Delayed type lookup
+		auto symbolScope = moduleScope.getScopeByCursor(symbol.location);
+		auto symbols = moduleScope.getSymbolsByNameAndCursor(lookup.breadcrumbs.front,
+			symbol.location);
 		if (symbols.length == 0)
-			return null;
+			continue;
 
-		if (literal)
-			return symbols[0];
-
-		slice.popFront();
-		auto s = symbols[0];
-
-		while (s !is null && s.type !is null && s !is s.type && !slice.empty)
+		baseClass = symbols[0];
+		lookup.breadcrumbs.popFront();
+		foreach (part; lookup.breadcrumbs[])
 		{
-			s = s.type;
-			if (slice.front == "foreach")
-			{
-				if (s.qualifier == SymbolQualifier.array)
-					s = s.type;
-				else
-				{
-					DSymbol*[] f = s.getPartsByName(internString("front"));
-					if (f.length > 0)
-						s = f[0].type;
-					else
-						s = null;
-				}
-				slice.popFront();
-			}
-			else if (slice.front == "[]")
-				s = s.type;
-			else
-				break;
-		}
-		while (s !is null && !slice.empty)
-		{
-			auto parts = s.getPartsByName(internString(slice.front));
-			if (parts.length == 0)
-				return null;
-			s = parts[0];
-			slice.popFront();
-		}
-		return s;
-	}
-
-	void resolveType(I)(ref const I initializer, const Type t, size_t location,
-		SemanticSymbol* semantic)
-	{
-		if (t is null)
-		{
-			semantic.acSymbol.type = resolveInitializerType(initializer, location);
-			goto followTypes;
-		}
-		else if (t.type2 is null)
-			goto followTypes;
-		else if (t.type2.builtinType != tok!"")
-			semantic.acSymbol.type = convertBuiltinType(t.type2);
-		else if (t.type2.typeConstructor != tok!"")
-			resolveType(initializer, t.type2.type, location, semantic);
-		else if (t.type2.symbol !is null)
-		{
-			// TODO: global scoped symbol handling
-			size_t l = t.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances.length;
-			istring[] symbolParts = (cast(istring*) Mallocator.it.allocate(
-				l * istring.sizeof))[0 .. l];
-			scope(exit) Mallocator.it.deallocate(symbolParts);
-			expandSymbol(symbolParts, t.type2.symbol.identifierOrTemplateChain);
-			auto symbols = moduleScope.getSymbolsByNameAndCursor(
-				symbolParts[0], location);
+			symbols = baseClass.getPartsByName(part);
 			if (symbols.length == 0)
-				goto resolveSuffixes;
-			semantic.acSymbol.type = symbols[0];
-			foreach (symbolPart; symbolParts[1..$])
-			{
-				auto parts = semantic.acSymbol.type.getPartsByName(symbolPart);
-				if (parts.length == 0)
-					goto resolveSuffixes;
-				semantic.acSymbol.type = parts[0];
-			}
+				continue outer;
+			baseClass = symbols[0];
 		}
 
-	resolveSuffixes:
-		foreach (suffix; t.typeSuffixes)
-			processSuffix(semantic.acSymbol, suffix, t);
-
-	followTypes:
-		while (shouldFollowType(semantic.acSymbol.type, semantic))
+		static bool shouldSkipFromBase(const DSymbol* d) pure nothrow @nogc
 		{
-			auto oldType = semantic.acSymbol.type;
-			immutable oldOwn = semantic.acSymbol.ownType;
-			semantic.acSymbol.ownType = oldType.ownType;
-			semantic.acSymbol.type = oldType.type;
-			if (oldOwn)
-				typeid(DSymbol).destroy(oldType);
+			if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
+				return false;
+			if (d.name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr)
+				return false;
+			if (d.name.ptr == UNITTEST_SYMBOL_NAME.ptr)
+				return false;
+			if (d.name.ptr == THIS_SYMBOL_NAME.ptr)
+				return false;
+			if (d.kind == CompletionKind.keyword)
+				return false;
+			return true;
+		}
+
+		// TODO: This will not work with symbol replacement and cache invalidation
+		foreach (_; baseClass.opSlice().filter!shouldSkipFromBase())
+		{
+			symbol.addChild(_, false);
+			symbolScope.addSymbol(_, false);
+		}
+		if (baseClass.kind == CompletionKind.className)
+		{
+			auto s = cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME,
+				CompletionKind.variableName, baseClass);
+			symbolScope.addSymbol(s, true);
 		}
 	}
+}
 
-	static void expandSymbol(istring[] strings, const IdentifierOrTemplateChain chain)
+void resolveAliasThis(DSymbol* symbol,
+	ref UnrolledList!(TypeLookup*) typeLookups, ref ModuleCache cache)
+{
+	import std.algorithm : filter;
+
+	foreach (aliasThis; typeLookups[].filter!(a => a.kind == TypeLookupKind.aliasThis))
 	{
-		for (size_t i = 0; i < chain.identifiersOrTemplateInstances.length; ++i)
+		assert(aliasThis.breadcrumbs.length > 0);
+		auto parts = symbol.getPartsByName(aliasThis.breadcrumbs.front);
+		if (parts.length == 0 || parts[0].type is null)
+			continue;
+		DSymbol* s = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
+			CompletionKind.importSymbol, parts[0].type);
+		symbol.addChild(s, true);
+	}
+}
+
+void resolveMixinTemplates(DSymbol* symbol,
+	ref UnrolledList!(TypeLookup*) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+{
+	import std.algorithm : filter;
+
+	foreach (mix; typeLookups[].filter!(a => a.kind == TypeLookupKind.mixinTemplate))
+	{
+		assert(mix.breadcrumbs.length > 0);
+		auto symbols = moduleScope.getSymbolsByNameAndCursor(mix.breadcrumbs.front,
+			symbol.location);
+		if (symbols.length == 0)
+			continue;
+		auto currentSymbol = symbols[0];
+		mix.breadcrumbs.popFront();
+		foreach (m; mix.breadcrumbs[])
 		{
-			auto identOrTemplate = chain.identifiersOrTemplateInstances[i];
-			if (identOrTemplate is null)
+			auto s = currentSymbol.getPartsByName(m);
+			if (s.length == 0)
 			{
-				strings[i] = istring(null);
+				currentSymbol = null;
+				break;
+			}
+			else
+				currentSymbol = s[0];
+		}
+		if (currentSymbol !is null)
+		{
+			auto i = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
+				CompletionKind.importSymbol, currentSymbol);
+			i.ownType = false;
+			symbol.addChild(i, true);
+		}
+	}
+}
+
+void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*) typeLookups,
+	Scope* moduleScope, ref ModuleCache cache)
+{
+	if (typeLookups.length == 0)
+		return;
+	assert(typeLookups.length == 1);
+	auto lookup = typeLookups.front;
+	if (lookup.kind == TypeLookupKind.varOrFunType)
+		resolveTypeFromType(symbol, lookup, moduleScope, cache, null);
+	else if (lookup.kind == TypeLookupKind.initializer)
+		resolveTypeFromInitializer(symbol, lookup, moduleScope, cache);
+	else
+		assert(false, "How did this happen?");
+}
+
+void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
+	ref ModuleCache cache, UnrolledList!(DSymbol*)* imports)
+in
+{
+	if (imports !is null)
+		foreach (i; imports.opSlice())
+			assert(i.kind == CompletionKind.importSymbol);
+}
+body
+{
+	// The left-most suffix
+	DSymbol* suffix;
+	// The right-most suffix
+	DSymbol* lastSuffix;
+
+	// Create symbols for the type suffixes such as array and
+	// associative array
+	while (!lookup.breadcrumbs.empty)
+	{
+		auto back = lookup.breadcrumbs.back;
+		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
+		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
+		if (!isArr && !isAssoc)
+			break;
+		immutable qualifier = isAssoc ? SymbolQualifier.assocArray : SymbolQualifier.array;
+		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
+		lastSuffix.qualifier = qualifier;
+		lastSuffix.ownType = true;
+		lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
+
+		if (suffix is null)
+			suffix = lastSuffix;
+		lookup.breadcrumbs.popBack();
+	}
+
+	UnrolledList!(DSymbol*) remainingImports;
+
+	DSymbol* currentSymbol;
+
+	void getSymbolFromImports(UnrolledList!(DSymbol*)* importList, istring name)
+	{
+		foreach (im; importList.opSlice())
+		{
+//			// TODO: Why does this happen?
+			if (im.symbolFile is null)
+				continue;
+			// Try to find a cached version of the module
+			DSymbol* moduleSymbol = cache.getModuleSymbol(im.symbolFile);
+			// If the module has not been cached yet, store it in the
+			// remaining imports list
+			if (moduleSymbol is null)
+			{
+				remainingImports.insert(im);
 				continue;
 			}
-			strings[i] = internString(identOrTemplate.templateInstance is null ?
-				identOrTemplate.identifier.text
-				: identOrTemplate.templateInstance.identifier.text);
+			// Try to get the symbol from the imported module
+			currentSymbol = moduleSymbol.getFirstPartNamed(name);
+			if (currentSymbol is null)
+				continue;
 		}
 	}
 
-	void processSuffix(ref DSymbol* symbol, const TypeSuffix suffix, const Type t)
+	// Follow all the names and try to resolve them
+	size_t i = 0;
+	foreach (part; lookup.breadcrumbs[])
 	{
-		if (suffix.star.type != tok!"")
-			return;
-		if (suffix.array || suffix.type)
+		if (i == 0)
 		{
-			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
-			foreach (_; suffix.array ? arraySymbols[] : assocArraySymbols[])
-				s.addChild(_, false);
-			s.type = symbol.type;
-			s.ownType = symbol.ownType;
-			symbol.ownType = true;
-			symbol.type = s;
-			s.qualifier = suffix.array ? SymbolQualifier.array : SymbolQualifier.assocArray;
-			return;
+			if (moduleScope is null)
+				getSymbolFromImports(imports, part);
+			else
+			{
+				auto symbols = moduleScope.getSymbolsByNameAndCursor(part, symbol.location);
+				if (symbols.length > 0)
+					currentSymbol = symbols[0];
+			}
 		}
-		if (suffix.parameters)
-		{
-			import dsymbol.conversion.first : formatNode;
-			import std.array : appender;
-			DSymbol* s = make!DSymbol(symbolAllocator, istring(null));
-			s.type = symbol.type;
-			s.ownType = symbol.ownType;
-			symbol.ownType = true;
-			symbol.type = s;
-			s.qualifier = SymbolQualifier.func;
-			auto app = appender!(char[]);
-			app.formatNode(t);
-			s.callTip = internString(cast(string) app.data);
-			return;
-		}
-		assert(false);
+		else
+			currentSymbol = currentSymbol.getFirstPartNamed(part);
+		++i;
+		if (currentSymbol is null)
+				break;
 	}
 
-	DSymbol* convertBuiltinType(const Type2 type2)
+	if (lastSuffix !is null)
 	{
-		istring stringRepresentation = getBuiltinTypeName(type2.builtinType);
-		DSymbol s = DSymbol(stringRepresentation);
-		assert(s.name.ptr == stringRepresentation.ptr);
-		return builtinSymbols.equalRange(&s).front();
+		assert(suffix !is null);
+		suffix.type = currentSymbol;
+		suffix.ownType = false;
+		symbol.type = lastSuffix;
+		symbol.ownType = true;
+		if (currentSymbol is null && !remainingImports.empty)
+		{
+//			info("Deferring type resolution for ", symbol.name);
+			auto deferred = Mallocator.it.make!DeferredSymbol(suffix);
+			// TODO: The scope has ownership of the import information
+			deferred.imports.insert(remainingImports[]);
+			deferred.typeLookups.insert(lookup);
+			cache.deferredSymbols.insert(deferred);
+		}
+	}
+	else if (currentSymbol !is null)
+	{
+		symbol.type = currentSymbol;
+		symbol.ownType = false;
+	}
+	else if (!remainingImports.empty)
+	{
+		auto deferred = Mallocator.it.make!DeferredSymbol(symbol);
+//		info("Deferring type resolution for ", symbol.name);
+		// TODO: The scope has ownership of the import information
+		deferred.imports.insert(remainingImports[]);
+		deferred.typeLookups.insert(lookup);
+		cache.deferredSymbols.insert(deferred);
+	}
+}
+
+void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
+	Scope* moduleScope, ref ModuleCache cache)
+{
+	if (lookup.breadcrumbs.length == 0)
+		return;
+	DSymbol* currentSymbol = null;
+	size_t i = 0;
+	foreach (crumb; lookup.breadcrumbs[])
+	{
+		if (i == 0)
+		{
+			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
+				symbolNameToTypeName(crumb), symbol.location);
+			if (currentSymbol is null)
+				return;
+		}
+		else if (crumb == ARRAY_SYMBOL_NAME)
+		{
+			// Index expressions can be an array index or an AA index
+			if (currentSymbol.type !is null
+					&& (currentSymbol.qualifier == SymbolQualifier.array
+					|| currentSymbol.qualifier == SymbolQualifier.assocArray
+					|| currentSymbol.kind == CompletionKind.aliasName))
+				currentSymbol = currentSymbol.type;
+			else
+			{
+				auto opIndex = currentSymbol.getFirstPartNamed(internString("opIndex"));
+				if (opIndex !is null)
+					currentSymbol = opIndex.type;
+				else
+				{
+					info("wat do?");
+					return;
+				}
+			}
+		}
+		else if (crumb == "foreach")
+		{
+			typeSwap(currentSymbol);
+			if (currentSymbol.qualifier == SymbolQualifier.array
+					|| currentSymbol.qualifier == SymbolQualifier.assocArray)
+			{
+				currentSymbol = currentSymbol.type;
+				break;
+			}
+			auto front = currentSymbol.getFirstPartNamed(internString("front"));
+			if (front !is null)
+			{
+				currentSymbol = front.type;
+				break;
+			}
+			auto opApply = currentSymbol.getFirstPartNamed(internString("opApply"));
+			if (opApply !is null)
+			{
+				currentSymbol = opApply.type;
+				break;
+			}
+		}
+		else
+		{
+			typeSwap(currentSymbol);
+			if (currentSymbol is null )
+				return;
+			currentSymbol = currentSymbol.getFirstPartNamed(crumb);
+		}
+		++i;
+		if (currentSymbol is null)
+			return;
+	}
+	typeSwap(currentSymbol);
+	symbol.type = currentSymbol;
+	symbol.ownType = false;
+}
+
+void typeSwap(ref DSymbol* currentSymbol)
+{
+	while (currentSymbol !is null && (currentSymbol.kind == CompletionKind.variableName
+			|| currentSymbol.kind == CompletionKind.withSymbol
+			|| currentSymbol.kind == CompletionKind.aliasName))
+		currentSymbol = currentSymbol.type;
+}
+
+void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups,
+	ref ModuleCache cache)
+{
+	assert (acSymbol.kind == CompletionKind.importSymbol);
+	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
+	{
+		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
+		if (moduleSymbol is null)
+		{
+		tryAgain:
+			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			deferred.typeLookups.insert(typeLookups[]);
+			// Get rid of the old references to the lookups, this new deferred
+			// symbol owns them now
+			typeLookups.clear();
+			cache.deferredSymbols.insert(deferred);
+		}
+		else
+		{
+			immutable size_t breadcrumbCount = typeLookups.front.breadcrumbs.length;
+			if (breadcrumbCount == 2)
+			{
+				// count of 2 means a renamed import
+			}
+			else if (breadcrumbCount == 1)
+			{
+				// count of 1 means selective import
+				istring symbolName = typeLookups.front.breadcrumbs.front;
+				DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
+				if (acSymbol is null)
+					goto tryAgain;
+				acSymbol.type = selected;
+				acSymbol.ownType = false;
+			}
+			else
+				assert(false, "Malformed selective import");
+		}
+	}
+	else
+	{
+		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
+		if (moduleSymbol is null)
+		{
+			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			cache.deferredSymbols.insert(deferred);
+		}
+		else
+		{
+			acSymbol.type = moduleSymbol;
+			acSymbol.ownType = false;
+		}
 	}
 }
