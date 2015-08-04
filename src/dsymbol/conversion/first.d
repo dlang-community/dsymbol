@@ -33,6 +33,7 @@ import dsymbol.type_lookup;
 import memory.allocators;
 import memory.appender;
 import std.experimental.allocator;
+import std.experimental.allocator.mallocator;
 import std.d.ast;
 import std.d.formatter;
 import std.d.lexer;
@@ -181,7 +182,7 @@ final class FirstPass : ASTVisitor
 	{
 		if (bc.type2.symbol is null || bc.type2.symbol.identifierOrTemplateChain is null)
 			return;
-		auto lookup = Mallocator.it.make!TypeLookup(TypeLookupKind.inherit);
+		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
 		writeIotcTo(bc.type2.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
@@ -254,7 +255,7 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const AliasThisDeclaration dec)
 	{
-		currentSymbol.typeLookups.insert(Mallocator.it.make!TypeLookup(
+		currentSymbol.typeLookups.insert(Mallocator.instance.make!TypeLookup(
 			internString(dec.identifier.text), TypeLookupKind.aliasThis));
 	}
 
@@ -362,7 +363,7 @@ final class FirstPass : ASTVisitor
 
 		foreach (bind; importDeclaration.importBindings.importBinds)
 		{
-			TypeLookup* lookup = Mallocator.it.make!TypeLookup(
+			TypeLookup* lookup = Mallocator.instance.make!TypeLookup(
 				TypeLookupKind.selectiveImport);
 
 			SemanticSymbol* importSymbol = allocateSemanticSymbol(
@@ -402,7 +403,7 @@ final class FirstPass : ASTVisitor
 		// TODO: support typeof here
 		if (tme.mixinTemplateName.symbol is null)
 			return;
-		auto lookup = Mallocator.it.make!TypeLookup(TypeLookupKind.mixinTemplate);
+		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate);
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
@@ -718,7 +719,7 @@ private:
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
 		bool appendForeach = false)
 	{
-		auto lookup = Mallocator.it.make!TypeLookup(TypeLookupKind.initializer);
+		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.initializer);
 		auto visitor = scoped!InitializerVisitor(lookup, appendForeach);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
@@ -742,7 +743,7 @@ private:
 	void addTypeToLookups(ref UnrolledList!(TypeLookup*) lookups, const Type type,
 		TypeLookup* l = null)
 	{
-		auto lookup = l !is null ? l : Mallocator.it.make!TypeLookup(
+		auto lookup = l !is null ? l : Mallocator.instance.make!TypeLookup(
 			TypeLookupKind.varOrFunType);
 		auto t2 = type.type2;
 		if (t2.type !is null)

@@ -30,6 +30,7 @@ import dsymbol.import_;
 import dsymbol.modulecache;
 import containers.unrolledlist;
 import std.experimental.allocator;
+import std.experimental.allocator.mallocator;
 import std.experimental.logger;
 import std.d.ast;
 import std.d.lexer;
@@ -308,7 +309,7 @@ body
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.it.make!DeferredSymbol(suffix);
+			auto deferred = Mallocator.instance.make!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -322,7 +323,7 @@ body
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.it.make!DeferredSymbol(symbol);
+		auto deferred = Mallocator.instance.make!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);
@@ -423,7 +424,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
@@ -456,7 +457,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			cache.deferredSymbols.insert(deferred);
 		}
 		else
