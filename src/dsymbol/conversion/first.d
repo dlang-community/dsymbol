@@ -284,11 +284,17 @@ final class FirstPass : ASTVisitor
 		currentSymbol = rootSymbol;
 		moduleScope = make!Scope(semanticAllocator, 0, uint.max);
 		currentScope = moduleScope;
-		auto objectImport = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
-			CompletionKind.importSymbol, cache.resolveImportLocation("object"));
-		objectImport.acSymbol.skipOver = true;
-		currentSymbol.addChild(objectImport, true);
-		currentScope.addSymbol(objectImport.acSymbol, false);
+		auto objectLocation = cache.resolveImportLocation("object");
+		if (objectLocation is null)
+			warning("Could not locate object.d or object.di");
+		else
+		{
+			auto objectImport = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
+				CompletionKind.importSymbol, objectLocation);
+			objectImport.acSymbol.skipOver = true;
+			currentSymbol.addChild(objectImport, true);
+			currentScope.addSymbol(objectImport.acSymbol, false);
+		}
 		foreach (s; builtinSymbols[])
 			currentScope.addSymbol(s, false);
 		mod.accept(this);
@@ -750,7 +756,7 @@ private:
 		return semanticAllocator.make!SemanticSymbol(acSymbol);
 	}
 
-	void addTypeToLookups(ref UnrolledList!(TypeLookup*) lookups, const Type type,
+	void addTypeToLookups(ref UnrolledList!(TypeLookup*, false) lookups, const Type type,
 		TypeLookup* l = null)
 	{
 		auto lookup = l !is null ? l : Mallocator.instance.make!TypeLookup(

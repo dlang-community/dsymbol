@@ -89,12 +89,13 @@ void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCach
 	}
 }
 
-void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups,
+void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, false) typeLookups,
 	ref ModuleCache cache)
 {
 	assert (acSymbol.kind == CompletionKind.importSymbol);
 	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
 	{
+		assert(acSymbol.symbolFile !is null);
 		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
@@ -129,6 +130,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 	}
 	else
 	{
+		assert(acSymbol.symbolFile !is null);
 		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
@@ -144,7 +146,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 }
 
 void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
-	ref ModuleCache cache, UnrolledList!(DSymbol*)* imports)
+	ref ModuleCache cache, UnrolledList!(DSymbol*, false)* imports)
 in
 {
 	if (imports !is null)
@@ -178,11 +180,11 @@ body
 		lookup.breadcrumbs.popBack();
 	}
 
-	UnrolledList!(DSymbol*) remainingImports;
+	UnrolledList!(DSymbol*, false) remainingImports;
 
 	DSymbol* currentSymbol;
 
-	void getSymbolFromImports(UnrolledList!(DSymbol*)* importList, istring name)
+	void getSymbolFromImports(UnrolledList!(DSymbol*, false)* importList, istring name)
 	{
 		foreach (im; importList.opSlice())
 		{
@@ -261,11 +263,9 @@ body
 private:
 
 void resolveInheritance(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
-
-
 
 	outer: foreach (TypeLookup* lookup; typeLookups[])
 	{
@@ -322,7 +322,7 @@ void resolveInheritance(DSymbol* symbol,
 }
 
 void resolveAliasThis(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*) typeLookups, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, false) typeLookups, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -339,7 +339,7 @@ void resolveAliasThis(DSymbol* symbol,
 }
 
 void resolveMixinTemplates(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -373,7 +373,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 	}
 }
 
-void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*) typeLookups,
+void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, false) typeLookups,
 	Scope* moduleScope, ref ModuleCache cache)
 {
 	if (typeLookups.length == 0)
