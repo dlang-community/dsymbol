@@ -99,7 +99,6 @@ struct Scope
 			{
 				if (item.ptr.kind == CompletionKind.withSymbol)
 				{
-					trace("Found a withSymbol ", item.type.name);
 					if (item.ptr.type !is null)
 						foreach (i; item.ptr.type.opSlice())
 							retVal.insert(i);
@@ -157,24 +156,21 @@ struct Scope
 
 		// Check imported symbols
 		DSymbol ir = DSymbol(IMPORT_SYMBOL_NAME);
-		auto r = _symbols.equalRange(SymbolOwnership(&ir));
-		if (!r.empty)
+
+		auto app = appender!(DSymbol*[])();
+		foreach (e; _symbols.equalRange(SymbolOwnership(&ir)))
 		{
-			auto app = appender!(DSymbol*[])();
-			foreach (e; r)
-			{
-				if (e.type is null)
-					continue;
-				if (e.qualifier == SymbolQualifier.selectiveImport &&
-						e.type.name.ptr == name.ptr)
-					app.put(e.type);
-				else
-					foreach (importedSymbol; e.type.getPartsByName(s.name))
-						app.put(importedSymbol);
-			}
-			if (app.data.length > 0)
-				return app.data;
+			if (e.type is null)
+				continue;
+			if (e.qualifier == SymbolQualifier.selectiveImport &&
+					e.type.name.ptr == name.ptr)
+				app.put(e.type);
+			else
+				foreach (importedSymbol; e.type.getPartsByName(s.name))
+					app.put(importedSymbol);
 		}
+		if (app.data.length > 0)
+			return app.data;
 		if (parent is null)
 			return [];
 		return parent.getSymbolsByName(name);
@@ -190,9 +186,6 @@ struct Scope
 	 */
 	DSymbol*[] getSymbolsByNameAndCursor(istring name, size_t cursorPosition) const
 	{
-		import std.algorithm:map;
-		import std.array:array;
-
 		auto s = getScopeByCursor(cursorPosition);
 		if (s is null)
 			return [];
@@ -247,5 +240,5 @@ struct Scope
 
 private:
 	/// Symbols contained in this scope
-	TTree!(SymbolOwnership, true, "a < b", false) _symbols;
+	TTree!(SymbolOwnership, true, "a.opCmp(b) < 0", false) _symbols;
 }

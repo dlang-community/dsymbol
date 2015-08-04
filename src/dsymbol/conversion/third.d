@@ -88,10 +88,183 @@ void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCach
 	}
 }
 
+void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups,
+	ref ModuleCache cache)
+{
+	assert (acSymbol.kind == CompletionKind.importSymbol);
+	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
+	{
+		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
+		if (moduleSymbol is null)
+		{
+		tryAgain:
+			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			deferred.typeLookups.insert(typeLookups[]);
+			// Get rid of the old references to the lookups, this new deferred
+			// symbol owns them now
+			typeLookups.clear();
+			cache.deferredSymbols.insert(deferred);
+		}
+		else
+		{
+			immutable size_t breadcrumbCount = typeLookups.front.breadcrumbs.length;
+			if (breadcrumbCount == 2)
+			{
+				// count of 2 means a renamed import
+			}
+			else if (breadcrumbCount == 1)
+			{
+				// count of 1 means selective import
+				istring symbolName = typeLookups.front.breadcrumbs.front;
+				DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
+				if (acSymbol is null)
+					goto tryAgain;
+				acSymbol.type = selected;
+				acSymbol.ownType = false;
+			}
+			else
+				assert(false, "Malformed selective import");
+		}
+	}
+	else
+	{
+		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
+		if (moduleSymbol is null)
+		{
+			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			cache.deferredSymbols.insert(deferred);
+		}
+		else
+		{
+			acSymbol.type = moduleSymbol;
+			acSymbol.ownType = false;
+		}
+	}
+}
+
+void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
+	ref ModuleCache cache, UnrolledList!(DSymbol*)* imports)
+in
+{
+	if (imports !is null)
+		foreach (i; imports.opSlice())
+			assert(i.kind == CompletionKind.importSymbol);
+}
+body
+{
+	// The left-most suffix
+	DSymbol* suffix;
+	// The right-most suffix
+	DSymbol* lastSuffix;
+
+	// Create symbols for the type suffixes such as array and
+	// associative array
+	while (!lookup.breadcrumbs.empty)
+	{
+		auto back = lookup.breadcrumbs.back;
+		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
+		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
+		if (!isArr && !isAssoc)
+			break;
+		immutable qualifier = isAssoc ? SymbolQualifier.assocArray : SymbolQualifier.array;
+		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
+		lastSuffix.qualifier = qualifier;
+		lastSuffix.ownType = true;
+		lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
+
+		if (suffix is null)
+			suffix = lastSuffix;
+		lookup.breadcrumbs.popBack();
+	}
+
+	UnrolledList!(DSymbol*) remainingImports;
+
+	DSymbol* currentSymbol;
+
+	void getSymbolFromImports(UnrolledList!(DSymbol*)* importList, istring name)
+	{
+		foreach (im; importList.opSlice())
+		{
+			assert(im.symbolFile !is null);
+			// Try to find a cached version of the module
+			DSymbol* moduleSymbol = cache.getModuleSymbol(im.symbolFile);
+			// If the module has not been cached yet, store it in the
+			// remaining imports list
+			if (moduleSymbol is null)
+			{
+				remainingImports.insert(im);
+				continue;
+			}
+			// Try to get the symbol from the imported module
+			currentSymbol = moduleSymbol.getFirstPartNamed(name);
+			if (currentSymbol is null)
+				continue;
+		}
+	}
+
+	// Follow all the names and try to resolve them
+	size_t i = 0;
+	foreach (part; lookup.breadcrumbs[])
+	{
+		if (i == 0)
+		{
+			if (moduleScope is null)
+				getSymbolFromImports(imports, part);
+			else
+			{
+				auto symbols = moduleScope.getSymbolsByNameAndCursor(part, symbol.location);
+				if (symbols.length > 0)
+					currentSymbol = symbols[0];
+			}
+		}
+		else
+			currentSymbol = currentSymbol.getFirstPartNamed(part);
+		++i;
+		if (currentSymbol is null)
+			break;
+	}
+
+	if (lastSuffix !is null)
+	{
+		assert(suffix !is null);
+		suffix.type = currentSymbol;
+		suffix.ownType = false;
+		symbol.type = lastSuffix;
+		symbol.ownType = true;
+		if (currentSymbol is null && !remainingImports.empty)
+		{
+//			info("Deferring type resolution for ", symbol.name);
+			auto deferred = Mallocator.it.make!DeferredSymbol(suffix);
+			// TODO: The scope has ownership of the import information
+			deferred.imports.insert(remainingImports[]);
+			deferred.typeLookups.insert(lookup);
+			cache.deferredSymbols.insert(deferred);
+		}
+	}
+	else if (currentSymbol !is null)
+	{
+		symbol.type = currentSymbol;
+		symbol.ownType = false;
+	}
+	else if (!remainingImports.empty)
+	{
+		auto deferred = Mallocator.it.make!DeferredSymbol(symbol);
+//		info("Deferring type resolution for ", symbol.name);
+		// TODO: The scope has ownership of the import information
+		deferred.imports.insert(remainingImports[]);
+		deferred.typeLookups.insert(lookup);
+		cache.deferredSymbols.insert(deferred);
+	}
+}
+
+private:
+
 void resolveInheritance(DSymbol* symbol,
 	ref UnrolledList!(TypeLookup*) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
+
+
 
 	outer: foreach (TypeLookup* lookup; typeLookups[])
 	{
@@ -214,122 +387,6 @@ void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*) typeLookups,
 		assert(false, "How did this happen?");
 }
 
-void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
-	ref ModuleCache cache, UnrolledList!(DSymbol*)* imports)
-in
-{
-	if (imports !is null)
-		foreach (i; imports.opSlice())
-			assert(i.kind == CompletionKind.importSymbol);
-}
-body
-{
-	// The left-most suffix
-	DSymbol* suffix;
-	// The right-most suffix
-	DSymbol* lastSuffix;
-
-	// Create symbols for the type suffixes such as array and
-	// associative array
-	while (!lookup.breadcrumbs.empty)
-	{
-		auto back = lookup.breadcrumbs.back;
-		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
-		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
-		if (!isArr && !isAssoc)
-			break;
-		immutable qualifier = isAssoc ? SymbolQualifier.assocArray : SymbolQualifier.array;
-		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
-		lastSuffix.qualifier = qualifier;
-		lastSuffix.ownType = true;
-		lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
-
-		if (suffix is null)
-			suffix = lastSuffix;
-		lookup.breadcrumbs.popBack();
-	}
-
-	UnrolledList!(DSymbol*) remainingImports;
-
-	DSymbol* currentSymbol;
-
-	void getSymbolFromImports(UnrolledList!(DSymbol*)* importList, istring name)
-	{
-		foreach (im; importList.opSlice())
-		{
-//			// TODO: Why does this happen?
-			if (im.symbolFile is null)
-				continue;
-			// Try to find a cached version of the module
-			DSymbol* moduleSymbol = cache.getModuleSymbol(im.symbolFile);
-			// If the module has not been cached yet, store it in the
-			// remaining imports list
-			if (moduleSymbol is null)
-			{
-				remainingImports.insert(im);
-				continue;
-			}
-			// Try to get the symbol from the imported module
-			currentSymbol = moduleSymbol.getFirstPartNamed(name);
-			if (currentSymbol is null)
-				continue;
-		}
-	}
-
-	// Follow all the names and try to resolve them
-	size_t i = 0;
-	foreach (part; lookup.breadcrumbs[])
-	{
-		if (i == 0)
-		{
-			if (moduleScope is null)
-				getSymbolFromImports(imports, part);
-			else
-			{
-				auto symbols = moduleScope.getSymbolsByNameAndCursor(part, symbol.location);
-				if (symbols.length > 0)
-					currentSymbol = symbols[0];
-			}
-		}
-		else
-			currentSymbol = currentSymbol.getFirstPartNamed(part);
-		++i;
-		if (currentSymbol is null)
-				break;
-	}
-
-	if (lastSuffix !is null)
-	{
-		assert(suffix !is null);
-		suffix.type = currentSymbol;
-		suffix.ownType = false;
-		symbol.type = lastSuffix;
-		symbol.ownType = true;
-		if (currentSymbol is null && !remainingImports.empty)
-		{
-//			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.it.make!DeferredSymbol(suffix);
-			// TODO: The scope has ownership of the import information
-			deferred.imports.insert(remainingImports[]);
-			deferred.typeLookups.insert(lookup);
-			cache.deferredSymbols.insert(deferred);
-		}
-	}
-	else if (currentSymbol !is null)
-	{
-		symbol.type = currentSymbol;
-		symbol.ownType = false;
-	}
-	else if (!remainingImports.empty)
-	{
-		auto deferred = Mallocator.it.make!DeferredSymbol(symbol);
-//		info("Deferring type resolution for ", symbol.name);
-		// TODO: The scope has ownership of the import information
-		deferred.imports.insert(remainingImports[]);
-		deferred.typeLookups.insert(lookup);
-		cache.deferredSymbols.insert(deferred);
-	}
-}
 
 void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 	Scope* moduleScope, ref ModuleCache cache)
@@ -349,27 +406,33 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		}
 		else if (crumb == ARRAY_SYMBOL_NAME)
 		{
+			typeSwap(currentSymbol);
+			if (currentSymbol is null)
+				return;
 			// Index expressions can be an array index or an AA index
-			if (currentSymbol.type !is null
-					&& (currentSymbol.qualifier == SymbolQualifier.array
+			if (currentSymbol.qualifier == SymbolQualifier.array
 					|| currentSymbol.qualifier == SymbolQualifier.assocArray
-					|| currentSymbol.kind == CompletionKind.aliasName))
-				currentSymbol = currentSymbol.type;
+					|| currentSymbol.kind == CompletionKind.aliasName)
+			{
+				if (currentSymbol.type !is null)
+					currentSymbol = currentSymbol.type;
+				else
+					return;
+			}
 			else
 			{
 				auto opIndex = currentSymbol.getFirstPartNamed(internString("opIndex"));
 				if (opIndex !is null)
 					currentSymbol = opIndex.type;
 				else
-				{
-					info("wat do?");
 					return;
-				}
 			}
 		}
 		else if (crumb == "foreach")
 		{
 			typeSwap(currentSymbol);
+			if (currentSymbol is null)
+				return;
 			if (currentSymbol.qualifier == SymbolQualifier.array
 					|| currentSymbol.qualifier == SymbolQualifier.assocArray)
 			{
@@ -411,58 +474,4 @@ void typeSwap(ref DSymbol* currentSymbol)
 			|| currentSymbol.kind == CompletionKind.withSymbol
 			|| currentSymbol.kind == CompletionKind.aliasName))
 		currentSymbol = currentSymbol.type;
-}
-
-void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups,
-	ref ModuleCache cache)
-{
-	assert (acSymbol.kind == CompletionKind.importSymbol);
-	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
-	{
-		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
-		if (moduleSymbol is null)
-		{
-		tryAgain:
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
-			deferred.typeLookups.insert(typeLookups[]);
-			// Get rid of the old references to the lookups, this new deferred
-			// symbol owns them now
-			typeLookups.clear();
-			cache.deferredSymbols.insert(deferred);
-		}
-		else
-		{
-			immutable size_t breadcrumbCount = typeLookups.front.breadcrumbs.length;
-			if (breadcrumbCount == 2)
-			{
-				// count of 2 means a renamed import
-			}
-			else if (breadcrumbCount == 1)
-			{
-				// count of 1 means selective import
-				istring symbolName = typeLookups.front.breadcrumbs.front;
-				DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
-				if (acSymbol is null)
-					goto tryAgain;
-				acSymbol.type = selected;
-				acSymbol.ownType = false;
-			}
-			else
-				assert(false, "Malformed selective import");
-		}
-	}
-	else
-	{
-		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
-		if (moduleSymbol is null)
-		{
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
-			cache.deferredSymbols.insert(deferred);
-		}
-		else
-		{
-			acSymbol.type = moduleSymbol;
-			acSymbol.ownType = false;
-		}
-	}
 }

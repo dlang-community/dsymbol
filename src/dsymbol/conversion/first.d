@@ -344,8 +344,13 @@ final class FirstPass : ASTVisitor
 		foreach (single; importDeclaration.singleImports.filter!(
 			a => a !is null && a.identifierChain !is null))
 		{
-			istring modulePath = cache.resolveImportLocation(convertChainToImportPath(
-				single.identifierChain));
+			immutable importPath = convertChainToImportPath(single.identifierChain);
+			istring modulePath = cache.resolveImportLocation(importPath);
+			if (modulePath is null)
+			{
+				warning("Could not resolve location of module '", importPath, "'");
+				continue;
+			}
 			SemanticSymbol* importSymbol = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol, modulePath);
 			importSymbol.acSymbol.skipOver = protection != tok!"public";
@@ -357,8 +362,13 @@ final class FirstPass : ASTVisitor
 		if (importDeclaration.importBindings is null) return;
 		if (importDeclaration.importBindings.singleImport.identifierChain is null) return;
 
-		istring modulePath = cache.resolveImportLocation(
-			convertChainToImportPath(importDeclaration.importBindings.singleImport.identifierChain));
+		immutable chain = convertChainToImportPath(importDeclaration.importBindings.singleImport.identifierChain);
+		istring modulePath = cache.resolveImportLocation(chain);
+		if (modulePath is null)
+		{
+			warning("Could not reslove location of module ", chain);
+			return;
+		}
 
 		foreach (bind; importDeclaration.importBindings.importBinds)
 		{
