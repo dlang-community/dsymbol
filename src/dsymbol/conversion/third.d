@@ -99,7 +99,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
@@ -132,7 +132,7 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*) typeLookups
 		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = Mallocator.it.make!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			cache.deferredSymbols.insert(deferred);
 		}
 		else
