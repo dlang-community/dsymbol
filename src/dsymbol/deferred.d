@@ -25,6 +25,7 @@ import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
 import std.experimental.allocator;
+import std.experimental.allocator.mallocator;
 
 /**
  * Contains information for deferred type resolution
@@ -34,9 +35,9 @@ struct DeferredSymbol
 	~this()
 	{
 		foreach (l; typeLookups[])
-			Mallocator.it.dispose(l);
+			Mallocator.instance.dispose(l);
 //		foreach (i; imports[])
-//			Mallocator.it.dispose(i);
+//			Mallocator.instance.dispose(i);
 	}
 
 	bool dependsOn(istring modulePath)

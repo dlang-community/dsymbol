@@ -34,6 +34,9 @@ import dsymbol.deferred;
 import memory.allocators;
 import std.algorithm;
 import std.experimental.allocator;
+import std.experimental.allocator.building_blocks.allocator_list;
+import std.experimental.allocator.building_blocks.region;
+import std.experimental.allocator.mallocator;
 import std.conv;
 import std.d.ast;
 import std.datetime;
@@ -136,8 +139,8 @@ struct ModuleCache
 		const(Token)[] tokens;
 		auto parseStringCache = StringCache(StringCache.defaultBucketCount);
 		{
-			ubyte[] source = cast(ubyte[]) Mallocator.it.allocate(fileSize);
-			scope (exit) Mallocator.it.deallocate(source);
+			ubyte[] source = cast(ubyte[]) Mallocator.instance.allocate(fileSize);
+			scope (exit) Mallocator.instance.deallocate(source);
 			f.rawRead(source);
 			LexerConfig config;
 			config.fileName = cachedLocation;
@@ -150,7 +153,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		CacheEntry* newEntry = Mallocator.it.make!CacheEntry();
+		CacheEntry* newEntry = Mallocator.instance.make!CacheEntry();
 
 		auto semanticAllocator = scoped!(ASTAllocator);
 		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
@@ -185,7 +188,7 @@ struct ModuleCache
 				upstream => upstream.symbol.updateTypes(updatePairs));
 
 			// Remove the old symbol.
-			cache.remove(oldEntry, entry => Mallocator.it.dispose(entry));
+			cache.remove(oldEntry, entry => Mallocator.instance.dispose(entry));
 		}
 
 		cache.insert(newEntry);
@@ -215,7 +218,7 @@ struct ModuleCache
 			if (deferred.symbol.kind == CompletionKind.importSymbol)
 			{
 				resolveImport(deferred.symbol, deferred.typeLookups, this);
-				Mallocator.it.dispose(deferred);
+				Mallocator.instance.dispose(deferred);
 			}
 			else if (!deferred.typeLookups.empty)
 			{
