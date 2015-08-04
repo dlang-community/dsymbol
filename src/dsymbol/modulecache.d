@@ -24,7 +24,6 @@ import containers.ttree;
 import containers.unrolledlist;
 import dsymbol.conversion;
 import dsymbol.conversion.first;
-//import dsymbol.conversion.second;
 import dsymbol.conversion.third;
 import dsymbol.cache_entry;
 import dsymbol.scope_;
@@ -160,8 +159,6 @@ struct ModuleCache
 		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
 			semanticAllocator, false, &this, newEntry);
 		first.run();
-
-//		secondPass(first.moduleScope, this);
 
 		thirdPass(first.rootSymbol, first.moduleScope, this);
 
