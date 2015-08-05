@@ -91,8 +91,11 @@ struct ModuleCache
 		import std.path : baseName;
 		import std.array : array;
 
-		auto newPaths = paths.filter!(a => existanceCheck(a) && !importPaths[].canFind(a)).map!(
-			internString).array;
+		auto newPaths = paths
+			.map!(a => absolutePath(expandTilde(a)))
+			.filter!(a => existanceCheck(a) && !importPaths[].canFind(a))
+			.map!(internString)
+			.array;
 		importPaths.insert(newPaths);
 
 		foreach (path; newPaths[])
