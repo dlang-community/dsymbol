@@ -49,8 +49,12 @@ void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCach
 	case memberVariableName:
 	case functionName:
 	case aliasName:
-		resolveType(currentSymbol.acSymbol, currentSymbol.typeLookups,
-			moduleScope, cache);
+		// type may not be null in the case of a renamed import
+		if (currentSymbol.acSymbol.type is null)
+		{
+			resolveType(currentSymbol.acSymbol, currentSymbol.typeLookups,
+				moduleScope, cache);
+		}
 		break;
 	case importSymbol:
 		if (currentSymbol.acSymbol.type is null)
@@ -472,6 +476,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 void typeSwap(ref DSymbol* currentSymbol)
 {
 	while (currentSymbol !is null && (currentSymbol.kind == CompletionKind.variableName
+			|| currentSymbol.kind == CompletionKind.importSymbol
 			|| currentSymbol.kind == CompletionKind.withSymbol
 			|| currentSymbol.kind == CompletionKind.aliasName))
 		currentSymbol = currentSymbol.type;

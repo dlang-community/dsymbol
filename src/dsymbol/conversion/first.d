@@ -361,8 +361,23 @@ final class FirstPass : ASTVisitor
 			SemanticSymbol* importSymbol = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol, modulePath);
 			importSymbol.acSymbol.skipOver = protection != tok!"public";
-			currentSymbol.addChild(importSymbol, true);
-			currentScope.addSymbol(importSymbol.acSymbol, false);
+			if (single.rename == tok!"")
+			{
+				currentSymbol.addChild(importSymbol, true);
+				currentScope.addSymbol(importSymbol.acSymbol, false);
+			}
+			else
+			{
+				SemanticSymbol* renameSymbol = allocateSemanticSymbol(
+					internString(single.rename.text), CompletionKind.aliasName,
+					modulePath);
+				renameSymbol.acSymbol.skipOver = protection != tok!"public";
+				renameSymbol.acSymbol.type = importSymbol.acSymbol;
+				renameSymbol.acSymbol.ownType = true;
+				renameSymbol.addChild(importSymbol, true);
+				currentSymbol.addChild(renameSymbol, true);
+				currentScope.addSymbol(renameSymbol.acSymbol, false);
+			}
 			if (entry !is null)
 				entry.dependencies.insert(modulePath);
 		}
