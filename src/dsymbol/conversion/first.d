@@ -363,6 +363,53 @@ final class FirstPass : ASTVisitor
 			importSymbol.acSymbol.skipOver = protection != tok!"public";
 			if (single.rename == tok!"")
 			{
+				size_t i = 0;
+				DSymbol* currentImportSymbol;
+				foreach (p; single.identifierChain.identifiers.map!(a => a.text))
+				{
+					immutable bool first = i == 0;
+					immutable bool last = i + 1 >= single.identifierChain.identifiers.length;
+					immutable CompletionKind kind = last ? CompletionKind.moduleName
+						: CompletionKind.packageName;
+//					trace("Handling import part ", p, " ", first, " ", last, " ", kind);
+					istring ip = internString(p);
+					if (first)
+					{
+						auto s = currentScope.getSymbolsByName(ip);
+						if (s.length == 0)
+						{
+							currentImportSymbol = symbolAllocator.make!DSymbol(ip, kind);
+							currentScope.addSymbol(currentImportSymbol, true);
+							if (last)
+							{
+								currentImportSymbol.symbolFile = modulePath;
+								currentImportSymbol.type = importSymbol.acSymbol;
+								currentImportSymbol.ownType = false;
+							}
+						}
+						else
+							currentImportSymbol = s[0];
+					}
+					else
+					{
+						auto s = currentImportSymbol.getPartsByName(ip);
+						if (s.length == 0)
+						{
+							auto sym = symbolAllocator.make!DSymbol(ip, kind);
+							currentImportSymbol.addChild(sym, true);
+							currentImportSymbol = sym;
+							if (last)
+							{
+								currentImportSymbol.symbolFile = modulePath;
+								currentImportSymbol.type = importSymbol.acSymbol;
+								currentImportSymbol.ownType = false;
+							}
+						}
+						else
+							currentImportSymbol = s[0];
+					}
+					i++;
+				}
 				currentSymbol.addChild(importSymbol, true);
 				currentScope.addSymbol(importSymbol.acSymbol, false);
 			}
@@ -798,6 +845,7 @@ private:
 				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 			else if (suffix.type)
 				lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME);
+			// TODO: Functions and delegates
 		}
 		if (l is null)
 			lookups.insert(lookup);
@@ -838,15 +886,20 @@ void formatNode(A, T)(ref A appender, const T node)
 
 private:
 
+auto byIdentifier(const IdentifierOrTemplateChain iotc)
+{
+	import std.algorithm : map;
+
+	return iotc.identifiersOrTemplateInstances.map!(a => a.identifier == tok!""
+		? a.templateInstance.identifier.text
+		: a.identifier.text);
+}
+
 void writeIotcTo(T)(const IdentifierOrTemplateChain iotc, ref T output)
 {
-	foreach (ioti; iotc.identifiersOrTemplateInstances)
-	{
-		if (ioti.identifier != tok!"")
-			output.insert(internString(ioti.identifier.text));
-		else
-			output.insert(internString(ioti.templateInstance.identifier.text));
-	}
+	import std.algorithm : each;
+
+	byIdentifier(iotc).each!(a => output.insert(internString(a)));
 }
 
 static istring convertChainToImportPath(const IdentifierChain ic)
