@@ -845,7 +845,17 @@ private:
 				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 			else if (suffix.type)
 				lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME);
-			// TODO: Functions and delegates
+			else if (suffix.delegateOrFunction != tok!"")
+			{
+				import std.array : appender;
+				auto app = appender!(char[])();
+				formatNode(app, type);
+				istring callTip = internString(cast(string) app.data);
+				// Insert the call tip and THEN the "function" string because
+				// the breadcrumbs are processed in reverse order
+				lookup.breadcrumbs.insert(callTip);
+				lookup.breadcrumbs.insert(FUNCTION_SYMBOL_NAME);
+			}
 		}
 		if (l is null)
 			lookups.insert(lookup);

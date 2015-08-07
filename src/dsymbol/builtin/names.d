@@ -6,6 +6,8 @@ import dsymbol.string_interning;
 package immutable(istring[24]) builtinTypeNames;
 
 /// Constants for buit-in or dummy symbol names
+immutable istring FUNCTION_SYMBOL_NAME;
+/// ditto
 immutable istring IMPORT_SYMBOL_NAME;
 /// ditto
 immutable istring ARRAY_SYMBOL_NAME;
@@ -124,6 +126,7 @@ static this()
 	builtinTypeNames[22] = internString("cfloat");
 	builtinTypeNames[23] = internString("creal");
 
+	FUNCTION_SYMBOL_NAME = internString("function");
 	IMPORT_SYMBOL_NAME = internString("import");
 	ARRAY_SYMBOL_NAME = internString("*arr*");
 	ASSOC_ARRAY_SYMBOL_NAME = internString("*aa*");

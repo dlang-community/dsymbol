@@ -171,13 +171,21 @@ body
 		auto back = lookup.breadcrumbs.back;
 		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
 		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
-		if (!isArr && !isAssoc)
+		immutable bool isFunction = back == FUNCTION_SYMBOL_NAME;
+		if (!isArr && !isAssoc && !isFunction)
 			break;
-		immutable qualifier = isAssoc ? SymbolQualifier.assocArray : SymbolQualifier.array;
+		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
+			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
 		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
 		lastSuffix.qualifier = qualifier;
 		lastSuffix.ownType = true;
-		lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
+		if (isFunction)
+		{
+			lookup.breadcrumbs.popBack();
+			lastSuffix.callTip = lookup.breadcrumbs.back();
+		}
+		else
+			lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
 
 		if (suffix is null)
 			suffix = lastSuffix;
