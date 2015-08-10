@@ -20,7 +20,7 @@ module dsymbol.conversion;
 
 import dsymbol.cache_entry;
 import dsymbol.conversion.first;
-import dsymbol.conversion.third;
+import dsymbol.conversion.second;
 import dsymbol.modulecache;
 import dsymbol.scope_;
 import dsymbol.string_interning;
@@ -45,7 +45,7 @@ ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
 		symbolAllocator, true, &cache);
 	first.run();
 
-	thirdPass(first.rootSymbol, first.moduleScope, cache);
+	secondPass(first.rootSymbol, first.moduleScope, cache);
 	return ScopeSymbolPair(first.rootSymbol.acSymbol, first.moduleScope);
 }
 

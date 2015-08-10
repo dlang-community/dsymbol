@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-module dsymbol.conversion.third;
+module dsymbol.conversion.second;
 
 import dsymbol.semantic;
 import dsymbol.string_interning;
@@ -35,7 +35,7 @@ import std.experimental.logger;
 import std.d.ast;
 import std.d.lexer;
 
-void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
+void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {
 	with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
 	{
@@ -74,7 +74,7 @@ void thirdPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCach
 	}
 
 	foreach (child; currentSymbol.children)
-		thirdPass(child, moduleScope, cache);
+		secondPass(child, moduleScope, cache);
 
 	// Alias this and mixin templates are resolved after child nodes are
 	// resolved so that the correct symbol information will be available.

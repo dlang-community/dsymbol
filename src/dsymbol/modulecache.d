@@ -24,7 +24,7 @@ import containers.ttree;
 import containers.unrolledlist;
 import dsymbol.conversion;
 import dsymbol.conversion.first;
-import dsymbol.conversion.third;
+import dsymbol.conversion.second;
 import dsymbol.cache_entry;
 import dsymbol.scope_;
 import dsymbol.semantic;
@@ -166,7 +166,7 @@ struct ModuleCache
 			semanticAllocator, false, &this, newEntry);
 		first.run();
 
-		thirdPass(first.rootSymbol, first.moduleScope, this);
+		secondPass(first.rootSymbol, first.moduleScope, this);
 
 		typeid(Scope).destroy(first.moduleScope);
 		symbolsAllocated += first.symbolsAllocated;

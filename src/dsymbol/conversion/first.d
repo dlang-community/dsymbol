@@ -946,7 +946,7 @@ class InitializerVisitor : ASTVisitor
 	override void visit(const PrimaryExpression primary)
 	{
 		// Add identifiers without processing. Convert literals to strings with
-		// the prefix '*' so that that the third pass can tell the difference
+		// the prefix '*' so that that the second pass can tell the difference
 		// between "int.abc" and "10.abc".
 		if (on && primary.basicType != tok!"")
 			lookup.breadcrumbs.insert(internString(str(primary.basicType.type)));
