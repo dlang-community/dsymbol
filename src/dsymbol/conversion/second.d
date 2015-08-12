@@ -236,14 +236,18 @@ body
 		}
 		else
 		{
-			if (currentSymbol.kind == CompletionKind.moduleName && currentSymbol.type !is null)
-			{
+			if (currentSymbol.kind == CompletionKind.aliasName)
 				currentSymbol = currentSymbol.type;
-				if (currentSymbol.kind == CompletionKind.importSymbol)
-					currentSymbol = currentSymbol.type;
-				if (currentSymbol is null)
-					return;
-			}
+			if (currentSymbol is null)
+				return;
+			if (currentSymbol.kind == CompletionKind.moduleName && currentSymbol.type !is null)
+				currentSymbol = currentSymbol.type;
+			if (currentSymbol is null)
+				return;
+			if (currentSymbol.kind == CompletionKind.importSymbol)
+				currentSymbol = currentSymbol.type;
+			if (currentSymbol is null)
+				return;
 			currentSymbol = currentSymbol.getFirstPartNamed(part);
 		}
 		++i;
