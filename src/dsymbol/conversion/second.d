@@ -230,13 +230,25 @@ body
 				auto symbols = moduleScope.getSymbolsByNameAndCursor(part, symbol.location);
 				if (symbols.length > 0)
 					currentSymbol = symbols[0];
+				else
+					return;
 			}
 		}
 		else
+		{
+			if (currentSymbol.kind == CompletionKind.moduleName && currentSymbol.type !is null)
+			{
+				currentSymbol = currentSymbol.type;
+				if (currentSymbol.kind == CompletionKind.importSymbol)
+					currentSymbol = currentSymbol.type;
+				if (currentSymbol is null)
+					return;
+			}
 			currentSymbol = currentSymbol.getFirstPartNamed(part);
+		}
 		++i;
 		if (currentSymbol is null)
-			break;
+			return;
 	}
 
 	if (lastSuffix !is null)
