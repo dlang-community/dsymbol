@@ -95,8 +95,12 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 
 void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, false) typeLookups,
 	ref ModuleCache cache)
+in
 {
 	assert (acSymbol.kind == CompletionKind.importSymbol);
+}
+body
+{
 	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
 	{
 		assert(acSymbol.symbolFile !is null);

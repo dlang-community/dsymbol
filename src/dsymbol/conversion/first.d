@@ -371,7 +371,6 @@ final class FirstPass : ASTVisitor
 					immutable bool last = i + 1 >= single.identifierChain.identifiers.length;
 					immutable CompletionKind kind = last ? CompletionKind.moduleName
 						: CompletionKind.packageName;
-//					trace("Handling import part ", p, " ", first, " ", last, " ", kind);
 					istring ip = internString(p);
 					if (first)
 					{
