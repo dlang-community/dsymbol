@@ -233,16 +233,16 @@ public:
 		return app.data();
 	}
 
-	DSymbol* getFirstPartNamed(istring name) const
+	auto getFirstPartNamed(this This)(istring name)
 	{
 		DSymbol s = DSymbol(name);
 		foreach (part; parts.equalRange(SymbolOwnership(&s)))
-			return part;
+			return part.ptr;
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		foreach (im; parts.equalRange(SymbolOwnership(&p)))
 			if (im.type !is null && !im.skipOver)
 				foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
-					return part;
+					return part.ptr;
 		return null;
 	}
 
@@ -251,7 +251,7 @@ public:
 	 * range.
 	 */
 	void getAllPartsNamed(OR)(string name, ref OR outputRange) const
-		if (isOutputRange!(OR, DSymbol*))
+		if (isOutputRange!(OR, const(DSymbol)*))
 	{
 		foreach (part; parts[])
 		{
@@ -301,7 +301,7 @@ public:
 	/**
 	 * Returns: a range over this symbol's parts.
 	 */
-	auto opSlice() const
+	auto opSlice(this This)()
 	{
 		return parts[];
 	}
