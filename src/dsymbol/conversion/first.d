@@ -30,7 +30,6 @@ import dsymbol.symbol;
 import dsymbol.cache_entry;
 import dsymbol.modulecache;
 import dsymbol.type_lookup;
-import memory.allocators;
 import std.experimental.allocator;
 import std.experimental.allocator.mallocator;
 import std.d.ast;

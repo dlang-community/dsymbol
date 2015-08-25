@@ -31,7 +31,6 @@ import dsymbol.semantic;
 import dsymbol.symbol;
 import dsymbol.string_interning;
 import dsymbol.deferred;
-import memory.allocators;
 import std.algorithm;
 import std.experimental.allocator;
 import std.experimental.allocator.building_blocks.allocator_list;

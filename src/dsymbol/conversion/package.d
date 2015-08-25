@@ -25,7 +25,6 @@ import dsymbol.modulecache;
 import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
-import memory.allocators;
 import std.d.ast;
 import std.d.lexer;
 import std.d.parser;
