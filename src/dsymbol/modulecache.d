@@ -35,6 +35,7 @@ import std.algorithm;
 import std.experimental.allocator;
 import std.experimental.allocator.building_blocks.allocator_list;
 import std.experimental.allocator.building_blocks.region;
+import std.experimental.allocator.building_blocks.null_allocator;
 import std.experimental.allocator.mallocator;
 import std.conv;
 import std.d.ast;
@@ -47,7 +48,7 @@ import std.lexer;
 import std.path;
 
 alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 64)));
+	n => Region!Mallocator(1024 * 128), NullAllocator));
 
 /**
  * Returns: true if a file exists at the given path.
@@ -76,7 +77,10 @@ struct ModuleCache
 	~this()
 	{
 		foreach (entry; ModuleCache.cache[])
-			typeid(CacheEntry).destroy(entry);
+		{
+			symbolAllocator.dispose(entry.symbol);
+			Mallocator.instance.dispose(entry);
+		}
 	}
 
 	/**
