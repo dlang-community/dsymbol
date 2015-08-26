@@ -77,10 +77,10 @@ struct ModuleCache
 	~this()
 	{
 		foreach (entry; ModuleCache.cache[])
-		{
-			symbolAllocator.dispose(entry.symbol);
 			Mallocator.instance.dispose(entry);
-		}
+		// TODO: This call to deallocateAll is a workaround for issues of
+		// CAllocatorImpl and GCAllocator not interacting well.
+		symbolAllocator.deallocateAll();
 	}
 
 	/**

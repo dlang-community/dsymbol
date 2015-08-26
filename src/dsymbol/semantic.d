@@ -57,6 +57,8 @@ public:
 	{
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
+		foreach (lookup; typeLookups[])
+			typeid(TypeLookup).destroy(lookup);
 	}
 
 	/**
