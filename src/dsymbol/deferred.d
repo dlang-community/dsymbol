@@ -36,8 +36,8 @@ struct DeferredSymbol
 	{
 		foreach (l; typeLookups[])
 			Mallocator.instance.dispose(l);
-//		foreach (i; imports[])
-//			Mallocator.instance.dispose(i);
+		foreach (i; imports[])
+			Mallocator.instance.dispose(i);
 	}
 
 	bool dependsOn(istring modulePath)

@@ -202,6 +202,8 @@ struct ModuleCache
 
 		resolveDeferredTypes(cachedLocation);
 
+		typeid(SemanticSymbol).destroy(first.rootSymbol);
+
 		return newEntry.symbol;
 	}
 
@@ -224,7 +226,6 @@ struct ModuleCache
 			if (deferred.symbol.kind == CompletionKind.importSymbol)
 			{
 				resolveImport(deferred.symbol, deferred.typeLookups, this);
-				Mallocator.instance.dispose(deferred);
 			}
 			else if (!deferred.typeLookups.empty)
 			{
@@ -232,6 +233,7 @@ struct ModuleCache
 				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
 					this, &deferred.imports);
 			}
+			Mallocator.instance.dispose(deferred);
 		}
 	}
 
