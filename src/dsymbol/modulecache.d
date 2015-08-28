@@ -48,7 +48,7 @@ import std.lexer;
 import std.path;
 
 alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 128), NullAllocator));
+	n => Region!Mallocator(1024 * 128), Mallocator));
 
 /**
  * Returns: true if a file exists at the given path.
