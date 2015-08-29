@@ -25,6 +25,7 @@ import dsymbol.modulecache;
 import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
+import dsymbol.semantic;
 import std.d.ast;
 import std.d.lexer;
 import std.d.parser;
@@ -45,7 +46,9 @@ ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
 	first.run();
 
 	secondPass(first.rootSymbol, first.moduleScope, cache);
-	return ScopeSymbolPair(first.rootSymbol.acSymbol, first.moduleScope);
+	auto r = first.rootSymbol.acSymbol;
+	typeid(SemanticSymbol).destroy(first.rootSymbol);
+	return ScopeSymbolPair(r, first.moduleScope);
 }
 
 struct ScopeSymbolPair

@@ -196,10 +196,10 @@ final class FirstPass : ASTVisitor
 				symbolFile, declarator.name.index);
 			addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
-			currentSymbol.addChild(symbol, true);
-			currentScope.addSymbol(symbol.acSymbol, false);
 			symbol.protection = protection;
 			symbol.acSymbol.doc = internString(dec.comment);
+			currentSymbol.addChild(symbol, true);
+			currentScope.addSymbol(symbol.acSymbol, false);
 		}
 		if (dec.autoDeclaration !is null)
 		{
@@ -209,11 +209,11 @@ final class FirstPass : ASTVisitor
 					identifier.text, CompletionKind.variableName,
 					symbolFile, identifier.index);
 				symbol.parent = currentSymbol;
-				currentSymbol.addChild(symbol, true);
-				currentScope.addSymbol(symbol.acSymbol, false);
 				populateInitializer(symbol, dec.autoDeclaration.initializers[i]);
 				symbol.protection = protection;
 				symbol.acSymbol.doc = internString(dec.comment);
+				currentSymbol.addChild(symbol, true);
+				currentScope.addSymbol(symbol.acSymbol, false);
 			}
 		}
 	}

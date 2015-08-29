@@ -55,10 +55,13 @@ public:
 
 	~this()
 	{
+		import std.experimental.allocator.mallocator : Mallocator;
+		import std.experimental.allocator : dispose;
+
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
 		foreach (lookup; typeLookups[])
-			typeid(TypeLookup).destroy(lookup);
+			Mallocator.instance.dispose(lookup);
 	}
 
 	/**

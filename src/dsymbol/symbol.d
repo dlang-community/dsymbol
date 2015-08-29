@@ -180,7 +180,7 @@ public:
 		{
 			if (part.owned)
 			{
-				assert (part.ptr !is null);
+				assert(part.ptr !is null);
 				typeid(DSymbol).destroy(part.ptr);
 			}
 			else
@@ -263,7 +263,7 @@ public:
 
 	void addChild(DSymbol* symbol, bool owns)
 	{
-		assert (symbol !is null);
+		assert(symbol !is null);
 		parts.insert(SymbolOwnership(symbol, owns));
 	}
 
@@ -271,7 +271,7 @@ public:
 	{
 		foreach (symbol; symbols)
 		{
-			assert (symbol !is null);
+			assert(symbol !is null);
 			parts.insert(SymbolOwnership(symbol, owns));
 		}
 	}

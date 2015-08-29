@@ -78,6 +78,9 @@ struct ModuleCache
 	{
 		foreach (entry; ModuleCache.cache[])
 			Mallocator.instance.dispose(entry);
+		foreach (symbol; deferredSymbols[])
+			Mallocator.instance.dispose(symbol);
+
 		// TODO: This call to deallocateAll is a workaround for issues of
 		// CAllocatorImpl and GCAllocator not interacting well.
 		symbolAllocator.deallocateAll();
