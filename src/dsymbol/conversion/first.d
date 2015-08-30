@@ -200,6 +200,13 @@ final class FirstPass : ASTVisitor
 			symbol.acSymbol.doc = internString(dec.comment);
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
+
+			if (currentSymbol.acSymbol.kind == CompletionKind.structName)
+			{
+				structFieldNames.insert(symbol.acSymbol.name);
+				// TODO: remove this cast. See the note on structFieldTypes
+				structFieldTypes.insert(cast() dec.type);
+			}
 		}
 		if (dec.autoDeclaration !is null)
 		{
@@ -214,6 +221,13 @@ final class FirstPass : ASTVisitor
 				symbol.acSymbol.doc = internString(dec.comment);
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
+
+				if (currentSymbol.acSymbol.kind == CompletionKind.structName)
+				{
+					structFieldNames.insert(symbol.acSymbol.name);
+					// TODO: remove this cast. See the note on structFieldTypes
+					structFieldTypes.insert(null);
+				}
 			}
 		}
 	}
@@ -326,10 +340,13 @@ final class FirstPass : ASTVisitor
 	override void visit(const StructBody structBody)
 	{
 		pushScope(structBody.startLocation, structBody.endLocation);
-		scope(exit) popScope();
+		scope (exit) popScope();
 
-		DSymbol* thisSymbol = make!DSymbol(symbolAllocator,
-			THIS_SYMBOL_NAME, CompletionKind.variableName, currentSymbol.acSymbol);
+		structFieldNames.clear();
+		structFieldTypes.clear();
+
+		DSymbol* thisSymbol = make!DSymbol(symbolAllocator, THIS_SYMBOL_NAME,
+			CompletionKind.variableName, currentSymbol.acSymbol);
 		thisSymbol.location = currentScope.startLocation;
 		thisSymbol.symbolFile = symbolFile;
 		thisSymbol.type = currentSymbol.acSymbol;
@@ -338,6 +355,11 @@ final class FirstPass : ASTVisitor
 
 		foreach (dec; structBody.declarations)
 			visit(dec);
+
+		// If no constructor is found, generate one
+		if (currentSymbol.acSymbol.kind == CompletionKind.structName
+				&& currentSymbol.acSymbol.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null)
+			createConstructor();
 	}
 
 	override void visit(const ImportDeclaration importDeclaration)
@@ -559,6 +581,36 @@ final class FirstPass : ASTVisitor
 	uint symbolsAllocated;
 
 private:
+
+	void createConstructor()
+	{
+		import std.array : appender;
+		import std.range : zip;
+
+		auto app = appender!(char[])();
+		app.put("this(");
+		bool first = true;
+		foreach (field; zip(structFieldTypes[], structFieldNames[]))
+		{
+			if (first)
+				first = false;
+			else
+				app.put(", ");
+			if (field[0] is null)
+				app.put("auto ");
+			else
+			{
+				app.formatNode(field[0]);
+				app.put(" ");
+			}
+			app.put(field[1]);
+		}
+		app.put(")");
+		SemanticSymbol* symbol = allocateSemanticSymbol(CONSTRUCTOR_SYMBOL_NAME,
+			CompletionKind.functionName, symbolFile, currentSymbol.acSymbol.location);
+		symbol.acSymbol.callTip = internString(cast(string) app.data);
+		currentSymbol.addChild(symbol, true);
+	}
 
 	void pushScope(size_t startLocation, size_t endLocation)
 	{
@@ -869,6 +921,15 @@ private:
 
 	/// Path to the file being converted
 	istring symbolFile;
+
+	/// Field types used for generating struct constructors if no constructor
+	/// was defined
+	// TODO: This should be `const Type`, but Rebindable and opEquals don't play
+	// well together
+	UnrolledList!(Type) structFieldTypes;
+
+	/// Field names for struct constructor generation
+	UnrolledList!(istring) structFieldNames;
 
 	const Module mod;
 
