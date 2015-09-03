@@ -108,7 +108,7 @@ struct ModuleCache
 		{
 			foreach (fileName; dirEntries(path, "*.{d,di}", SpanMode.depth))
 			{
-				if (fileName.baseName.startsWith(".#"))
+				if (fileName.baseName.startsWith(".#") || !fileName.isFile)
 					continue;
 				cacheModule(fileName);
 			}
