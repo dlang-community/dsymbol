@@ -69,6 +69,8 @@ struct ModuleCache
 	/// No copying.
 	@disable this(this);
 
+	@disable this();
+
 	this(IAllocator symbolAllocator)
 	{
 		this.symbolAllocator = symbolAllocator;
