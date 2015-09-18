@@ -867,8 +867,8 @@ private:
 		return semanticAllocator.make!SemanticSymbol(acSymbol);
 	}
 
-	void addTypeToLookups(ref UnrolledList!(TypeLookup*, false) lookups, const Type type,
-		TypeLookup* l = null)
+	void addTypeToLookups(ref UnrolledList!(TypeLookup*, Mallocator, false) lookups,
+		const Type type, TypeLookup* l = null)
 	{
 		auto lookup = l !is null ? l : Mallocator.instance.make!TypeLookup(
 			TypeLookupKind.varOrFunType);

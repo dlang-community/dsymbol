@@ -51,7 +51,7 @@ struct DeferredSymbol
 	/// The symbol that needs its type resolved
 	DSymbol* symbol;
 	/// The imports that were in scope for the symbol's declaration'
-	UnrolledList!(DSymbol*, false) imports;
+	UnrolledList!(DSymbol*, Mallocator, false) imports;
 	/// The type lookup information
-	UnrolledList!(TypeLookup*, false) typeLookups;
+	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
 }

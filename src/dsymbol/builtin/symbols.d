@@ -11,27 +11,27 @@ import std.d.lexer;
 /**
  * Symbols for the built in types
  */
-TTree!(DSymbol*, true, "a < b", false) builtinSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) builtinSymbols;
 
 /**
  * Array properties
  */
-TTree!(DSymbol*, true, "a < b", false) arraySymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) arraySymbols;
 
 /**
  * Associative array properties
  */
-TTree!(DSymbol*, true, "a < b", false) assocArraySymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) assocArraySymbols;
 
 /**
  * Struct, enum, union, class, and interface properties
  */
-TTree!(DSymbol*, true, "a < b", false) aggregateSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) aggregateSymbols;
 
 /**
  * Class properties
  */
-TTree!(DSymbol*, true, "a < b", false) classSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
 
 static this()
 {

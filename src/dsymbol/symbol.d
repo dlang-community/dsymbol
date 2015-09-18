@@ -213,24 +213,24 @@ public:
 	/**
 	 * Gets all parts whose name matches the given string.
 	 */
-	DSymbol*[] getPartsByName(istring name)
+	inout(DSymbol)*[] getPartsByName(istring name) inout
 	{
 		DSymbol s = DSymbol(name);
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		auto app = appender!(DSymbol*[])();
 		if (qualifier == SymbolQualifier.selectiveImport && type !is null
 				&& type.name.ptr == name.ptr)
-			app.put(type);
+			app.put(cast(DSymbol*) type);
 		else
 		{
 			foreach (part; parts.equalRange(SymbolOwnership(&s)))
-				app.put(part);
+				app.put(cast(DSymbol*) part);
 			foreach (im; parts.equalRange(SymbolOwnership(&p)))
 				if (im.type !is null && !im.skipOver)
 					foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
-						app.put(part);
+						app.put(cast(DSymbol*) part);
 		}
-		return app.data();
+		return cast(typeof(return)) app.data;
 	}
 
 	auto getFirstPartNamed(this This)(istring name)
@@ -310,7 +310,7 @@ public:
 	 * Symbols that compose this symbol, such as enum members, class variables,
 	 * methods, parameters, etc.
 	 */
-	private TTree!(SymbolOwnership, true, "a < b", false) parts;
+	private TTree!(SymbolOwnership, Mallocator, true, "a < b", false) parts;
 
 	/**
 	 * DSymbol's name
@@ -391,7 +391,7 @@ struct UpdatePair
 	DSymbol* newSymbol;
 }
 
-alias UpdatePairCollection = TTree!(UpdatePair,false, "a < b", false);
+alias UpdatePairCollection = TTree!(UpdatePair, Mallocator, false, "a < b", false);
 
 void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results)
 {

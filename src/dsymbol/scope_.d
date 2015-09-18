@@ -61,7 +61,7 @@ struct Scope
 	 * Returns:
 	 *     the innermost scope that contains the given cursor position
 	 */
-	Scope* getScopeByCursor(size_t cursorPosition) const pure @nogc
+	Scope* getScopeByCursor(size_t cursorPosition) pure @nogc
 	{
 		if (cursorPosition < startLocation) return null;
 		if (cursorPosition > endLocation) return null;
@@ -127,7 +127,7 @@ struct Scope
 	 * Returns:
 	 *     all symbols in this scope or parent scopes with the given name
 	 */
-	DSymbol*[] getSymbolsByName(istring name)
+	inout(DSymbol)*[] getSymbolsByName(istring name) inout
 	{
 		import std.array : array, appender;
 		import std.algorithm.iteration : map;
@@ -135,7 +135,7 @@ struct Scope
 		DSymbol s = DSymbol(name);
 		auto er = _symbols.equalRange(SymbolOwnership(&s));
 		if (!er.empty)
-			return array(er.map!(a => a.ptr));
+			return cast(typeof(return)) array(er.map!(a => a.ptr));
 
 		// Check symbols from "with" statement
 		DSymbol ir2 = DSymbol(WITH_SYMBOL_NAME);
@@ -148,10 +148,10 @@ struct Scope
 				if (e.type is null)
 					continue;
 				foreach (withSymbol; e.type.getPartsByName(s.name))
-					app.put(withSymbol);
+					app.put(cast(DSymbol*) withSymbol);
 			}
 			if (app.data.length > 0)
-				return app.data;
+				return cast(typeof(return)) app.data;
 		}
 
 		// Check imported symbols
@@ -164,13 +164,13 @@ struct Scope
 				continue;
 			if (e.qualifier == SymbolQualifier.selectiveImport &&
 					e.type.name.ptr == name.ptr)
-				app.put(e.type);
+				app.put(cast(DSymbol*) e.type);
 			else
 				foreach (importedSymbol; e.type.getPartsByName(s.name))
-					app.put(importedSymbol);
+					app.put(cast(DSymbol*) importedSymbol);
 		}
 		if (app.data.length > 0)
-			return app.data;
+			return cast(typeof(return)) app.data;
 		if (parent is null)
 			return [];
 		return parent.getSymbolsByName(name);
@@ -184,7 +184,7 @@ struct Scope
 	 *     all symbols with the given name in the scope containing the cursor
 	 *     and its parent scopes
 	 */
-	DSymbol*[] getSymbolsByNameAndCursor(istring name, size_t cursorPosition) const
+	DSymbol*[] getSymbolsByNameAndCursor(istring name, size_t cursorPosition)
 	{
 		auto s = getScopeByCursor(cursorPosition);
 		if (s is null)
@@ -192,7 +192,7 @@ struct Scope
 		return s.getSymbolsByName(name);
 	}
 
-	DSymbol* getFirstSymbolByNameAndCursor(istring name, size_t cursorPosition) const
+	DSymbol* getFirstSymbolByNameAndCursor(istring name, size_t cursorPosition)
 	{
 		auto s = getSymbolsByNameAndCursor(name, cursorPosition);
 		return s.length > 0 ? s[0] : null;
@@ -201,7 +201,7 @@ struct Scope
 	/**
 	 * Returns an array of symbols that are present at global scope
 	 */
-	DSymbol*[] getSymbolsAtGlobalScope(istring name)
+	inout(DSymbol)*[] getSymbolsAtGlobalScope(istring name) inout
 	{
 		if (parent !is null)
 			return parent.getSymbolsAtGlobalScope(name);
@@ -212,7 +212,7 @@ struct Scope
 	Scope* parent;
 
 	/// Child scopes
-	UnrolledList!(Scope*, false) children;
+	UnrolledList!(Scope*, Mallocator, false) children;
 
 	/// Start location of this scope in bytes
 	uint startLocation;
@@ -240,5 +240,5 @@ struct Scope
 
 private:
 	/// Symbols contained in this scope
-	TTree!(SymbolOwnership, true, "a.opCmp(b) < 0", false) _symbols;
+	TTree!(SymbolOwnership, Mallocator, true, "a.opCmp(b) < 0", false) _symbols;
 }

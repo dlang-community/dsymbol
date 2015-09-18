@@ -74,10 +74,10 @@ public:
 	}
 
 	/// Information used to do type resolution, inheritance, mixins, and alias this
-	UnrolledList!(TypeLookup*, false) typeLookups;
+	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
 
 	/// Child symbols
-	UnrolledList!(SemanticSymbol*, false) children;
+	UnrolledList!(SemanticSymbol*, Mallocator, false) children;
 
 	/// Autocompletion symbol
 	DSymbol* acSymbol;
