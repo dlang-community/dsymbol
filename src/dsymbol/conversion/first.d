@@ -755,6 +755,7 @@ private:
 					p.name.index);
 				addTypeToLookups(parameter.typeLookups, p.type);
 				parameter.parent = currentSymbol;
+				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
 			}
