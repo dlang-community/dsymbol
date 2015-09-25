@@ -35,7 +35,6 @@ static this()
 
 alias istring = InternedString;
 
-//private size_t[string] dupCheck;
 private StringCache stringCache = void;
 
 private struct InternedString
