@@ -140,13 +140,13 @@ final class FirstPass : ASTVisitor
 		scope(exit) popSymbol();
 		currentSymbol.protection = protection;
 		currentSymbol.acSymbol.doc = internString(dec.comment);
+		processParameters(currentSymbol, dec.returnType,
+			currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
 		if (dec.functionBody !is null)
 		{
 			pushFunctionScope(dec.functionBody, semanticAllocator,
 				dec.name.index + dec.name.text.length);
 			scope(exit) popScope();
-			processParameters(currentSymbol, dec.returnType,
-				currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
 			dec.functionBody.accept(this);
 		}
 	}
@@ -755,6 +755,7 @@ private:
 					p.name.index);
 				addTypeToLookups(parameter.typeLookups, p.type);
 				parameter.parent = currentSymbol;
+				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
 			}

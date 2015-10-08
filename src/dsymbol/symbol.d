@@ -338,6 +338,11 @@ public:
 	// TODO: assert that the type is not a function
 	DSymbol* type;
 
+	/**
+	 * Names of function arguments
+	 */
+	UnrolledList!(istring) argNames;
+
 	private uint _location;
 
 	/**
@@ -371,6 +376,7 @@ public:
 	mixin(bitfields!(bool, "ownType", 1,
 		bool, "skipOver", 1,
 		ubyte, "", 6));
+	// dfmt on
 
 }
 
