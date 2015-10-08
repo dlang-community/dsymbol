@@ -179,7 +179,7 @@ struct ModuleCache
 
 		SysTime access;
 		SysTime modification;
-		getTimes(cachedLocation, access, modification);
+		getTimes(cachedLocation.data, access, modification);
 
 		newEntry.symbol = first.rootSymbol.acSymbol;
 		newEntry.modificationTime = modification;
@@ -327,7 +327,7 @@ private:
 	{
 		if (recursionGuard.contains(mod))
 			return false;
-		if (!exists(mod))
+		if (!exists(mod.data))
 			return true;
 		CacheEntry e;
 		e.path = mod;
@@ -336,7 +336,7 @@ private:
 			return true;
 		SysTime access;
 		SysTime modification;
-		getTimes(mod, access, modification);
+		getTimes(mod.data, access, modification);
 		return r.front.modificationTime != modification;
 	}
 
