@@ -96,6 +96,15 @@ enum CompletionKind : char
 	mixinTemplateName = 'T'
 }
 
+/**
+ * Returns: true if `kind` is something that can be returned to the client
+ */
+bool isPublicCompletionKind(CompletionKind kind) pure nothrow @safe @nogc
+{
+	return kind != CompletionKind.dummy && kind != CompletionKind.importSymbol
+		&& kind != CompletionKind.withSymbol;
+}
+
 
 /**
  * Any special information about a variable declaration symbol.
