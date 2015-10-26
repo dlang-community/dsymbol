@@ -33,6 +33,11 @@ TTree!(DSymbol*, Mallocator, true, "a < b", false) aggregateSymbols;
  */
 TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
 
+/**
+ * Enum properties
+ */
+TTree!(DSymbol*, Mallocator, true, "a < b", false) enumSymbols;
+
 static this()
 {
 	auto bool_ = make!DSymbol(Mallocator.instance, builtinTypeNames[13], CompletionKind.keyword);
@@ -51,14 +56,19 @@ static this()
 	auto alignof_ = make!DSymbol(Mallocator.instance, internString("alignof"), CompletionKind.keyword);
 	auto mangleof_ = make!DSymbol(Mallocator.instance, internString("mangleof"), CompletionKind.keyword);
 	auto sizeof_ = make!DSymbol(Mallocator.instance, internString("sizeof"), CompletionKind.keyword);
-	auto stringof_ = make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword);
-	auto init = make!DSymbol(Mallocator.instance, internString("stringof"), CompletionKind.keyword);
+	auto stringof_ = make!DSymbol(Mallocator.instance, internString("stringof"), CompletionKind.keyword);
+	auto init = make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword);
+	auto min = make!DSymbol(Mallocator.instance, internString("min"), CompletionKind.keyword);
+	auto max = make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword);
+	auto dup = make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword);
+	auto length = make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_);
+	auto tupleof = make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.variableName);
 
 	arraySymbols.insert(alignof_);
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword));
+	arraySymbols.insert(dup);
 	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("idup"), CompletionKind.keyword));
 	arraySymbols.insert(init);
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_));
+	arraySymbols.insert(length);
 	arraySymbols.insert(mangleof_);
 	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("ptr"), CompletionKind.keyword));
 	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("reverse"), CompletionKind.keyword));
@@ -69,11 +79,11 @@ static this()
 	assocArraySymbols.insert(alignof_);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byKey"), CompletionKind.keyword));
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byValue"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword));
+	assocArraySymbols.insert(dup);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("get"), CompletionKind.keyword));
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword));
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("keys"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_));
+	assocArraySymbols.insert(length);
 	assocArraySymbols.insert(mangleof_);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("rehash"), CompletionKind.keyword));
 	assocArraySymbols.insert(sizeof_);
@@ -104,7 +114,6 @@ static this()
 		s.addChild(sizeof_, false);
 		s.addChild(stringof_, false);
 		s.addChild(mangleof_, false);
-		s.addChild(init, false);
 	}
 
 	auto cdouble_ = make!DSymbol(Mallocator.instance, builtinTypeNames[21], CompletionKind.keyword);
@@ -153,7 +162,7 @@ static this()
 		s.addChild(stringof_, false);
 	}
 
-	aggregateSymbols.insert(make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.keyword));
+	aggregateSymbols.insert(tupleof);
 	aggregateSymbols.insert(mangleof_);
 	aggregateSymbols.insert(alignof_);
 	aggregateSymbols.insert(sizeof_);
@@ -161,7 +170,7 @@ static this()
 	aggregateSymbols.insert(init);
 
 	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("classinfo"), CompletionKind.variableName));
-	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.variableName));
+	classSymbols.insert(tupleof);
 	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("__vptr"), CompletionKind.variableName));
 	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("__monitor"), CompletionKind.variableName));
 	classSymbols.insert(mangleof_);
@@ -169,6 +178,15 @@ static this()
 	classSymbols.insert(sizeof_);
 	classSymbols.insert(stringof_);
 	classSymbols.insert(init);
+
+	enumSymbols.insert(init);
+	enumSymbols.insert(sizeof_);
+	enumSymbols.insert(alignof_);
+	enumSymbols.insert(mangleof_);
+	enumSymbols.insert(stringof_);
+	enumSymbols.insert(min);
+	enumSymbols.insert(max);
+
 
 	ireal_.addChild(make!DSymbol(Mallocator.instance, internString("im"), CompletionKind.keyword, real_), true);
 	ifloat_.addChild(make!DSymbol(Mallocator.instance, internString("im"), CompletionKind.keyword, float_), true);
