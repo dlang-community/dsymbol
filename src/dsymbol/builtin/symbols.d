@@ -62,7 +62,7 @@ static this()
 	auto max = make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword);
 	auto dup = make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword);
 	auto length = make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_);
-	auto tupleof = make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.variableName);
+	auto tupleof = make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.keyword);
 
 	arraySymbols.insert(alignof_);
 	arraySymbols.insert(dup);
