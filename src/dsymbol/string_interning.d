@@ -18,7 +18,7 @@
 
 module dsymbol.string_interning;
 
-import std.d.lexer;
+import dparse.lexer;
 
 /**
  * Interns the given string and returns the interned version.

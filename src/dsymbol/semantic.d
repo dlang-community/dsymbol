@@ -19,8 +19,8 @@
 module dsymbol.semantic;
 
 import dsymbol.symbol;
-import std.d.ast;
-import std.d.lexer;
+import dparse.ast;
+import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
 

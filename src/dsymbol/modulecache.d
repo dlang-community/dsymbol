@@ -38,13 +38,13 @@ import std.experimental.allocator.building_blocks.region;
 import std.experimental.allocator.building_blocks.null_allocator;
 import std.experimental.allocator.mallocator;
 import std.conv;
-import std.d.ast;
+import dparse.ast;
 import std.datetime;
-import std.d.lexer;
-import std.d.parser;
+import dparse.lexer;
+import dparse.parser;
 import std.experimental.logger;
 import std.file;
-import std.lexer;
+import std.experimental.lexer;
 import std.path;
 
 alias ASTAllocator = CAllocatorImpl!(AllocatorList!(

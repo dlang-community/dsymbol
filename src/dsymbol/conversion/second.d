@@ -32,8 +32,8 @@ import containers.unrolledlist;
 import std.experimental.allocator;
 import std.experimental.allocator.mallocator;
 import std.experimental.logger;
-import std.d.ast;
-import std.d.lexer;
+import dparse.ast;
+import dparse.lexer;
 
 void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {

@@ -24,7 +24,7 @@ import std.array;
 import containers.ttree;
 import containers.unrolledlist;
 import containers.slist;
-import std.d.lexer;
+import dparse.lexer;
 import std.bitmanip;
 
 import dsymbol.builtin.names;

@@ -1,6 +1,6 @@
 module dsymbol.builtin.names;
 
-import std.d.lexer;
+import dparse.lexer;
 import dsymbol.string_interning;
 
 package immutable(istring[24]) builtinTypeNames;

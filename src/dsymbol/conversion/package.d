@@ -26,9 +26,9 @@ import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.semantic;
-import std.d.ast;
-import std.d.lexer;
-import std.d.parser;
+import dparse.ast;
+import dparse.lexer;
+import dparse.parser;
 import std.experimental.allocator;
 import std.typecons;
 

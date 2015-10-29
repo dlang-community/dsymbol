@@ -6,7 +6,7 @@ import dsymbol.string_interning;
 import containers.ttree;
 import std.experimental.allocator;
 import std.experimental.allocator.mallocator;
-import std.d.lexer;
+import dparse.lexer;
 
 /**
  * Symbols for the built in types

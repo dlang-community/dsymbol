@@ -32,9 +32,9 @@ import dsymbol.modulecache;
 import dsymbol.type_lookup;
 import std.experimental.allocator;
 import std.experimental.allocator.mallocator;
-import std.d.ast;
-import std.d.formatter;
-import std.d.lexer;
+import dparse.ast;
+import dparse.formatter;
+import dparse.lexer;
 import std.typecons;
 import std.experimental.logger;
 
