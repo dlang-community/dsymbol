@@ -319,6 +319,7 @@ final class FirstPass : ASTVisitor
 			CompletionKind.enumName, symbolFile, dec.name.index);
 		if (dec.type !is null)
 			addTypeToLookups(symbol.typeLookups, dec.type);
+		symbol.acSymbol.addChildren(enumSymbols[], false);
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		currentScope.addSymbol(symbol.acSymbol, false);
