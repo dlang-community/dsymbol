@@ -504,7 +504,9 @@ final class FirstPass : ASTVisitor
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate);
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
-		currentSymbol.typeLookups.insert(lookup);
+
+		if (currentSymbol.acSymbol.kind != CompletionKind.functionName)
+			currentSymbol.typeLookups.insert(lookup);
 	}
 
 	override void visit(const ForeachStatement feStatement)
