@@ -1,0 +1,12 @@
+{
+	"name": "dsymbol",
+	"description": "Basic symbol lookup/resolution for libdparse",
+	"copyright": "Copyright © 2015, Brian Schott",
+	"authors": ["Brian Schott"],
+	"license": "GPL-3.0",
+	"dependencies":{
+		"libdparse_keywan":"~>0.3.1",
+		"containers":"~>0.2.2"
+	}
+
+}
