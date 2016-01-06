@@ -332,6 +332,11 @@ public:
 	istring callTip;
 
 	/**
+	 * Used for storing information for selective renamed imports
+	 */
+	alias altFile = callTip;
+
+	/**
 	 * Module containing the symbol.
 	 */
 	istring symbolFile;

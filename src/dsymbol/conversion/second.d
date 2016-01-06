@@ -118,22 +118,22 @@ body
 		else
 		{
 			immutable size_t breadcrumbCount = typeLookups.front.breadcrumbs.length;
+			assert(breadcrumbCount <= 2 && breadcrumbCount > 0, "Malformed selective import");
+
+			istring symbolName = typeLookups.front.breadcrumbs.front;
+			DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
+			if (acSymbol is null)
+				goto tryAgain;
+			acSymbol.type = selected;
+			acSymbol.ownType = false;
+
+			// count of 1 means selective import
+			// count of 2 means a renamed selective import
 			if (breadcrumbCount == 2)
 			{
-				// count of 2 means a renamed import
+				acSymbol.kind = CompletionKind.aliasName;
+				acSymbol.symbolFile = acSymbol.altFile;
 			}
-			else if (breadcrumbCount == 1)
-			{
-				// count of 1 means selective import
-				istring symbolName = typeLookups.front.breadcrumbs.front;
-				DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
-				if (acSymbol is null)
-					goto tryAgain;
-				acSymbol.type = selected;
-				acSymbol.ownType = false;
-			}
-			else
-				assert(false, "Malformed selective import");
 		}
 	}
 	else

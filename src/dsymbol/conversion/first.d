@@ -464,16 +464,23 @@ final class FirstPass : ASTVisitor
 			TypeLookup* lookup = Mallocator.instance.make!TypeLookup(
 				TypeLookupKind.selectiveImport);
 
-			SemanticSymbol* importSymbol = allocateSemanticSymbol(
-				IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, modulePath);
+			immutable bool isRenamed = bind.right != tok!"";
 
-			if (bind.right == tok!"")
-				lookup.breadcrumbs.insert(internString(bind.left.text));
-			else
+			// The second phase must change this `importSymbol` kind to
+			// `aliasName` for symbol lookup to work.
+			SemanticSymbol* importSymbol = allocateSemanticSymbol(
+				isRenamed ? bind.left.text : IMPORT_SYMBOL_NAME,
+				CompletionKind.importSymbol, modulePath);
+
+
+			if (isRenamed)
 			{
-				lookup.breadcrumbs.insert(internString(bind.left.text));
 				lookup.breadcrumbs.insert(internString(bind.right.text));
+				importSymbol.acSymbol.location = bind.left.index;
+				importSymbol.acSymbol.altFile = symbolFile;
 			}
+			lookup.breadcrumbs.insert(internString(bind.left.text));
+
 			importSymbol.acSymbol.qualifier = SymbolQualifier.selectiveImport;
 			importSymbol.typeLookups.insert(lookup);
 			importSymbol.acSymbol.skipOver = protection != tok!"public";
