@@ -3,6 +3,6 @@
 	"versions": {
 		"containers": "0.2.2",
 		"experimental_allocator": "0.0.1",
-		"libdparse_keywan": "0.3.1"
+		"libdparse_keywan": "0.3.2-2"
 	}
 }

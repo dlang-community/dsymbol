@@ -5,7 +5,7 @@
 	"authors": ["Brian Schott"],
 	"license": "GPL-3.0",
 	"dependencies":{
-		"libdparse_keywan":"~>0.3.1",
+		"libdparse_keywan":"~>0.3.2-3",
 		"containers":"~>0.2.2"
 	}
 
