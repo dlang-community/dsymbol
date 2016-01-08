@@ -197,7 +197,7 @@ final class FirstPass : ASTVisitor
 			addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
 			symbol.protection = protection;
-			symbol.acSymbol.doc = internString(dec.comment);
+			symbol.acSymbol.doc = internString(declarator.comment);
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
 
