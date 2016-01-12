@@ -472,7 +472,6 @@ final class FirstPass : ASTVisitor
 				isRenamed ? bind.left.text : IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol, modulePath);
 
-
 			if (isRenamed)
 			{
 				lookup.breadcrumbs.insert(internString(bind.right.text));
@@ -905,6 +904,8 @@ private:
 				lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME);
 			else if (suffix.array)
 				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
+			else if (suffix.star != tok!"")
+				lookup.breadcrumbs.insert(POINTER_SYMBOL_NAME);
 			else if (suffix.delegateOrFunction != tok!"")
 			{
 				import std.array : appender;

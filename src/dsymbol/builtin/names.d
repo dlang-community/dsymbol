@@ -14,6 +14,8 @@ immutable istring ARRAY_SYMBOL_NAME;
 /// ditto
 immutable istring ASSOC_ARRAY_SYMBOL_NAME;
 /// ditto
+immutable istring POINTER_SYMBOL_NAME;
+/// ditto
 immutable istring PARAMETERS_SYMBOL_NAME;
 /// ditto
 immutable istring WITH_SYMBOL_NAME;
@@ -130,6 +132,7 @@ static this()
 	IMPORT_SYMBOL_NAME = internString("import");
 	ARRAY_SYMBOL_NAME = internString("*arr*");
 	ASSOC_ARRAY_SYMBOL_NAME = internString("*aa*");
+	POINTER_SYMBOL_NAME = internString("*");
 	PARAMETERS_SYMBOL_NAME = internString("*parameters*");
 	WITH_SYMBOL_NAME = internString("with");
 	CONSTRUCTOR_SYMBOL_NAME = internString("*constructor*");

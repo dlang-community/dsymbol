@@ -111,16 +111,16 @@ bool isPublicCompletionKind(CompletionKind kind) pure nothrow @safe @nogc
  */
 enum SymbolQualifier : ubyte
 {
-	/// _none
+	/// None
 	none,
-	/// the symbol is an array
+	/// The symbol is an array
 	array,
-	/// the symbol is a associative array
+	/// The symbol is a associative array
 	assocArray,
-	/// the symbol is a function or delegate pointer
+	/// The symbol is a function or delegate pointer
 	func,
-	/// selective import
-	selectiveImport
+	/// Selective import
+	selectiveImport,
 }
 
 /**
@@ -389,7 +389,8 @@ public:
 	// dfmt off
 	mixin(bitfields!(bool, "ownType", 1,
 		bool, "skipOver", 1,
-		ubyte, "", 6));
+		bool, "isPointer", 1,
+		ubyte, "", 5));
 	// dfmt on
 
 }
