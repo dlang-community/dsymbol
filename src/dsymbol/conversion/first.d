@@ -1010,6 +1010,8 @@ class InitializerVisitor : ASTVisitor
 	{
 		if (on && ioti.identifier != tok!"")
 			lookup.breadcrumbs.insert(internString(ioti.identifier.text));
+		else if (on && ioti.templateInstance.identifier != tok!"")
+			lookup.breadcrumbs.insert(internString(ioti.templateInstance.identifier.text));
 		ioti.accept(this);
 	}
 
