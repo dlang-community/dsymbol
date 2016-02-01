@@ -194,7 +194,8 @@ final class FirstPass : ASTVisitor
 			SemanticSymbol* symbol = allocateSemanticSymbol(
 				declarator.name.text, CompletionKind.variableName,
 				symbolFile, declarator.name.index);
-			addTypeToLookups(symbol.typeLookups, dec.type);
+			if (dec.type !is null)
+				addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
 			symbol.protection = protection;
 			symbol.acSymbol.doc = internString(declarator.comment);
@@ -240,7 +241,8 @@ final class FirstPass : ASTVisitor
 			{
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					name.text, CompletionKind.aliasName, symbolFile, name.index);
-				addTypeToLookups(symbol.typeLookups, aliasDeclaration.type);
+				if (aliasDeclaration.type !is null)
+					addTypeToLookups(symbol.typeLookups, aliasDeclaration.type);
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
@@ -763,7 +765,8 @@ private:
 				SemanticSymbol* parameter = allocateSemanticSymbol(
 					p.name.text, CompletionKind.variableName, symbolFile,
 					p.name.index);
-				addTypeToLookups(parameter.typeLookups, p.type);
+				if (p.type !is null)
+					addTypeToLookups(parameter.typeLookups, p.type);
 				parameter.parent = currentSymbol;
 				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 				currentSymbol.addChild(parameter, true);
