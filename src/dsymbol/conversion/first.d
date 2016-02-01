@@ -255,7 +255,8 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					initializer.name.text, CompletionKind.aliasName,
 					symbolFile, initializer.name.index);
-				addTypeToLookups(symbol.typeLookups, initializer.type);
+				if (initializer.type !is null)
+					addTypeToLookups(symbol.typeLookups, initializer.type);
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
