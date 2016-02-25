@@ -249,7 +249,7 @@ public:
 			return part.ptr;
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		foreach (im; parts.equalRange(SymbolOwnership(&p)))
-			if (im.type !is null && !im.skipOver)
+			if (!im.skipOver && im.type !is null)
 				foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
 					return part.ptr;
 		return null;
@@ -264,7 +264,7 @@ public:
 	{
 		foreach (part; parts[])
 		{
-			if (part.name == name && !part.skipOver)
+			if (!part.skipOver && part.name == name)
 				outputRange.put(part);
 			part.getAllPartsNamed(name, outputRange);
 		}
