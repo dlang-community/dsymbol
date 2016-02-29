@@ -889,6 +889,10 @@ private:
 		auto t2 = type.type2;
 		if (t2.type !is null)
 			addTypeToLookups(lookups, t2.type, lookup);
+		else if (t2.superOrThis is tok!"this")
+			lookup.breadcrumbs.insert(internString("this"));
+		else if (t2.superOrThis is tok!"super")
+			lookup.breadcrumbs.insert(internString("super"));
 		else if (t2.builtinType !is tok!"")
 			lookup.breadcrumbs.insert(getBuiltinTypeName(t2.builtinType));
 		else if (t2.symbol !is null)
