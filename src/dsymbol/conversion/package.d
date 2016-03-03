@@ -29,6 +29,7 @@ import dsymbol.semantic;
 import dparse.ast;
 import dparse.lexer;
 import dparse.parser;
+import dparse.rollback_allocator;
 import std.experimental.allocator;
 import std.typecons;
 
@@ -36,10 +37,11 @@ import std.typecons;
  * Used by autocompletion.
  */
 ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
-	IAllocator symbolAllocator, size_t cursorPosition, ref ModuleCache cache)
+	IAllocator symbolAllocator, RollbackAllocator* parseAllocator,
+	size_t cursorPosition, ref ModuleCache cache)
 {
 	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
-		symbolAllocator, cursorPosition);
+		parseAllocator, cursorPosition);
 
 	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
 		symbolAllocator, true, &cache);
@@ -72,7 +74,7 @@ struct ScopeSymbolPair
  *     parseAllocator = the allocator to use for the AST
  * Returns: the parsed module
  */
-Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator parseAllocator)
+Module parseModuleSimple(const(Token)[] tokens, string fileName, RollbackAllocator* parseAllocator)
 {
 	assert (parseAllocator !is null);
 	auto parser = scoped!SimpleParser();
@@ -86,7 +88,7 @@ Module parseModuleSimple(const(Token)[] tokens, string fileName, IAllocator pars
 private:
 
 Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
-	IAllocator parseAllocator, size_t cursorPosition)
+	RollbackAllocator* parseAllocator, size_t cursorPosition)
 {
 	auto parser = scoped!AutocompleteParser();
 	parser.fileName = fileName;
@@ -103,7 +105,7 @@ class AutocompleteParser : Parser
 	{
 		if (current.index > cursorPosition)
 		{
-			BlockStatement bs = allocate!(BlockStatement);
+			BlockStatement bs = allocator.make!(BlockStatement);
 			bs.startLocation = current.index;
 			skipBraces();
 			bs.endLocation = tokens[index - 1].index;
@@ -115,7 +117,7 @@ class AutocompleteParser : Parser
 		if (tokens[index - 1].index < cursorPosition)
 		{
 			abandonBookmark(b);
-			BlockStatement bs = allocate!BlockStatement();
+			BlockStatement bs = allocator.make!BlockStatement();
 			bs.startLocation = start;
 			bs.endLocation = tokens[index - 1].index;
 			return bs;
@@ -181,7 +183,7 @@ class SimpleParser : Parser
 			if (currentIs(tok!"{"))
 				skipBraces();
 		}
-		return allocate!FunctionBody();
+		return allocator.make!FunctionBody();
 	}
 }
 

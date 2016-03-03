@@ -167,7 +167,9 @@ struct ModuleCache
 		CacheEntry* newEntry = Mallocator.instance.make!CacheEntry();
 
 		auto semanticAllocator = scoped!(ASTAllocator);
-		Module m = parseModuleSimple(tokens[], cachedLocation, semanticAllocator);
+		import dparse.rollback_allocator:RollbackAllocator;
+		RollbackAllocator parseAllocator;
+		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
 
 		assert (symbolAllocator);
 		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,

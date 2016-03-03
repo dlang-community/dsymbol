@@ -297,7 +297,7 @@ final class FirstPass : ASTVisitor
 		rootSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
 			symbolFile);
 		currentSymbol = rootSymbol;
-		moduleScope = make!Scope(semanticAllocator, 0, uint.max);
+		moduleScope = semanticAllocator.make!Scope(0, uint.max);
 		currentScope = moduleScope;
 		auto objectLocation = cache.resolveImportLocation("object");
 		if (objectLocation is null)
@@ -628,7 +628,7 @@ private:
 	{
 		assert (startLocation < uint.max);
 		assert (endLocation < uint.max || endLocation == ulong.max);
-		Scope* s = make!Scope(semanticAllocator, cast(uint) startLocation, cast(uint) endLocation);
+		Scope* s = semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
@@ -649,7 +649,7 @@ private:
 			functionBody.outStatement is null ? 0 : functionBody.outStatement.blockStatement.endLocation,
 			functionBody.blockStatement is null ? 0 : functionBody.blockStatement.endLocation,
 			functionBody.bodyStatement is null ? 0 : functionBody.bodyStatement.blockStatement.endLocation);
-		Scope* s = make!Scope(semanticAllocator, cast(uint) scopeBegin, cast(uint) scopeEnd);
+		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin, cast(uint) scopeEnd);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
