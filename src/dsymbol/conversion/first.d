@@ -458,7 +458,7 @@ final class FirstPass : ASTVisitor
 		istring modulePath = cache.resolveImportLocation(chain);
 		if (modulePath is null)
 		{
-			warning("Could not reslove location of module '", chain, "'");
+			warning("Could not resolve location of module '", chain, "'");
 			return;
 		}
 
