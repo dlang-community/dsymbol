@@ -138,7 +138,7 @@ final class FirstPass : ASTVisitor
 			CompletionKind.functionName, symbolFile, dec.name.index,
 			dec.returnType);
 		scope(exit) popSymbol();
-		currentSymbol.protection = protection;
+		currentSymbol.protection = protection.current;
 		currentSymbol.acSymbol.doc = internString(dec.comment);
 		processParameters(currentSymbol, dec.returnType,
 			currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
@@ -197,7 +197,7 @@ final class FirstPass : ASTVisitor
 			if (dec.type !is null)
 				addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
-			symbol.protection = protection;
+			symbol.protection = protection.current;
 			symbol.acSymbol.doc = internString(declarator.comment);
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
@@ -218,7 +218,7 @@ final class FirstPass : ASTVisitor
 					symbolFile, identifier.index);
 				symbol.parent = currentSymbol;
 				populateInitializer(symbol, dec.autoDeclaration.initializers[i]);
-				symbol.protection = protection;
+				symbol.protection = protection.current;
 				symbol.acSymbol.doc = internString(dec.comment);
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
@@ -246,7 +246,7 @@ final class FirstPass : ASTVisitor
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
-				symbol.protection = protection;
+				symbol.protection = protection.current;
 				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
 			}
 		}
@@ -262,7 +262,7 @@ final class FirstPass : ASTVisitor
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
-				symbol.protection = protection;
+				symbol.protection = protection.current;
 				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
 			}
 		}
@@ -279,17 +279,20 @@ final class FirstPass : ASTVisitor
 		if (dec.attributeDeclaration !is null
 			&& isProtection(dec.attributeDeclaration.attribute.attribute.type))
 		{
-			protection = dec.attributeDeclaration.attribute.attribute.type;
+			protection.addScope(dec.attributeDeclaration.attribute.attribute.type);
 			return;
 		}
-		immutable IdType p = protection;
+		IdType p;
 		foreach (const Attribute attr; dec.attributes)
 		{
 			if (isProtection(attr.attribute.type))
-				protection = attr.attribute.type;
+				p = attr.attribute.type;
 		}
+		if (p != tok!"")
+			protection.beginLocal(p);
 		dec.accept(this);
-		protection = p;
+		if (p != tok!"")
+			protection.endLocal();
 	}
 
 	override void visit(const Module mod)
@@ -345,6 +348,8 @@ final class FirstPass : ASTVisitor
 	{
 		pushScope(structBody.startLocation, structBody.endLocation);
 		scope (exit) popScope();
+		protection.beginScope();
+		scope (exit) protection.endScope();
 
 		structFieldNames.clear();
 		structFieldTypes.clear();
@@ -384,7 +389,7 @@ final class FirstPass : ASTVisitor
 			}
 			SemanticSymbol* importSymbol = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol, modulePath);
-			importSymbol.acSymbol.skipOver = protection != tok!"public";
+			importSymbol.acSymbol.skipOver = protection.currentForImport != tok!"public";
 			if (single.rename == tok!"")
 			{
 				size_t i = 0;
@@ -441,7 +446,7 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* renameSymbol = allocateSemanticSymbol(
 					internString(single.rename.text), CompletionKind.aliasName,
 					modulePath);
-				renameSymbol.acSymbol.skipOver = protection != tok!"public";
+				renameSymbol.acSymbol.skipOver = protection.current != tok!"public";
 				renameSymbol.acSymbol.type = importSymbol.acSymbol;
 				renameSymbol.acSymbol.ownType = true;
 				renameSymbol.addChild(importSymbol, true);
@@ -485,7 +490,7 @@ final class FirstPass : ASTVisitor
 
 			importSymbol.acSymbol.qualifier = SymbolQualifier.selectiveImport;
 			importSymbol.typeLookups.insert(lookup);
-			importSymbol.acSymbol.skipOver = protection != tok!"public";
+			importSymbol.acSymbol.skipOver = protection.current != tok!"public";
 			currentSymbol.addChild(importSymbol, true);
 			currentScope.addSymbol(importSymbol.acSymbol, false);
 		}
@@ -698,7 +703,7 @@ private:
 			currentSymbol.acSymbol.addChildren(classSymbols[], false);
 		else
 			currentSymbol.acSymbol.addChildren(aggregateSymbols[], false);
-		currentSymbol.protection = protection;
+		currentSymbol.protection = protection.current;
 		currentSymbol.acSymbol.doc = internString(dec.comment);
 
 		immutable size_t scopeBegin = dec.name.index + dec.name.text.length;
@@ -721,7 +726,7 @@ private:
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
-		symbol.protection = protection;
+		symbol.protection = protection.current;
 		symbol.acSymbol.doc = internString(doc);
 		if (functionBody !is null)
 		{
@@ -741,7 +746,7 @@ private:
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		symbol.acSymbol.callTip = internString("~this()");
-		symbol.protection = protection;
+		symbol.protection = protection.current;
 		symbol.acSymbol.doc = internString(doc);
 		if (functionBody !is null)
 		{
@@ -931,7 +936,7 @@ private:
 	}
 
 	/// Current protection type
-	IdType protection;
+	ProtectionStack protection;
 
 	/// Current scope
 	Scope* currentScope;
@@ -962,6 +967,84 @@ private:
 	ModuleCache* cache;
 
 	bool includeParameterSymbols;
+}
+
+struct ProtectionStack
+{
+	invariant
+	{
+		import std.algorithm.iteration : filter, map, joiner;
+		import std.conv:to;
+
+		assert(stack.length == stack[].filter!(a => isProtection(a)
+				|| a == tok!":" || a == tok!"{").walkLength(), to!string(stack[].map!(a => str(a)).joiner(", ")));
+	}
+
+	IdType currentForImport() const
+	{
+		return stack.empty ? tok!"default" : current();
+	}
+
+	IdType current() const
+	{
+		import std.range : choose, only;
+		import std.algorithm.iteration : filter;
+
+		IdType retVal;
+		foreach (t; choose(stack.empty, only(tok!"public"), stack[]).filter!(
+				a => a != tok!"{" && a != tok!":"))
+			retVal = cast(IdType) t;
+		return retVal;
+	}
+
+	void beginScope()
+	{
+		stack.insertBack(tok!"{");
+	}
+
+	void endScope()
+	{
+		while (!stack.empty && stack.back == tok!":")
+		{
+			assert(stack.length >= 2);
+			stack.popBack();
+			stack.popBack();
+		}
+		assert(stack.length == stack[].walkLength());
+		assert(!stack.empty && stack.back == tok!"{");
+		stack.popBack();
+	}
+
+	void beginLocal(const IdType t)
+	{
+		assert (t != tok!"", "DERP!");
+		stack.insertBack(t);
+	}
+
+	void endLocal()
+	{
+		assert(!stack.empty && stack.back != tok!":" && stack.back != tok!"{");
+		stack.popBack();
+	}
+
+	void addScope(const IdType t)
+	{
+		assert(t != tok!"", "DERP!");
+		assert(isProtection(t));
+		if (!stack.empty && stack.back == tok!":")
+		{
+			assert(stack.length >= 2);
+			stack.popBack();
+			assert(isProtection(stack.back));
+			stack.popBack();
+		}
+		stack.insertBack(t);
+		stack.insertBack(tok!":");
+	}
+
+private:
+
+	UnrolledList!IdType stack;
 }
 
 void formatNode(A, T)(ref A appender, const T node)
