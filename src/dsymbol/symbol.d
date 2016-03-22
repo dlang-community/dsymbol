@@ -24,6 +24,7 @@ import std.array;
 import containers.ttree;
 import containers.unrolledlist;
 import containers.slist;
+import containers.hashset;
 import dparse.lexer;
 import std.bitmanip;
 
@@ -224,50 +225,81 @@ public:
 	 */
 	inout(DSymbol)*[] getPartsByName(istring name) inout
 	{
-		DSymbol s = DSymbol(name);
-		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		auto app = appender!(DSymbol*[])();
-		if (qualifier == SymbolQualifier.selectiveImport && type !is null
-				&& type.name.ptr == name.ptr)
-			app.put(cast(DSymbol*) type);
-		else
-		{
-			foreach (part; parts.equalRange(SymbolOwnership(&s)))
-				app.put(cast(DSymbol*) part);
-			foreach (im; parts.equalRange(SymbolOwnership(&p)))
-				if (im.type !is null && !im.skipOver)
-					foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
-						app.put(cast(DSymbol*) part);
-		}
+		HashSet!size_t visited;
+		getParts(name, app, visited);
 		return cast(typeof(return)) app.data;
 	}
 
-	auto getFirstPartNamed(this This)(istring name)
+	inout(DSymbol)* getFirstPartNamed(this This)(istring name) inout
 	{
-		DSymbol s = DSymbol(name);
-		foreach (part; parts.equalRange(SymbolOwnership(&s)))
-			return part.ptr;
-		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
-		foreach (im; parts.equalRange(SymbolOwnership(&p)))
-			if (!im.skipOver && im.type !is null)
-				foreach (part; im.type.parts.equalRange(SymbolOwnership(&s)))
-					return part.ptr;
-		return null;
+		auto app = appender!(DSymbol*[])();
+		HashSet!size_t visited;
+		getParts(name, app, visited);
+		return app.data.length > 0 ? cast(typeof(return)) app.data[0] : null;
 	}
 
 	/**
-	 * Adds all parts and parts of parts with the given name to the given output
-	 * range.
+	 * Gets all parts and imported parts. Filters based on the part's name if
+	 * the `name` argument is not null. Stores results in `app`.
 	 */
-	void getAllPartsNamed(OR)(string name, ref OR outputRange) const
-		if (isOutputRange!(OR, const(DSymbol)*))
+	void getParts(OR)(istring name, ref OR app, ref HashSet!size_t visited,
+			bool onlyOne = false) inout
+		if (isOutputRange!(OR, DSymbol*))
 	{
-		foreach (part; parts[])
+		import std.algorithm.iteration : filter;
+
+		if (visited.contains(cast(size_t) &this))
+			return;
+		visited.insert(cast(size_t) &this);
+
+		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
+		if (qualifier == SymbolQualifier.selectiveImport && type !is null
+				&& (name is null ? true : type.name.ptr == name.ptr))
 		{
-			if (!part.skipOver && part.name == name)
-				outputRange.put(part);
-			part.getAllPartsNamed(name, outputRange);
+			app.put(cast(DSymbol*) type);
+			if (onlyOne)
+				return;
 		}
+		else
+		{
+			if (name == "")
+			{
+				foreach (part; parts[].filter!(a => a.name != IMPORT_SYMBOL_NAME))
+				{
+					app.put(cast(DSymbol*) part);
+					if (onlyOne)
+						return;
+				}
+				foreach (im; parts.equalRange(SymbolOwnership(&p)))
+					if (im.type !is null && !im.skipOver)
+						im.type.getParts(name, app, visited, onlyOne);
+			}
+			else
+			{
+				DSymbol s = DSymbol(name);
+				foreach (part; parts.equalRange(SymbolOwnership(&s)))
+				{
+					app.put(cast(DSymbol*) part);
+					if (onlyOne)
+						return;
+				}
+				foreach (im; parts.equalRange(SymbolOwnership(&p)))
+					if (im.type !is null && !im.skipOver)
+						im.type.getParts(name, app, visited, onlyOne);
+			}
+		}
+	}
+
+	/**
+	 * Returns: a range over this symbol's parts and publicly visible imports
+	 */
+	inout(DSymbol)*[] opSlice(this This)() inout
+	{
+		auto app = appender!(DSymbol*[])();
+		HashSet!size_t visited;
+		getParts!(typeof(app))(internString(null), app, visited);
+		return cast(typeof(return)) app.data;
 	}
 
 	void addChild(DSymbol* symbol, bool owns)
@@ -305,14 +337,6 @@ public:
 			type = r.front.newSymbol;
 		foreach (part; parts[])
 			part.updateTypes(collection);
-	}
-
-	/**
-	 * Returns: a range over this symbol's parts.
-	 */
-	auto opSlice(this This)()
-	{
-		return parts[];
 	}
 
 	/**
