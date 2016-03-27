@@ -974,6 +974,7 @@ struct ProtectionStack
 	invariant
 	{
 		import std.algorithm.iteration : filter, map, joiner;
+		import std.range : walkLength;
 		import std.conv:to;
 
 		assert(stack.length == stack[].filter!(a => isProtection(a)
@@ -1004,6 +1005,8 @@ struct ProtectionStack
 
 	void endScope()
 	{
+		import std.range : walkLength;
+
 		while (!stack.empty && stack.back == tok!":")
 		{
 			assert(stack.length >= 2);

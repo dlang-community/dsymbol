@@ -24,6 +24,7 @@ import dsymbol.builtin.names;
 import containers.ttree;
 import containers.unrolledlist;
 import std.experimental.logger;
+import std.experimental.allocator.mallocator : Mallocator;
 
 /**
  * Contains symbols and supports lookup of symbols by cursor position.

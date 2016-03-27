@@ -19,6 +19,7 @@
 module dsymbol.symbol;
 
 import std.experimental.allocator;
+import std.experimental.allocator.mallocator : Mallocator;
 import std.array;
 
 import containers.ttree;

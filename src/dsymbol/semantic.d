@@ -23,6 +23,7 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
+import std.experimental.allocator.mallocator : Mallocator;
 
 enum ResolutionFlags : ubyte
 {
