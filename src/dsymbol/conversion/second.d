@@ -509,7 +509,8 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 
 void typeSwap(ref DSymbol* currentSymbol)
 {
-	while (currentSymbol !is null && (currentSymbol.kind == CompletionKind.variableName
+	while (currentSymbol !is null && currentSymbol.type !is currentSymbol
+			&& (currentSymbol.kind == CompletionKind.variableName
 			|| currentSymbol.kind == CompletionKind.importSymbol
 			|| currentSymbol.kind == CompletionKind.withSymbol
 			|| currentSymbol.kind == CompletionKind.aliasName))
