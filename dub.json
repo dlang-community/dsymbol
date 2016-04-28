@@ -5,7 +5,7 @@
 	"license": "BSL-1.0",
 	"authors": ["Brian Schott"],
 	"dependencies": {
-		"libdparse": "~>0.7.0-alpha5",
-		"emsi_containers": "~>0.4.1"
+		"libdparse": "~>0.7.0-alpha9",
+		"emsi_containers": "~>0.4.2"
 	}
 }
