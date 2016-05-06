@@ -394,7 +394,9 @@ public:
 
 	void location(size_t location) pure nothrow @nogc @property
 	{
-		assert(location < uint.max);
+		// If the symbol was declared in a file, assert that it has a location
+		// in that file. Built-in symbols don't need a location.
+		assert(symbolFile is null || location < uint.max);
 		_location = cast(uint) location;
 	}
 
