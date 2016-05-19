@@ -713,6 +713,8 @@ private:
 			immutable size_t scopeEnd = dec.structBody is null ? scopeBegin : dec.structBody.endLocation;
 		pushScope(scopeBegin, scopeEnd);
 		scope(exit) popScope();
+		protection.beginScope();
+		scope (exit) protection.endScope();
 		processTemplateParameters(currentSymbol, dec.templateParameters);
 		dec.accept(this);
 	}
