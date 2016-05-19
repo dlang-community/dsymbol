@@ -79,6 +79,7 @@ static this()
 	assocArraySymbols.insert(alignof_);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byKey"), CompletionKind.keyword));
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byValue"), CompletionKind.keyword));
+	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("clear"), CompletionKind.keyword));
 	assocArraySymbols.insert(dup);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("get"), CompletionKind.keyword));
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword));
