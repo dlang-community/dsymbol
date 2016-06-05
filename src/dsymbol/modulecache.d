@@ -108,11 +108,20 @@ struct ModuleCache
 
 		foreach (path; newPaths[])
 		{
-			foreach (fileName; dirEntries(path, "*.{d,di}", SpanMode.depth))
+			if (path.isFile)
 			{
-				if (fileName.baseName.startsWith(".#") || !fileName.isFile)
+				if (path.baseName.startsWith(".#"))
 					continue;
-				cacheModule(fileName);
+				cacheModule(path);
+			}
+			else
+			{
+				foreach (fileName; dirEntries(path, "*.{d,di}", SpanMode.depth))
+				{
+					if (fileName.baseName.startsWith(".#") || !fileName.isFile)
+						continue;
+					cacheModule(fileName);
+				}
 			}
 		}
 	}
@@ -272,23 +281,31 @@ struct ModuleCache
 		string[] alternatives;
 		foreach (path; importPaths[])
 		{
-			string dotDi = buildPath(path, moduleName) ~ ".di";
-			string dotD = dotDi[0 .. $ - 1];
-			string withoutSuffix = dotDi[0 .. $ - 3];
-			if (exists(dotD) && isFile(dotD))
-				alternatives = dotD ~ alternatives;
-			else if (exists(dotDi) && isFile(dotDi))
-				alternatives ~= dotDi;
-			else if (exists(withoutSuffix) && isDir(withoutSuffix))
+			if (path.isFile)
 			{
-				string packagePath = buildPath(withoutSuffix, "package.di");
-				if (exists(packagePath) && isFile(packagePath))
+				if (path.stripExtension.endsWith(moduleName))
+					alternatives ~= path;
+			}
+			else
+			{
+				string dotDi = buildPath(path, moduleName) ~ ".di";
+				string dotD = dotDi[0 .. $ - 1];
+				string withoutSuffix = dotDi[0 .. $ - 3];
+				if (exists(dotD) && isFile(dotD))
+					alternatives = dotD ~ alternatives;
+				else if (exists(dotDi) && isFile(dotDi))
+					alternatives ~= dotDi;
+				else if (exists(withoutSuffix) && isDir(withoutSuffix))
 				{
-					alternatives ~= packagePath;
-					continue;
+					string packagePath = buildPath(withoutSuffix, "package.di");
+					if (exists(packagePath) && isFile(packagePath))
+					{
+						alternatives ~= packagePath;
+						continue;
+					}
+					if (exists(packagePath[0 .. $ - 1]) && isFile(packagePath[0 .. $ - 1]))
+						alternatives ~= packagePath[0 .. $ - 1];
 				}
-				if (exists(packagePath[0 .. $ - 1]) && isFile(packagePath[0 .. $ - 1]))
-					alternatives ~= packagePath[0 .. $ - 1];
 			}
 		}
 		return alternatives.length > 0 ? internString(alternatives[0]) : istring(null);
