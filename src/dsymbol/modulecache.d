@@ -311,12 +311,12 @@ struct ModuleCache
 		return alternatives.length > 0 ? internString(alternatives[0]) : istring(null);
 	}
 
-	auto getImportPaths()
+	auto getImportPaths() const
 	{
 		return importPaths[];
 	}
 
-	auto getAllSymbols()
+	auto getAllSymbols() const
 	{
 		return cache[];
 	}
