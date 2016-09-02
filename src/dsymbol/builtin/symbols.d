@@ -250,6 +250,6 @@ static this()
 
 	foreach (s; ["__DATE__", "__EOF__", "__TIME__", "__TIMESTAMP__", "__VENDOR__",
 			"__VERSION__", "__FUNCTION__", "__PRETTY_FUNCTION__", "__MODULE__",
-			"__FILE__", "__LINE__"])
+			"__FILE__", "__LINE__", "__FILE_FULL_PATH__"])
 		builtinSymbols.insert(make!DSymbol(Mallocator.instance, internString(s), CompletionKind.keyword));
 }
