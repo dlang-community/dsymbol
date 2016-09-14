@@ -134,20 +134,28 @@ final class FirstPass : ASTVisitor
 	override void visit(const FunctionDeclaration dec)
 	{
 		assert(dec);
-		pushSymbol(dec.name.text,
-			CompletionKind.functionName, symbolFile, dec.name.index,
-			dec.returnType);
-		scope(exit) popSymbol();
+		pushSymbol(dec.name.text, CompletionKind.functionName, symbolFile,
+				dec.name.index, dec.returnType);
+		scope (exit) popSymbol();
 		currentSymbol.protection = protection.current;
 		currentSymbol.acSymbol.doc = internString(dec.comment);
-		processParameters(currentSymbol, dec.returnType,
-			currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
+
 		if (dec.functionBody !is null)
 		{
 			pushFunctionScope(dec.functionBody, semanticAllocator,
-				dec.name.index + dec.name.text.length);
-			scope(exit) popScope();
+					dec.name.index + dec.name.text.length);
+			scope (exit) popScope();
+			processParameters(currentSymbol, dec.returnType,
+					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
 			dec.functionBody.accept(this);
+		}
+		else
+		{
+			immutable ips = includeParameterSymbols;
+			includeParameterSymbols = false;
+			processParameters(currentSymbol, dec.returnType,
+					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
+			includeParameterSymbols = ips;
 		}
 	}
 
@@ -650,7 +658,7 @@ private:
 		currentScope = currentScope.parent;
 	}
 
-	void pushFunctionScope( const FunctionBody functionBody,
+	void pushFunctionScope(const FunctionBody functionBody,
 		IAllocator semanticAllocator, size_t scopeBegin)
 	{
 		import std.algorithm : max;
