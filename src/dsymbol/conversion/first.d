@@ -331,8 +331,14 @@ final class FirstPass : ASTVisitor
 		currentScope.addSymbol(symbol.acSymbol, false);
 		symbol.acSymbol.doc = internString(dec.comment);
 		currentSymbol = symbol;
+
 		if (dec.enumBody !is null)
+		{
+			pushScope(dec.enumBody.startLocation, dec.enumBody.endLocation);
 			dec.enumBody.accept(this);
+			popScope();
+		}
+
 		currentSymbol = currentSymbol.parent;
 	}
 
