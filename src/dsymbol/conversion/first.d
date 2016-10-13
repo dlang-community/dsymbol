@@ -37,6 +37,7 @@ import dparse.formatter;
 import dparse.lexer;
 import std.typecons;
 import std.experimental.logger;
+import std.algorithm.iteration : map;
 
 /**
  * First Pass handles the following:
@@ -219,13 +220,13 @@ final class FirstPass : ASTVisitor
 		}
 		if (dec.autoDeclaration !is null)
 		{
-			foreach (i, identifier; dec.autoDeclaration.identifiers)
+			foreach (part; dec.autoDeclaration.parts)
 			{
 				SemanticSymbol* symbol = allocateSemanticSymbol(
-					identifier.text, CompletionKind.variableName,
-					symbolFile, identifier.index);
+					part.identifier.text, CompletionKind.variableName,
+					symbolFile, part.identifier.index);
 				symbol.parent = currentSymbol;
-				populateInitializer(symbol, dec.autoDeclaration.initializers[i]);
+				populateInitializer(symbol, part.initializer);
 				symbol.protection = protection.current;
 				symbol.acSymbol.doc = internString(dec.comment);
 				currentSymbol.addChild(symbol, true);
