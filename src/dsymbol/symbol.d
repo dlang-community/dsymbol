@@ -201,7 +201,7 @@ public:
 			typeid(DSymbol).destroy(type);
 	}
 
-	int opCmp(ref const DSymbol other) const pure nothrow @safe
+	int opCmp(ref const DSymbol other) const pure nothrow @trusted
 	{
 		// Compare the pointers because the strings have been interned.
 		// Identical strings MUST have the same address
@@ -211,12 +211,12 @@ public:
 		return r;
 	}
 
-	bool opEquals(ref const DSymbol other) const pure nothrow @safe
+	bool opEquals(ref const DSymbol other) const pure nothrow @trusted
 	{
 		return other.name.ptr == this.name.ptr;
 	}
 
-	size_t toHash() const pure nothrow @safe
+	size_t toHash() const pure nothrow @trusted
 	{
 		return (cast(size_t) name.ptr) * 27_644_437;
 	}
