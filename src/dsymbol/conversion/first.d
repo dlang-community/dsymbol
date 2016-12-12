@@ -1199,7 +1199,9 @@ class InitializerVisitor : ASTVisitor
 		on = false;
 	}
 
+	// Skip these
 	override void visit(const ArgumentList) {}
+	override void visit(const NewAnonClassExpression) {}
 
 	override void visit(const Expression expression)
 	{
