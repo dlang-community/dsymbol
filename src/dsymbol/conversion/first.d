@@ -19,25 +19,24 @@
 module dsymbol.conversion.first;
 
 import containers.unrolledlist;
-import dsymbol.builtin.names;
-import dsymbol.builtin.symbols;
-import dsymbol.import_;
-import dsymbol.scope_;
-import dsymbol.semantic;
-import dsymbol.semantic;
-import dsymbol.string_interning;
-import dsymbol.symbol;
-import dsymbol.cache_entry;
-import dsymbol.modulecache;
-import dsymbol.type_lookup;
-import std.experimental.allocator;
-import std.experimental.allocator.mallocator;
 import dparse.ast;
 import dparse.formatter;
 import dparse.lexer;
-import std.typecons;
-import std.experimental.logger;
+import dsymbol.builtin.names;
+import dsymbol.builtin.symbols;
+import dsymbol.cache_entry;
+import dsymbol.import_;
+import dsymbol.modulecache;
+import dsymbol.scope_;
+import dsymbol.semantic;
+import dsymbol.string_interning;
+import dsymbol.symbol;
+import dsymbol.type_lookup;
 import std.algorithm.iteration : map;
+import std.experimental.allocator;
+import std.experimental.allocator.mallocator;
+import std.experimental.logger;
+import std.typecons;
 
 /**
  * First Pass handles the following:
@@ -298,10 +297,20 @@ final class FirstPass : ASTVisitor
 				p = attr.attribute.type;
 		}
 		if (p != tok!"")
+		{
 			protection.beginLocal(p);
-		dec.accept(this);
-		if (p != tok!"")
+			if (dec.declarations.length > 0)
+			{
+				protection.beginScope();
+				dec.accept(this);
+				protection.endScope();
+			}
+			else
+				dec.accept(this);
 			protection.endLocal();
+		}
+		else
+			dec.accept(this);
 	}
 
 	override void visit(const Module mod)
@@ -388,9 +397,9 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const ImportDeclaration importDeclaration)
 	{
-		import std.typecons : Tuple;
 		import std.algorithm : filter, map;
 		import std.path : buildPath;
+		import std.typecons : Tuple;
 
 		foreach (single; importDeclaration.singleImports.filter!(
 			a => a !is null && a.identifierChain !is null))
@@ -990,9 +999,9 @@ struct ProtectionStack
 {
 	invariant
 	{
-		import std.algorithm.iteration : filter, map, joiner;
-		import std.range : walkLength;
+		import std.algorithm.iteration : filter, joiner, map;
 		import std.conv:to;
+		import std.range : walkLength;
 
 		assert(stack.length == stack[].filter!(a => isProtection(a)
 				|| a == tok!":" || a == tok!"{").walkLength(), to!string(stack[].map!(a => str(a)).joiner(", ")));
@@ -1005,8 +1014,8 @@ struct ProtectionStack
 
 	IdType current() const
 	{
-		import std.range : choose, only;
 		import std.algorithm.iteration : filter;
+		import std.range : choose, only;
 
 		IdType retVal;
 		foreach (t; choose(stack.empty, only(tok!"public"), stack[]).filter!(
@@ -1022,6 +1031,8 @@ struct ProtectionStack
 
 	void endScope()
 	{
+		import std.algorithm.iteration : joiner;
+		import std.conv : to;
 		import std.range : walkLength;
 
 		while (!stack.empty && stack.back == tok!":")
@@ -1031,7 +1042,7 @@ struct ProtectionStack
 			stack.popBack();
 		}
 		assert(stack.length == stack[].walkLength());
-		assert(!stack.empty && stack.back == tok!"{");
+		assert(!stack.empty && stack.back == tok!"{", to!string(stack[].map!(a => str(a)).joiner(", ")));
 		stack.popBack();
 	}
 
@@ -1043,7 +1054,11 @@ struct ProtectionStack
 
 	void endLocal()
 	{
-		assert(!stack.empty && stack.back != tok!":" && stack.back != tok!"{");
+		import std.algorithm.iteration : joiner;
+		import std.conv : to;
+
+		assert(!stack.empty && stack.back != tok!":" && stack.back != tok!"{",
+				to!string(stack[].map!(a => str(a)).joiner(", ")));
 		stack.popBack();
 	}
 
