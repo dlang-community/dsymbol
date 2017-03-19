@@ -35,8 +35,6 @@ import std.experimental.logger;
 import dparse.ast;
 import dparse.lexer;
 
-import std.stdio;
-
 void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {
 	with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
@@ -429,7 +427,7 @@ void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, fal
 }
 
 
-public void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
+void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 	Scope* moduleScope, ref ModuleCache cache)
 {
 	if (lookup.breadcrumbs.length == 0)
@@ -440,11 +438,10 @@ public void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 	DSymbol* suffix;
 	DSymbol* lastSuffix;
 
-	writeln("resolving type for : ", symbol.name);
-
 	while (!lookup.breadcrumbs.empty)
 	{
-		auto crumb = lookup.breadcrumbs.front();
+		auto crumb = lookup.breadcrumbs.front;
+
 		if (i == 0)
 		{
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
@@ -452,47 +449,42 @@ public void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 
 			if (crumb == ARRAY_SYMBOL_NAME)
 			{
+				auto last = lookup.breadcrumbs.back;
 				currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
-				    symbolNameToTypeName(crumb), symbol.location);
+					symbolNameToTypeName(last), symbol.location);
 
-		        lastSuffix = cache.symbolAllocator.make!(DSymbol)(crumb, CompletionKind.dummy, lastSuffix);
-		        lastSuffix.qualifier = SymbolQualifier.array;
-		        lastSuffix.ownType = true;
-			    lastSuffix.addChildren(arraySymbols[], false);
+				lastSuffix = cache.symbolAllocator.make!(DSymbol)(crumb, CompletionKind.dummy, lastSuffix);
+				lastSuffix.qualifier = SymbolQualifier.array;
+				lastSuffix.ownType = true;
+				lastSuffix.addChildren(arraySymbols[], false);
 
-		        if (suffix is null)
-			        suffix = lastSuffix;
-		        lookup.breadcrumbs.popBack();
+				if (suffix is null)
+					suffix = lastSuffix;
+				lookup.breadcrumbs.popBack();
 
-
-                if (lastSuffix !is null)
-	            {
-		            assert(suffix !is null);
-		            suffix.type = currentSymbol;
-		            suffix.ownType = false;
-		            symbol.type = lastSuffix;
-		            symbol.ownType = true;
-	            }
+				if (lastSuffix !is null)
+				{
+					assert(suffix !is null);
+					suffix.type = currentSymbol;
+					suffix.ownType = false;
+					symbol.type = lastSuffix;
+					symbol.ownType = true;
+				}
 			}
 			if (currentSymbol is null)
 				return;
 		}
 		else if (crumb == ARRAY_SYMBOL_NAME)
 		{
-			writeln("lookup array");
-
 			typeSwap(currentSymbol);
 			if (currentSymbol is null)
-			{
-				writeln("lookup array: next is null");
 				return;
-			}
+
 			// Index expressions can be an array index or an AA index
 			if (currentSymbol.qualifier == SymbolQualifier.array
 					|| currentSymbol.qualifier == SymbolQualifier.assocArray
 					|| currentSymbol.kind == CompletionKind.aliasName)
 			{
-				writeln("lookup array: curr sym qual is 'array'");
 				if (currentSymbol.type !is null)
 					currentSymbol = currentSymbol.type;
 				else

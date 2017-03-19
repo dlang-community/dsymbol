@@ -892,7 +892,7 @@ private:
 		bool appendForeach = false)
 	{
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.initializer);
-		auto visitor = scoped!(InitializerVisitor)(lookup, appendForeach);
+		auto visitor = scoped!InitializerVisitor(lookup, appendForeach);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
 	}
@@ -1216,8 +1216,6 @@ class InitializerVisitor : ASTVisitor
 
 	override void visit(const ArrayInitializer ai)
 	{
-		import std.stdio;
-		writeln(__PRETTY_FUNCTION__);
 		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 		ai.accept(this);
 	}
