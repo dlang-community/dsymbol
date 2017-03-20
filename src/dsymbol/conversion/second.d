@@ -434,12 +434,59 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		return;
 	DSymbol* currentSymbol = null;
 	size_t i = 0;
-	foreach (crumb; lookup.breadcrumbs[])
+
+	auto crumbs = lookup.breadcrumbs[];
+	foreach (crumb; crumbs)
 	{
 		if (i == 0)
 		{
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
+
+			// solves auto arrays
+			if (crumb == ARRAY_SYMBOL_NAME)
+			{
+				auto nestedArr = crumbs.save();
+				auto a = nestedArr.front();
+
+				DSymbol* suffix;
+				DSymbol* lastSuffix;
+
+				// process the flags set in ArrayInitializer visit
+				while (true)
+				{
+					lastSuffix = cache.symbolAllocator.make!(DSymbol)(a, CompletionKind.dummy, lastSuffix);
+					lastSuffix.qualifier = SymbolQualifier.array;
+
+					if (suffix is null)
+						suffix = lastSuffix;
+
+					nestedArr.popFront();
+					if (nestedArr.empty())
+						break;
+					a = nestedArr.front();
+					if (a != ARRAY_SYMBOL_NAME)
+						break;
+				}
+
+				// last crumb should be the element type
+				DSymbol* elemType;
+				if (!nestedArr.empty)
+				{
+					suffix.addChildren(arraySymbols[], false);
+					elemType = moduleScope.getFirstSymbolByNameAndCursor(
+						symbolNameToTypeName(a), symbol.location);
+				}
+
+				// put the elem type to the back of the *arr* chain
+				if (suffix !is null && elemType)
+				{
+					suffix.type = elemType;
+					suffix.ownType = false;
+					symbol.type = lastSuffix;
+					symbol.ownType = true;
+				}
+			}
 			if (currentSymbol is null)
 				return;
 		}
@@ -448,6 +495,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 			typeSwap(currentSymbol);
 			if (currentSymbol is null)
 				return;
+
 			// Index expressions can be an array index or an AA index
 			if (currentSymbol.qualifier == SymbolQualifier.array
 					|| currentSymbol.qualifier == SymbolQualifier.assocArray

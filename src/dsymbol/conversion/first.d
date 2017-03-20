@@ -1214,6 +1214,12 @@ class InitializerVisitor : ASTVisitor
 		on = false;
 	}
 
+	override void visit(const ArrayInitializer ai)
+	{
+		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
+		ai.accept(this);
+	}
+
 	// Skip these
 	override void visit(const ArgumentList) {}
 	override void visit(const NewAnonClassExpression) {}
