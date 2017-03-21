@@ -154,7 +154,6 @@ static this()
 		s.addChild(make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword, s), true);
 		s.addChild(make!DSymbol(Mallocator.instance, internString("max_10_exp"), CompletionKind.keyword, int_), true);
 		s.addChild(make!DSymbol(Mallocator.instance, internString("max_exp"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("min"), CompletionKind.keyword, s), true);
 		s.addChild(make!DSymbol(Mallocator.instance, internString("min_exp"), CompletionKind.keyword, int_), true);
 		s.addChild(make!DSymbol(Mallocator.instance, internString("min_10_exp"), CompletionKind.keyword, int_), true);
 		s.addChild(make!DSymbol(Mallocator.instance, internString("min_normal"), CompletionKind.keyword, s), true);
