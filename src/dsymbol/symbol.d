@@ -205,20 +205,20 @@ public:
 	{
 		// Compare the pointers because the strings have been interned.
 		// Identical strings MUST have the same address
-		int r = name.ptr > other.name.ptr;
-		if (name.ptr < other.name.ptr)
+		int r = &name.ptr[0] > &other.name.ptr[0];
+		if (&name.ptr[0] < &other.name.ptr[0])
 			r = -1;
 		return r;
 	}
 
 	bool opEquals(ref const DSymbol other) const pure nothrow @trusted
 	{
-		return other.name.ptr == this.name.ptr;
+		return &other.name.ptr[0] == &this.name.ptr[0];
 	}
 
 	size_t toHash() const pure nothrow @trusted
 	{
-		return (cast(size_t) name.ptr) * 27_644_437;
+		return (cast(size_t) &name.ptr[0]) * 27_644_437;
 	}
 
 	/**
