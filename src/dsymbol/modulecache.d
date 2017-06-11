@@ -116,12 +116,21 @@ struct ModuleCache
 			}
 			else
 			{
-				foreach (fileName; dirEntries(path, "*.{d,di}", SpanMode.depth))
+				void scanFrom(const string root)
 				{
-					if (fileName.baseName.startsWith(".#") || !fileName.isFile)
-						continue;
-					cacheModule(fileName);
+					try foreach (f; dirEntries(root, SpanMode.shallow))
+					{
+						if (f.name.isFile)
+						{
+							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
+								continue;
+							cacheModule(f.name);
+						}
+						else scanFrom(f.name);
+					}
+					catch(FileException) {}
 				}
+				scanFrom(path);
 			}
 		}
 	}
