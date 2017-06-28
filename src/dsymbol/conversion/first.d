@@ -563,27 +563,36 @@ final class FirstPass : ASTVisitor
 			feExpression = null;
 		}
 		else
+		{
+			const ubyte o1 = foreachTypeIndexOfInterest;
+			const ubyte o2 = foreachTypeIndex;
 			feStatement.accept(this);
+			foreachTypeIndexOfInterest = o1;
+			foreachTypeIndex = o2;
+		}
 	}
 
 	override void visit(const ForeachTypeList feTypeList)
 	{
-		if (feTypeList.items.length == 1)
-			feTypeList.accept(this);
+		foreachTypeIndex = 0;
+		foreachTypeIndexOfInterest = cast(ubyte)(feTypeList.items.length - 1);
+		feTypeList.accept(this);
 	}
 
 	override void visit(const ForeachType feType)
 	{
-		SemanticSymbol* symbol = allocateSemanticSymbol(feType.identifier.text,
-			CompletionKind.variableName, symbolFile, feType.identifier.index);
-		if (feType.type !is null)
-			addTypeToLookups(symbol.typeLookups, feType.type);
-		symbol.parent = currentSymbol;
-		currentSymbol.addChild(symbol, true);
-		currentScope.addSymbol(symbol.acSymbol, true);
-		if (symbol.typeLookups.empty && feExpression !is null)
-			populateInitializer(symbol, feExpression, true);
-
+		if (foreachTypeIndex++ == foreachTypeIndexOfInterest)
+		{
+		    SemanticSymbol* symbol = allocateSemanticSymbol(feType.identifier.text,
+			    CompletionKind.variableName, symbolFile, feType.identifier.index);
+		    if (feType.type !is null)
+			    addTypeToLookups(symbol.typeLookups, feType.type);
+		    symbol.parent = currentSymbol;
+		    currentSymbol.addChild(symbol, true);
+		    currentScope.addSymbol(symbol.acSymbol, true);
+		    if (symbol.typeLookups.empty && feExpression !is null)
+			    populateInitializer(symbol, feExpression, true);
+		}
 	}
 
 	override void visit(const WithStatement withStatement)
@@ -993,6 +1002,9 @@ private:
 	ModuleCache* cache;
 
 	bool includeParameterSymbols;
+
+	ubyte foreachTypeIndexOfInterest;
+	ubyte foreachTypeIndex;
 }
 
 struct ProtectionStack
