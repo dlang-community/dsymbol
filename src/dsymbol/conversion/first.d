@@ -1216,8 +1216,8 @@ class InitializerVisitor : ASTVisitor
 
 	override void visit(const ArrayInitializer ai)
 	{
-		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 		ai.accept(this);
+		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 	}
 
 	// Skip these
