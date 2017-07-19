@@ -61,6 +61,8 @@ immutable istring DSTRING_LITERAL_SYMBOL_NAME;
 immutable istring STRING_LITERAL_SYMBOL_NAME;
 /// ditto
 immutable istring WSTRING_LITERAL_SYMBOL_NAME;
+/// ditto
+immutable istring BOOL_VALUE_SYMBOL_NAME;
 
 /**
  * Translates the IDs for built-in types into an interned string.
@@ -156,6 +158,7 @@ static this()
 	DSTRING_LITERAL_SYMBOL_NAME = internString("*dstring");
 	STRING_LITERAL_SYMBOL_NAME = internString("*string");
 	WSTRING_LITERAL_SYMBOL_NAME = internString("*wstring");
+	BOOL_VALUE_SYMBOL_NAME = internString("*bool");
 }
 
 istring symbolNameToTypeName(istring name)
@@ -188,5 +191,7 @@ istring symbolNameToTypeName(istring name)
 		return internString("string");
 	if (name.ptr == WSTRING_LITERAL_SYMBOL_NAME.ptr)
 		return internString("wstring");
+	if (name.ptr == BOOL_VALUE_SYMBOL_NAME.ptr)
+		return internString("bool");
 	return name;
 }

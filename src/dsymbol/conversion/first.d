@@ -1207,6 +1207,10 @@ class InitializerVisitor : ASTVisitor
 		case tok!"wstringLiteral":
 			lookup.breadcrumbs.insert(WSTRING_LITERAL_SYMBOL_NAME);
 			break;
+		case tok!"false":
+		case tok!"true":
+			lookup.breadcrumbs.insert(BOOL_VALUE_SYMBOL_NAME);
+			break;
 		default:
 			break;
 		}
