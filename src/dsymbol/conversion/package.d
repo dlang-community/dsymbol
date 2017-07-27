@@ -31,6 +31,7 @@ import dparse.lexer;
 import dparse.parser;
 import dparse.rollback_allocator;
 import std.experimental.allocator;
+import std.functional;
 import std.typecons;
 
 /**
@@ -80,7 +81,7 @@ Module parseModuleSimple(const(Token)[] tokens, string fileName, RollbackAllocat
 	auto parser = scoped!SimpleParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
-	parser.messageFunction = &doesNothing;
+	parser.messageDg = toDelegate(&doesNothing);
 	parser.allocator = parseAllocator;
 	return parser.parseModule();
 }
@@ -93,7 +94,7 @@ Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
 	auto parser = scoped!AutocompleteParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
-	parser.messageFunction = &doesNothing;
+	parser.messageDg = toDelegate(&doesNothing);
 	parser.allocator = parseAllocator;
 	parser.cursorPosition = cursorPosition;
 	return parser.parseModule();
