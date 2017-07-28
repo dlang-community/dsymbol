@@ -11,3 +11,7 @@ d:
  - dmd-nightly
  - ldc
  - ldc-beta
+
+script:
+ - dub build --build=release --compiler=${DC}
+ - dub test --compiler=${DC}
