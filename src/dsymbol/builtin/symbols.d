@@ -71,9 +71,7 @@ static this()
 	arraySymbols.insert(length);
 	arraySymbols.insert(mangleof_);
 	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("ptr"), CompletionKind.keyword));
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("reverse"), CompletionKind.keyword));
 	arraySymbols.insert(sizeof_);
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("sort"), CompletionKind.keyword));
 	arraySymbols.insert(stringof_);
 
 	assocArraySymbols.insert(alignof_);
