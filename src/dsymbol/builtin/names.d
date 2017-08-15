@@ -3,66 +3,66 @@ module dsymbol.builtin.names;
 import dparse.lexer;
 import dsymbol.string_interning;
 
-package const(istring[24]) builtinTypeNames;
+package istring[24] builtinTypeNames;
 
 /// Constants for buit-in or dummy symbol names
-const istring FUNCTION_SYMBOL_NAME;
+istring FUNCTION_SYMBOL_NAME;
 /// ditto
-const istring IMPORT_SYMBOL_NAME;
+istring IMPORT_SYMBOL_NAME;
 /// ditto
-const istring ARRAY_SYMBOL_NAME;
+istring ARRAY_SYMBOL_NAME;
 /// ditto
-const istring ASSOC_ARRAY_SYMBOL_NAME;
+istring ASSOC_ARRAY_SYMBOL_NAME;
 /// ditto
-const istring POINTER_SYMBOL_NAME;
+istring POINTER_SYMBOL_NAME;
 /// ditto
-const istring PARAMETERS_SYMBOL_NAME;
+istring PARAMETERS_SYMBOL_NAME;
 /// ditto
-const istring WITH_SYMBOL_NAME;
+istring WITH_SYMBOL_NAME;
 /// ditto
-const istring CONSTRUCTOR_SYMBOL_NAME;
+istring CONSTRUCTOR_SYMBOL_NAME;
 /// ditto
-const istring DESTRUCTOR_SYMBOL_NAME;
+istring DESTRUCTOR_SYMBOL_NAME;
 /// ditto
-const istring ARGPTR_SYMBOL_NAME;
+istring ARGPTR_SYMBOL_NAME;
 /// ditto
-const istring ARGUMENTS_SYMBOL_NAME;
+istring ARGUMENTS_SYMBOL_NAME;
 /// ditto
-const istring THIS_SYMBOL_NAME;
+istring THIS_SYMBOL_NAME;
 /// ditto
-const istring SUPER_SYMBOL_NAME;
+istring SUPER_SYMBOL_NAME;
 /// ditto
-const istring UNITTEST_SYMBOL_NAME;
+istring UNITTEST_SYMBOL_NAME;
 /// ditto
-const istring DOUBLE_LITERAL_SYMBOL_NAME;
+istring DOUBLE_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring FLOAT_LITERAL_SYMBOL_NAME;
+istring FLOAT_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring IDOUBLE_LITERAL_SYMBOL_NAME;
+istring IDOUBLE_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring IFLOAT_LITERAL_SYMBOL_NAME;
+istring IFLOAT_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring INT_LITERAL_SYMBOL_NAME;
+istring INT_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring LONG_LITERAL_SYMBOL_NAME;
+istring LONG_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring REAL_LITERAL_SYMBOL_NAME;
+istring REAL_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring IREAL_LITERAL_SYMBOL_NAME;
+istring IREAL_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring UINT_LITERAL_SYMBOL_NAME;
+istring UINT_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring ULONG_LITERAL_SYMBOL_NAME;
+istring ULONG_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring CHAR_LITERAL_SYMBOL_NAME;
+istring CHAR_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring DSTRING_LITERAL_SYMBOL_NAME;
+istring DSTRING_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring STRING_LITERAL_SYMBOL_NAME;
+istring STRING_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring WSTRING_LITERAL_SYMBOL_NAME;
+istring WSTRING_LITERAL_SYMBOL_NAME;
 /// ditto
-const istring BOOL_VALUE_SYMBOL_NAME;
+istring BOOL_VALUE_SYMBOL_NAME;
 
 /**
  * Translates the IDs for built-in types into an interned string.
