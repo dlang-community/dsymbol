@@ -329,7 +329,7 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			baseClass = symbols[0];
 		}
 
-		static bool shouldSkipFromBase(const DSymbol* d) pure nothrow @nogc
+		static bool shouldSkipFromBase(const DSymbol* d) nothrow @nogc
 		{
 			if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
 				return false;
