@@ -176,29 +176,32 @@ body
 		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
 		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
 		immutable bool isFunction = back == FUNCTION_SYMBOL_NAME;
-		if (back == POINTER_SYMBOL_NAME)
-		{
-			lastSuffix.isPointer = true;
-			lookup.breadcrumbs.popBack();
-			continue;
-		}
-		if (!isArr && !isAssoc && !isFunction)
+		immutable bool isPointer = back == POINTER_SYMBOL_NAME;
+		if (!isArr && !isAssoc && !isFunction && !isPointer)
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
-			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
-		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
-		lastSuffix.qualifier = qualifier;
-		lastSuffix.ownType = true;
+			(isFunction ? SymbolQualifier.func :
+				(isArr ? SymbolQualifier.array : SymbolQualifier.none));
+		auto _prevSuffix = suffix;
+		suffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy);
+		suffix.qualifier = qualifier;
+		suffix.ownType = true;
+		suffix.isPointer = isPointer;
+		if (_prevSuffix)
+			_prevSuffix.type = suffix;
 		if (isFunction)
 		{
 			lookup.breadcrumbs.popBack();
-			lastSuffix.callTip = lookup.breadcrumbs.back();
+			suffix.callTip = lookup.breadcrumbs.back();
 		}
-		else
-			lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
+		else if (isArr)
+			suffix.addChildren(arraySymbols[], false);
+		else if (isAssoc)
+			// TODO: resolve the type of the key
+			suffix.addChildren(assocArraySymbols[], false);
 
-		if (suffix is null)
-			suffix = lastSuffix;
+		if (lastSuffix is null)
+			lastSuffix = suffix;
 		lookup.breadcrumbs.popBack();
 	}
 
@@ -295,6 +298,53 @@ body
 		deferred.imports.insert(remainingImports[]);
 		deferred.typeLookups.insert(lookup);
 		cache.deferredSymbols.insert(deferred);
+	}
+}
+
+unittest
+{
+	import dsymbol.tests : generateAutocompleteTrees;
+	import std.stdio : writeln;
+
+	ModuleCache cache = ModuleCache(theAllocator);
+	{
+		auto pair = generateAutocompleteTrees(q{uint[][] i;}, cache);
+		auto sym = pair.symbol.getFirstPartNamed(internString("i"));
+		assert(sym.type.name is ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.name is ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.type.name is internString("uint"));
+	}
+
+	{
+		auto pair = generateAutocompleteTrees(q{byte[int][] k;}, cache);
+		auto sym = pair.symbol.getFirstPartNamed(internString("k"));
+		assert(sym.type.name is ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.name is ASSOC_ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.type);
+		assert(sym.type.type.type.name is internString("byte"));
+	}
+
+	{
+		auto pair = generateAutocompleteTrees(q{double* j;}, cache);
+		auto sym = pair.symbol.getFirstPartNamed(internString("j"));
+		assert(sym.type.isPointer);
+		assert(sym.type.type.name is internString("double"));
+	}
+
+	{
+		auto pair = generateAutocompleteTrees(q{const(float)*[] k;}, cache);
+		auto sym = pair.symbol.getFirstPartNamed(internString("k"));
+		assert(sym.type.name is ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.isPointer);
+		assert(sym.type.type.type.name is internString("float"));
+	}
+
+	{
+		auto pair = generateAutocompleteTrees(q{int[dstring[]] aa;}, cache);
+		auto sym = pair.symbol.getFirstPartNamed(internString("aa"));
+		assert(sym.type.name is ASSOC_ARRAY_SYMBOL_NAME);
+		assert(sym.type.type.name is internString("int"));
+		// FIXME: check the key type
 	}
 }
 
