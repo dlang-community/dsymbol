@@ -17,8 +17,11 @@ import std.stdio : writeln, stdout;
  */
 version (unittest):
 void expectSymbolsAndTypes(const string source, const string[][] results,
-    string file = __FILE_FULL_PATH__, int line = __LINE__)
+    string file = __FILE_FULL_PATH__, size_t line = __LINE__)
 {
+    import core.exception : AssertError;
+    import std.exception : enforce;
+
     static immutable rName = "dsymbol-test-154251542-56564105-78944416-98523170-02452336.d";
     auto fName = tempDir ~ dirSeparator ~ rName;
     fName.write(source);
@@ -28,32 +31,26 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     ModuleCache mcache = ModuleCache(theAllocator);
     mcache.cacheModule(fName);
 
-    void assertBoolExpr(E)(lazy E expression, string message)
-    {
-        import core.exception: AssertError;
-        if (expression() == false)
-            throw new AssertError(message, file, line);
-    }
-
     size_t i;
     foreach (const(CacheEntry)* s; mcache.getAllSymbols)
         foreach(ss; (*s.symbol)[])
     {
         if (ss.type)
         {
-            assertBoolExpr(i <= results.length,
-                "not enough results");
-            assertBoolExpr(results[i].length > 1,
-                "at least one type must be present in a result row");
-            assertBoolExpr(ss.name == results[i][0],
-                "expected variableName: `%s` but got `%s`".format(results[i][0], ss.name));
+            enforce!AssertError(i <= results.length, "not enough results", file, line);
+            enforce!AssertError(results[i].length > 1,
+                "at least one type must be present in a result row", file, line);
+            enforce!AssertError(ss.name == results[i][0],
+                "expected variableName: `%s` but got `%s`".format(results[i][0], ss.name),
+                file, line);
 
             auto t = cast() ss.type;
             foreach (immutable j; 1..results[i].length)
             {
-                assertBoolExpr(t != null, "null symbol");
-                assertBoolExpr(t.name == results[i][j],
-                    "expected typeName: `%s` but got `%s`".format(results[i][j], t.name));
+                enforce!AssertError(t != null, "null symbol", file, line);
+                enforce!AssertError(t.name == results[i][j],
+                    "expected typeName: `%s` but got `%s`".format(results[i][j], t.name),
+                    file, line);
                 if (t.type is t && t.name.length && t.name[0] != '*')
                     break;
                 t = t.type;
@@ -63,7 +60,7 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     }
 }
 
-unittest
+@system unittest
 {
     writeln("Running type deduction tests...");
     q{bool b; int i;}.expectSymbolsAndTypes([["b", "bool"],["i", "int"]]);
