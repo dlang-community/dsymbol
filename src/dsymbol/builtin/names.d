@@ -3,71 +3,71 @@ module dsymbol.builtin.names;
 import dparse.lexer;
 import dsymbol.string_interning;
 
-package immutable(istring[24]) builtinTypeNames;
+package istring[24] builtinTypeNames;
 
 /// Constants for buit-in or dummy symbol names
-immutable istring FUNCTION_SYMBOL_NAME;
+istring FUNCTION_SYMBOL_NAME;
 /// ditto
-immutable istring IMPORT_SYMBOL_NAME;
+istring IMPORT_SYMBOL_NAME;
 /// ditto
-immutable istring ARRAY_SYMBOL_NAME;
+istring ARRAY_SYMBOL_NAME;
 /// ditto
-immutable istring ASSOC_ARRAY_SYMBOL_NAME;
+istring ASSOC_ARRAY_SYMBOL_NAME;
 /// ditto
-immutable istring POINTER_SYMBOL_NAME;
+istring POINTER_SYMBOL_NAME;
 /// ditto
-immutable istring PARAMETERS_SYMBOL_NAME;
+istring PARAMETERS_SYMBOL_NAME;
 /// ditto
-immutable istring WITH_SYMBOL_NAME;
+istring WITH_SYMBOL_NAME;
 /// ditto
-immutable istring CONSTRUCTOR_SYMBOL_NAME;
+istring CONSTRUCTOR_SYMBOL_NAME;
 /// ditto
-immutable istring DESTRUCTOR_SYMBOL_NAME;
+istring DESTRUCTOR_SYMBOL_NAME;
 /// ditto
-immutable istring ARGPTR_SYMBOL_NAME;
+istring ARGPTR_SYMBOL_NAME;
 /// ditto
-immutable istring ARGUMENTS_SYMBOL_NAME;
+istring ARGUMENTS_SYMBOL_NAME;
 /// ditto
-immutable istring THIS_SYMBOL_NAME;
+istring THIS_SYMBOL_NAME;
 /// ditto
-immutable istring SUPER_SYMBOL_NAME;
+istring SUPER_SYMBOL_NAME;
 /// ditto
-immutable istring UNITTEST_SYMBOL_NAME;
+istring UNITTEST_SYMBOL_NAME;
 /// ditto
-immutable istring DOUBLE_LITERAL_SYMBOL_NAME;
+istring DOUBLE_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring FLOAT_LITERAL_SYMBOL_NAME;
+istring FLOAT_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring IDOUBLE_LITERAL_SYMBOL_NAME;
+istring IDOUBLE_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring IFLOAT_LITERAL_SYMBOL_NAME;
+istring IFLOAT_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring INT_LITERAL_SYMBOL_NAME;
+istring INT_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring LONG_LITERAL_SYMBOL_NAME;
+istring LONG_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring REAL_LITERAL_SYMBOL_NAME;
+istring REAL_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring IREAL_LITERAL_SYMBOL_NAME;
+istring IREAL_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring UINT_LITERAL_SYMBOL_NAME;
+istring UINT_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring ULONG_LITERAL_SYMBOL_NAME;
+istring ULONG_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring CHAR_LITERAL_SYMBOL_NAME;
+istring CHAR_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring DSTRING_LITERAL_SYMBOL_NAME;
+istring DSTRING_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring STRING_LITERAL_SYMBOL_NAME;
+istring STRING_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring WSTRING_LITERAL_SYMBOL_NAME;
+istring WSTRING_LITERAL_SYMBOL_NAME;
 /// ditto
-immutable istring BOOL_VALUE_SYMBOL_NAME;
+istring BOOL_VALUE_SYMBOL_NAME;
 
 /**
  * Translates the IDs for built-in types into an interned string.
  */
-istring getBuiltinTypeName(IdType id) nothrow pure @nogc @safe
+istring getBuiltinTypeName(IdType id) nothrow @nogc @safe
 {
 	switch (id)
 	{
