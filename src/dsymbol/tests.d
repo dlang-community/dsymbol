@@ -106,8 +106,7 @@ unittest
 string randomDFilename()
 {
     import std.uuid : randomUUID;
-    import std.string : translate;
-    return "dsymbol_" ~ randomUUID().toString().translate(['-': '_']) ~ ".d";
+    return "dsymbol_" ~ randomUUID().toString() ~ ".d";
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, ref ModuleCache cache)
