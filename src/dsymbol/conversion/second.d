@@ -301,53 +301,6 @@ body
 	}
 }
 
-unittest
-{
-	import dsymbol.tests : generateAutocompleteTrees;
-	import std.stdio : writeln;
-
-	ModuleCache cache = ModuleCache(theAllocator);
-	{
-		auto pair = generateAutocompleteTrees(q{uint[][] i;}, cache);
-		auto sym = pair.symbol.getFirstPartNamed(internString("i"));
-		assert(sym.type.name is ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.name is ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.type.name is internString("uint"));
-	}
-
-	{
-		auto pair = generateAutocompleteTrees(q{byte[int][] k;}, cache);
-		auto sym = pair.symbol.getFirstPartNamed(internString("k"));
-		assert(sym.type.name is ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.name is ASSOC_ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.type);
-		assert(sym.type.type.type.name is internString("byte"));
-	}
-
-	{
-		auto pair = generateAutocompleteTrees(q{double* j;}, cache);
-		auto sym = pair.symbol.getFirstPartNamed(internString("j"));
-		assert(sym.type.isPointer);
-		assert(sym.type.type.name is internString("double"));
-	}
-
-	{
-		auto pair = generateAutocompleteTrees(q{const(float)*[] k;}, cache);
-		auto sym = pair.symbol.getFirstPartNamed(internString("k"));
-		assert(sym.type.name is ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.isPointer);
-		assert(sym.type.type.type.name is internString("float"));
-	}
-
-	{
-		auto pair = generateAutocompleteTrees(q{int[dstring[]] aa;}, cache);
-		auto sym = pair.symbol.getFirstPartNamed(internString("aa"));
-		assert(sym.type.name is ASSOC_ARRAY_SYMBOL_NAME);
-		assert(sym.type.type.name is internString("int"));
-		// FIXME: check the key type
-	}
-}
-
 private:
 
 void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,

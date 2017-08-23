@@ -69,6 +69,10 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
     q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
     q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
+    q{int[char] b;}.expectSymbolsAndTypes([["b", "*aa*", "int"]]);
+    q{byte[int][] b;}.expectSymbolsAndTypes([["b", "*arr*", "*aa*"]]);
+    q{int*[]*[char] b;}.expectSymbolsAndTypes([["b", "*aa*", "*", "*arr*", "*"]]);
+    q{void* function()[] b;}.expectSymbolsAndTypes([["b", "*arr*", "function", "*", "void"]]);
 }
 
 static StringCache stringCache = void;
