@@ -93,11 +93,9 @@ const(Token)[] lex(string source, string filename)
 
 unittest
 {
-    import std.meta : AliasSeq;
-
     auto tokens = lex(q{int a = 9;});
     foreach(i, t;
-        AliasSeq!(tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"))
+        cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
     {
         assert(tokens[i] == t);
     }
