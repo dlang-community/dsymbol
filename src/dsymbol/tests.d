@@ -25,14 +25,9 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     import core.exception : AssertError;
     import std.exception : enforce;
 
-    static immutable rName = "dsymbol-test-154251542-56564105-78944416-98523170-02452336.d";
-    auto fName = tempDir ~ dirSeparator ~ rName;
-    fName.write(source);
-    scope(exit)
-        remove(fName);
-
     ModuleCache mcache = ModuleCache(theAllocator);
-    mcache.cacheModule(fName);
+    auto pair = generateAutocompleteTrees(source, mcache);
+    scope(exit) pair.destroy();
 
     size_t i;
     foreach (const(CacheEntry)* s; mcache.getAllSymbols)
