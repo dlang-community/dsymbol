@@ -69,7 +69,7 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     q{auto b = [0];}.expectSymbolsAndTypes([["b", "*arr*", "int"]]);
     q{auto b = [[0]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "int"]]);
     q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
-    //q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
-    //q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
+    q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
+    q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
 }
 
