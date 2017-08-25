@@ -3,6 +3,7 @@ module dsymbol.tests;
 import std.experimental.allocator;
 import dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
+import dsymbol.string_interning;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
 
@@ -16,11 +17,13 @@ import std.stdio : writeln, stdout;
  *      followed by the type strings.
  */
 version (unittest):
-void expectSymbolsAndTypes(const string source, const string[][] results,
+void expectSymbolsAndTypes(string source, const(string[])[] results,
     string file = __FILE_FULL_PATH__, size_t line = __LINE__)
 {
     import core.exception : AssertError;
     import std.exception : enforce;
+    import std.algorithm : schwartzSort;
+    import std.range : array;
 
     static immutable rName = "dsymbol-test-154251542-56564105-78944416-98523170-02452336.d";
     auto fName = tempDir ~ dirSeparator ~ rName;
@@ -30,6 +33,11 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 
     ModuleCache mcache = ModuleCache(theAllocator);
     mcache.cacheModule(fName);
+
+    results = results
+        .dup
+        .schwartzSort!(a => internString(a[0]).ptr)
+        .array;
 
     size_t i;
     foreach (const(CacheEntry)* s; mcache.getAllSymbols)
