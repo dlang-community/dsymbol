@@ -244,6 +244,29 @@ static this()
 	builtinSymbols.insert(void_);
 	void_.type = void_;
 
+	auto string_ = make!DSymbol(Mallocator.instance, internString("string"), CompletionKind.aliasName,
+		make!DSymbol(Mallocator.instance, ARRAY_SYMBOL_NAME, CompletionKind.dummy, char_));
+	string_.type.addChildren(arraySymbols[], false);
+	string_.ownType = true;
+
+	auto wstring_ = make!DSymbol(Mallocator.instance, internString("wstring"), CompletionKind.aliasName,
+		make!DSymbol(Mallocator.instance, ARRAY_SYMBOL_NAME, CompletionKind.dummy, wchar_));
+	wstring_.type.addChildren(arraySymbols[], false);
+	wstring_.ownType = true;
+
+	auto dstring_ = make!DSymbol(Mallocator.instance, internString("dstring"), CompletionKind.aliasName,
+		make!DSymbol(Mallocator.instance, ARRAY_SYMBOL_NAME, CompletionKind.dummy, dchar_));
+	dstring_.type.addChildren(arraySymbols[], false);
+	dstring_.ownType = true;
+
+	auto size_t_ = make!DSymbol(Mallocator.instance, internString("size_t"), CompletionKind.aliasName, ulong_);
+	auto ptrdiff_t_ = make!DSymbol(Mallocator.instance, internString("ptrdiff_t"), CompletionKind.aliasName, long_);
+
+	builtinSymbols.insert(string_);
+	builtinSymbols.insert(wstring_);
+	builtinSymbols.insert(dstring_);
+	builtinSymbols.insert(size_t_);
+	builtinSymbols.insert(ptrdiff_t_);
 
 	foreach (s; ["__DATE__", "__EOF__", "__TIME__", "__TIMESTAMP__", "__VENDOR__",
 			"__VERSION__", "__FUNCTION__", "__PRETTY_FUNCTION__", "__MODULE__",
