@@ -30,8 +30,7 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     scope(exit) pair.destroy();
 
     size_t i;
-    foreach (const(CacheEntry)* s; mcache.getAllSymbols)
-        foreach(ss; (*s.symbol)[])
+    foreach(ss; (*pair.symbol)[])
     {
         if (ss.type)
         {
