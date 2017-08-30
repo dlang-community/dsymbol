@@ -370,13 +370,17 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const StructBody structBody)
 	{
+		import std.algorithm : move;
+
 		pushScope(structBody.startLocation, structBody.endLocation);
 		scope (exit) popScope();
 		protection.beginScope();
 		scope (exit) protection.endScope();
 
-		structFieldNames.clear();
-		structFieldTypes.clear();
+		auto savedStructFieldNames = move(structFieldNames);
+		auto savedStructFieldTypes = move(structFieldTypes);
+		scope(exit) structFieldNames = move(savedStructFieldNames);
+		scope(exit) structFieldTypes = move(savedStructFieldTypes);
 
 		DSymbol* thisSymbol = make!DSymbol(symbolAllocator, THIS_SYMBOL_NAME,
 			CompletionKind.variableName, currentSymbol.acSymbol);
