@@ -329,27 +329,10 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			baseClass = symbols[0];
 		}
 
-		static bool shouldSkipFromBase(const DSymbol* d) nothrow @nogc
-		{
-			if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == UNITTEST_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == THIS_SYMBOL_NAME.ptr)
-				return false;
-			if (d.kind == CompletionKind.keyword)
-				return false;
-			return true;
-		}
-
-		// TODO: This will not work with symbol replacement and cache invalidation
-		foreach (_; baseClass.opSlice().filter!shouldSkipFromBase())
-		{
-			symbol.addChild(_, false);
-			symbolScope.addSymbol(_, false);
-		}
+		DSymbol* imp = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
+			CompletionKind.importSymbol, baseClass);
+		symbol.addChild(imp, true);
+		symbolScope.addSymbol(imp, false);
 		if (baseClass.kind == CompletionKind.className)
 		{
 			auto s = cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME,
