@@ -89,6 +89,21 @@ unittest
     assert(C.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
 }
 
+unittest
+{
+    ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running alias this tests...");
+    auto source = q{ struct A {int f;} struct B { A a; alias a this; void fun() { auto var = f; };} };
+    auto pair = generateAutocompleteTrees(source, cache);
+    auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto B = pair.symbol.getFirstPartNamed(internString("B"));
+    auto Af = A.getFirstPartNamed(internString("f"));
+    auto fun = B.getFirstPartNamed(internString("fun"));
+    auto var = fun.getFirstPartNamed(internString("var"));
+    assert(Af is pair.scope_.getFirstSymbolByNameAndCursor(internString("f"), var.location));
+}
+
 static StringCache stringCache = void;
 static this()
 {
@@ -138,14 +153,14 @@ ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref Mo
     RollbackAllocator rba;
     Module m = parseModule(tokens, filename, &rba);
 
-	auto first = scoped!FirstPass(m, internString(filename),
+    auto first = scoped!FirstPass(m, internString(filename),
             theAllocator, theAllocator, true, &cache);
-	first.run();
+    first.run();
 
-	secondPass(first.rootSymbol, first.moduleScope, cache);
-	auto r = first.rootSymbol.acSymbol;
-	typeid(SemanticSymbol).destroy(first.rootSymbol);
-	return ScopeSymbolPair(r, first.moduleScope);
+    secondPass(first.rootSymbol, first.moduleScope, cache);
+    auto r = first.rootSymbol.acSymbol;
+    typeid(SemanticSymbol).destroy(first.rootSymbol);
+    return ScopeSymbolPair(r, first.moduleScope);
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, size_t cursorPosition, ref ModuleCache cache)
