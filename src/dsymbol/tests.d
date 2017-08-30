@@ -4,7 +4,7 @@ import std.experimental.allocator;
 import dparse.ast, dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
 import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;
-import dsymbol.semantic, dsymbol.string_interning;
+import dsymbol.semantic, dsymbol.string_interning, dsymbol.builtin.names;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
 import std.typecons : scoped;
@@ -68,6 +68,18 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
     //q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
     //q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running union constructor tests...");
+	auto source = q{ union A {int a; bool b;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+    assert(ACtor.callTip == "this(int a, bool b)");
 }
 
 static StringCache stringCache = void;
