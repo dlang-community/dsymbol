@@ -313,7 +313,8 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 		assert(lookup.breadcrumbs.length > 0);
 
 		// TODO: Delayed type lookup
-		auto symbolScope = moduleScope.getScopeByCursor(symbol.location);
+		auto symbolScope = moduleScope.getScopeByCursor(
+			symbol.location + symbol.name.length);
 		auto symbols = moduleScope.getSymbolsByNameAndCursor(lookup.breadcrumbs.front,
 			symbol.location);
 		if (symbols.length == 0)
