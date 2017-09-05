@@ -665,7 +665,7 @@ private:
 	void pushScope(size_t startLocation, size_t endLocation)
 	{
 		assert (startLocation < uint.max);
-		assert (endLocation < uint.max || endLocation == ulong.max);
+		assert (endLocation < uint.max || endLocation == size_t.max);
 		Scope* s = semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
