@@ -285,6 +285,11 @@ public:
 					if (onlyOne)
 						return;
 				}
+				if (name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr
+						|| name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr
+						|| name.ptr == UNITTEST_SYMBOL_NAME.ptr
+						|| name.ptr == THIS_SYMBOL_NAME.ptr)
+					return;	// these symbols should not be imported
 				foreach (im; parts.equalRange(SymbolOwnership(&p)))
 					if (im.type !is null && !im.skipOver)
 						im.type.getParts(name, app, visited, onlyOne);

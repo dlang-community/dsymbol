@@ -1,10 +1,13 @@
 module dsymbol.tests;
 
 import std.experimental.allocator;
-import dparse.parser, dparse.lexer, dparse.rollback_allocator;
+import dparse.ast, dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
+import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;
+import dsymbol.semantic, dsymbol.string_interning, dsymbol.builtin.names;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
+import std.typecons : scoped;
 
 /**
  * Parses `source`, caches its symbols and compares the the cache content
@@ -22,18 +25,12 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     import core.exception : AssertError;
     import std.exception : enforce;
 
-    static immutable rName = "dsymbol-test-154251542-56564105-78944416-98523170-02452336.d";
-    auto fName = tempDir ~ dirSeparator ~ rName;
-    fName.write(source);
-    scope(exit)
-        remove(fName);
-
     ModuleCache mcache = ModuleCache(theAllocator);
-    mcache.cacheModule(fName);
+    auto pair = generateAutocompleteTrees(source, mcache);
+    scope(exit) pair.destroy();
 
     size_t i;
-    foreach (const(CacheEntry)* s; mcache.getAllSymbols)
-        foreach(ss; (*s.symbol)[])
+    foreach(ss; (*pair.symbol)[])
     {
         if (ss.type)
         {
@@ -73,3 +70,93 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
     //q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+    writeln("Running non-importable symbols tests...");
+    auto source = q{
+        class A { this(int a){} }
+        class B : A {}
+        class C { A f; alias f this; }
+    };
+    auto pair = generateAutocompleteTrees(source, cache);
+    auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto B = pair.symbol.getFirstPartNamed(internString("B"));
+    auto C = pair.symbol.getFirstPartNamed(internString("C"));
+    assert(A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) !is null);
+    assert(B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+    assert(C.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+}
+
+static StringCache stringCache = void;
+static this()
+{
+    stringCache = StringCache(StringCache.defaultBucketCount);
+}
+
+const(Token)[] lex(string source)
+{
+    return lex(source, null);
+}
+
+const(Token)[] lex(string source, string filename)
+{
+    import dparse.lexer : getTokensForParser;
+    import std.string : representation;
+    LexerConfig config;
+    config.fileName = filename;
+    return getTokensForParser(source.dup.representation, config, &stringCache);
+}
+
+unittest
+{
+    auto tokens = lex(q{int a = 9;});
+    foreach(i, t;
+        cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
+    {
+        assert(tokens[i] == t);
+    }
+    assert(tokens[1].text == "a", tokens[1].text);
+    assert(tokens[3].text == "9", tokens[3].text);
+}
+
+string randomDFilename()
+{
+    import std.uuid : randomUUID;
+    return "dsymbol_" ~ randomUUID().toString() ~ ".d";
+}
+
+ScopeSymbolPair generateAutocompleteTrees(string source, ref ModuleCache cache)
+{
+    return generateAutocompleteTrees(source, randomDFilename, cache);
+}
+
+ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref ModuleCache cache)
+{
+    auto tokens = lex(source);
+    RollbackAllocator rba;
+    Module m = parseModule(tokens, filename, &rba);
+
+	auto first = scoped!FirstPass(m, internString(filename),
+            theAllocator, theAllocator, true, &cache);
+	first.run();
+
+	secondPass(first.rootSymbol, first.moduleScope, cache);
+	auto r = first.rootSymbol.acSymbol;
+	typeid(SemanticSymbol).destroy(first.rootSymbol);
+	return ScopeSymbolPair(r, first.moduleScope);
+}
+
+ScopeSymbolPair generateAutocompleteTrees(string source, size_t cursorPosition, ref ModuleCache cache)
+{
+    return generateAutocompleteTrees(source, null, cache);
+}
+
+ScopeSymbolPair generateAutocompleteTrees(string source, string filename, size_t cursorPosition, ref ModuleCache cache)
+{
+    auto tokens = lex(source);
+    RollbackAllocator rba;
+    return dsymbol.conversion.generateAutocompleteTrees(
+            tokens, theAllocator, &rba, cursorPosition, cache);
+}
