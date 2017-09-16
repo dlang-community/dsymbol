@@ -118,6 +118,9 @@ struct ModuleCache
 			{
 				void scanFrom(const string root)
 				{
+					if (exists(buildPath(root, ".no-dcd")))
+						return;
+
 					try foreach (f; dirEntries(root, SpanMode.shallow))
 					{
 						if (f.name.isFile)
