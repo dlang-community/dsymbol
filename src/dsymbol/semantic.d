@@ -120,14 +120,11 @@ static this()
 	// _arguments has type TypeInfo[]
 	argumentsType = make!Type(Mallocator.instance);
 	argumentsType.type2 = make!Type2(Mallocator.instance);
-	argumentsType.type2.symbol = make!Symbol(Mallocator.instance);
-	argumentsType.type2.symbol.identifierOrTemplateChain = make!IdentifierOrTemplateChain(Mallocator.instance);
+	argumentsType.type2.typeIdentifierPart = make!TypeIdentifierPart(Mallocator.instance);
 	IdentifierOrTemplateInstance i = make!IdentifierOrTemplateInstance(Mallocator.instance);
 	i.identifier.text = internString("TypeInfo");
 	i.identifier.type = tok!"identifier";
-	argumentsType.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances =
-		cast(IdentifierOrTemplateInstance[]) Mallocator.instance.allocate(IdentifierOrTemplateInstance.sizeof);
-	argumentsType.type2.symbol.identifierOrTemplateChain.identifiersOrTemplateInstances[0] = i;
+	argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance = i;
 	TypeSuffix argumentsTypeSuffix = make!TypeSuffix(Mallocator.instance);
 	argumentsTypeSuffix.array = true;
 	argumentsType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
