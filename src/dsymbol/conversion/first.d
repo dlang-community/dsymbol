@@ -186,7 +186,8 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const BaseClass bc)
 	{
-		if (bc.type2.typeIdentifierPart is null)
+		if (bc.type2.typeIdentifierPart is null ||
+			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
 		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
