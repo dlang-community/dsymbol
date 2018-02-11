@@ -72,13 +72,13 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 
 unittest
 {
-	ModuleCache cache = ModuleCache(theAllocator);
+    ModuleCache cache = ModuleCache(theAllocator);
 
     writeln("Running struct constructor tests...");
-	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
-	auto pair = generateAutocompleteTrees(source, cache);
-	auto A = pair.symbol.getFirstPartNamed(internString("A"));
-	auto B = A.getFirstPartNamed(internString("B"));
+    auto source = q{ struct A {int a; struct B {bool b;} int c;} };
+    auto pair = generateAutocompleteTrees(source, cache);
+    auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto B = A.getFirstPartNamed(internString("B"));
     auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
     auto BCtor = B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
     assert(ACtor.callTip == "this(int a, int c)");
@@ -90,16 +90,16 @@ unittest
 	ModuleCache cache = ModuleCache(theAllocator);
 
     writeln("Running union constructor tests...");
-	auto source = q{ union A {int a; bool b;} };
-	auto pair = generateAutocompleteTrees(source, cache);
-	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+    auto source = q{ union A {int a; bool b;} };
+    auto pair = generateAutocompleteTrees(source, cache);
+    auto A = pair.symbol.getFirstPartNamed(internString("A"));
     auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
     assert(ACtor.callTip == "this(int a, bool b)");
 }
 
 unittest
 {
-	ModuleCache cache = ModuleCache(theAllocator);
+    ModuleCache cache = ModuleCache(theAllocator);
     writeln("Running non-importable symbols tests...");
     auto source = q{
         class A { this(int a){} }
@@ -199,5 +199,5 @@ ScopeSymbolPair generateAutocompleteTrees(string source, string filename, size_t
     auto tokens = lex(source);
     RollbackAllocator rba;
     return dsymbol.conversion.generateAutocompleteTrees(
-            tokens, theAllocator, &rba, cursorPosition, cache);
+        tokens, theAllocator, &rba, cursorPosition, cache);
 }
