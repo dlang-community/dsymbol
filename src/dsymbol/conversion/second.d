@@ -29,8 +29,8 @@ import dsymbol.deferred;
 import dsymbol.import_;
 import dsymbol.modulecache;
 import containers.unrolledlist;
-import std.experimental.allocator;
-import std.experimental.allocator.mallocator;
+import stdx.allocator;
+import stdx.allocator.mallocator;
 import std.experimental.logger;
 import dparse.ast;
 import dparse.lexer;
@@ -84,7 +84,7 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 	case interfaceName:
 	case structName:
 	case unionName:
-		resolveAliasThis(currentSymbol.acSymbol, currentSymbol.typeLookups, cache);
+		resolveAliasThis(currentSymbol.acSymbol, currentSymbol.typeLookups, moduleScope, cache);
 		resolveMixinTemplates(currentSymbol.acSymbol, currentSymbol.typeLookups,
 			moduleScope, cache);
 		break;
@@ -329,27 +329,10 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			baseClass = symbols[0];
 		}
 
-		static bool shouldSkipFromBase(const DSymbol* d) nothrow @nogc
-		{
-			if (d.name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == UNITTEST_SYMBOL_NAME.ptr)
-				return false;
-			if (d.name.ptr == THIS_SYMBOL_NAME.ptr)
-				return false;
-			if (d.kind == CompletionKind.keyword)
-				return false;
-			return true;
-		}
-
-		// TODO: This will not work with symbol replacement and cache invalidation
-		foreach (_; baseClass.opSlice().filter!shouldSkipFromBase())
-		{
-			symbol.addChild(_, false);
-			symbolScope.addSymbol(_, false);
-		}
+		DSymbol* imp = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
+			CompletionKind.importSymbol, baseClass);
+		symbol.addChild(imp, true);
+		symbolScope.addSymbol(imp, false);
 		if (baseClass.kind == CompletionKind.className)
 		{
 			auto s = cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME,
@@ -360,7 +343,7 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 }
 
 void resolveAliasThis(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -373,6 +356,9 @@ void resolveAliasThis(DSymbol* symbol,
 		DSymbol* s = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
 			CompletionKind.importSymbol, parts[0].type);
 		symbol.addChild(s, true);
+		auto symbolScope = moduleScope.getScopeByCursor(s.location);
+		if (symbolScope !is null)
+			symbolScope.addSymbol(s, false);
 	}
 }
 

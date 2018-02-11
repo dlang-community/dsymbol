@@ -4,8 +4,8 @@ import dsymbol.symbol;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import containers.ttree;
-import std.experimental.allocator;
-import std.experimental.allocator.mallocator;
+import stdx.allocator;
+import stdx.allocator.mallocator;
 import dparse.lexer;
 
 /**

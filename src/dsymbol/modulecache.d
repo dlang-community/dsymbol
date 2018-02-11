@@ -32,11 +32,11 @@ import dsymbol.symbol;
 import dsymbol.string_interning;
 import dsymbol.deferred;
 import std.algorithm;
-import std.experimental.allocator;
-import std.experimental.allocator.building_blocks.allocator_list;
-import std.experimental.allocator.building_blocks.region;
-import std.experimental.allocator.building_blocks.null_allocator;
-import std.experimental.allocator.mallocator;
+import stdx.allocator;
+import stdx.allocator.building_blocks.allocator_list;
+import stdx.allocator.building_blocks.region;
+import stdx.allocator.building_blocks.null_allocator;
+import stdx.allocator.mallocator;
 import std.conv;
 import dparse.ast;
 import std.datetime;
@@ -118,6 +118,9 @@ struct ModuleCache
 			{
 				void scanFrom(const string root)
 				{
+					if (exists(buildPath(root, ".no-dcd")))
+						return;
+
 					try foreach (f; dirEntries(root, SpanMode.shallow))
 					{
 						if (f.name.isFile)
