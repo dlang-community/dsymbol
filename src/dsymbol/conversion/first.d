@@ -210,7 +210,8 @@ final class FirstPass : ASTVisitor
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
 
-			if (currentSymbol.acSymbol.kind == CompletionKind.structName)
+			if (currentSymbol.acSymbol.kind == CompletionKind.structName
+				|| currentSymbol.acSymbol.kind == CompletionKind.unionName)
 			{
 				structFieldNames.insert(symbol.acSymbol.name);
 				// TODO: remove this cast. See the note on structFieldTypes
@@ -231,7 +232,8 @@ final class FirstPass : ASTVisitor
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
 
-				if (currentSymbol.acSymbol.kind == CompletionKind.structName)
+				if (currentSymbol.acSymbol.kind == CompletionKind.structName
+					|| currentSymbol.acSymbol.kind == CompletionKind.unionName)
 				{
 					structFieldNames.insert(symbol.acSymbol.name);
 					// TODO: remove this cast. See the note on structFieldTypes
@@ -390,7 +392,8 @@ final class FirstPass : ASTVisitor
 			visit(dec);
 
 		// If no constructor is found, generate one
-		if (currentSymbol.acSymbol.kind == CompletionKind.structName
+		if ((currentSymbol.acSymbol.kind == CompletionKind.structName
+				|| currentSymbol.acSymbol.kind == CompletionKind.unionName)
 				&& currentSymbol.acSymbol.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null)
 			createConstructor();
 	}
