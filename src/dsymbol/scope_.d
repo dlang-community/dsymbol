@@ -155,23 +155,29 @@ struct Scope
 				return cast(typeof(return)) app.data;
 		}
 
-		// Check imported symbols
-		DSymbol ir = DSymbol(IMPORT_SYMBOL_NAME);
-
-		auto app = appender!(DSymbol*[])();
-		foreach (e; _symbols.equalRange(SymbolOwnership(&ir)))
+		if (name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr
+				&& name.ptr != DESTRUCTOR_SYMBOL_NAME.ptr
+				&& name.ptr != UNITTEST_SYMBOL_NAME.ptr
+				&& name.ptr != THIS_SYMBOL_NAME.ptr)
 		{
-			if (e.type is null)
-				continue;
-			if (e.qualifier == SymbolQualifier.selectiveImport &&
-					e.type.name.ptr == name.ptr)
-				app.put(cast(DSymbol*) e.type);
-			else
-				foreach (importedSymbol; e.type.getPartsByName(s.name))
-					app.put(cast(DSymbol*) importedSymbol);
+			// Check imported symbols
+			DSymbol ir = DSymbol(IMPORT_SYMBOL_NAME);
+
+			auto app = appender!(DSymbol*[])();
+			foreach (e; _symbols.equalRange(SymbolOwnership(&ir)))
+			{
+				if (e.type is null)
+					continue;
+				if (e.qualifier == SymbolQualifier.selectiveImport &&
+						e.type.name.ptr == name.ptr)
+					app.put(cast(DSymbol*) e.type);
+				else
+					foreach (importedSymbol; e.type.getPartsByName(s.name))
+						app.put(cast(DSymbol*) importedSymbol);
+			}
+			if (app.data.length > 0)
+				return cast(typeof(return)) app.data;
 		}
-		if (app.data.length > 0)
-			return cast(typeof(return)) app.data;
 		if (parent is null)
 			return [];
 		return parent.getSymbolsByName(name);

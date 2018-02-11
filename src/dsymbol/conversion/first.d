@@ -186,11 +186,11 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const BaseClass bc)
 	{
-		if (bc.type2.symbol is null || bc.type2.symbol.identifierOrTemplateChain is null)
+		if (bc.type2.typeIdentifierPart is null ||
+			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
-		writeIotcTo(bc.type2.symbol.identifierOrTemplateChain,
-			lookup.breadcrumbs);
+		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
 	}
 
@@ -247,7 +247,7 @@ final class FirstPass : ASTVisitor
 	{
 		if (aliasDeclaration.initializers.length == 0)
 		{
-			foreach (name; aliasDeclaration.identifierList.identifiers)
+			foreach (name; aliasDeclaration.declaratorIdentifierList.identifiers)
 			{
 				SemanticSymbol* symbol = allocateSemanticSymbol(
 					name.text, CompletionKind.aliasName, symbolFile, name.index);
@@ -668,7 +668,7 @@ private:
 	void pushScope(size_t startLocation, size_t endLocation)
 	{
 		assert (startLocation < uint.max);
-		assert (endLocation < uint.max || endLocation == ulong.max);
+		assert (endLocation < uint.max || endLocation == size_t.max);
 		Scope* s = semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
@@ -938,8 +938,8 @@ private:
 			lookup.breadcrumbs.insert(internString("super"));
 		else if (t2.builtinType !is tok!"")
 			lookup.breadcrumbs.insert(getBuiltinTypeName(t2.builtinType));
-		else if (t2.symbol !is null)
-			writeIotcTo(t2.symbol.identifierOrTemplateChain, lookup.breadcrumbs);
+		else if (t2.typeIdentifierPart !is null)
+			writeIotcTo(t2.typeIdentifierPart, lookup.breadcrumbs);
 		else
 		{
 			// TODO: Add support for typeof expressions
@@ -1107,7 +1107,47 @@ void formatNode(A, T)(ref A appender, const T node)
 
 private:
 
-auto byIdentifier(const IdentifierOrTemplateChain iotc)
+auto byIdentifier(const TypeIdentifierPart tip) pure nothrow @trusted
+{
+	TypeIdentifierPart root = cast() tip;
+
+	struct Range
+	{
+		auto front() pure nothrow @nogc @safe
+		{
+			assert(root !is null);
+			assert(root.identifierOrTemplateInstance !is null);
+
+			with (root.identifierOrTemplateInstance)
+			return identifier != tok!""
+				? identifier.text
+				: templateInstance.identifier.text;
+		}
+
+		void popFront() pure nothrow @nogc @safe
+		{
+			assert(root !is null, "attempt to pop the front of an empty byIdentifier.Range");
+			root = cast() root.typeIdentifierPart;
+		}
+
+		bool empty() pure nothrow @nogc @safe
+		{
+			return root is null;
+		}
+	}
+
+	Range range;
+	return range;
+}
+
+void writeIotcTo(T)(const TypeIdentifierPart tip, ref T output) nothrow
+{
+	import std.algorithm : each;
+
+	byIdentifier(tip).each!(a => output.insert(internString(a)));
+}
+
+auto byIdentifier(const IdentifierOrTemplateChain iotc) nothrow
 {
 	import std.algorithm : map;
 
@@ -1116,7 +1156,7 @@ auto byIdentifier(const IdentifierOrTemplateChain iotc)
 		: a.identifier.text);
 }
 
-void writeIotcTo(T)(const IdentifierOrTemplateChain iotc, ref T output)
+void writeIotcTo(T)(const IdentifierOrTemplateChain iotc, ref T output) nothrow
 {
 	import std.algorithm : each;
 
