@@ -18,8 +18,8 @@
 
 module dsymbol.symbol;
 
-import std.experimental.allocator;
-import std.experimental.allocator.mallocator : Mallocator;
+import stdx.allocator;
+import stdx.allocator.mallocator : Mallocator;
 import std.array;
 
 import containers.ttree;

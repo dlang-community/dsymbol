@@ -1,6 +1,6 @@
 module dsymbol.tests;
 
-import std.experimental.allocator;
+import stdx.allocator;
 import dparse.ast, dparse.parser, dparse.lexer, dparse.rollback_allocator;
 import dsymbol.cache_entry, dsymbol.modulecache, dsymbol.symbol;
 import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;

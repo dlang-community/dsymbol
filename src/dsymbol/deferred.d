@@ -24,8 +24,8 @@ import dsymbol.string_interning;
 import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
-import std.experimental.allocator;
-import std.experimental.allocator.mallocator;
+import stdx.allocator;
+import stdx.allocator.mallocator;
 
 /**
  * Contains information for deferred type resolution
