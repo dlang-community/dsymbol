@@ -84,7 +84,7 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 	case interfaceName:
 	case structName:
 	case unionName:
-		resolveAliasThis(currentSymbol.acSymbol, currentSymbol.typeLookups, cache);
+		resolveAliasThis(currentSymbol.acSymbol, currentSymbol.typeLookups, moduleScope, cache);
 		resolveMixinTemplates(currentSymbol.acSymbol, currentSymbol.typeLookups,
 			moduleScope, cache);
 		break;
@@ -343,7 +343,7 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 }
 
 void resolveAliasThis(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -356,6 +356,9 @@ void resolveAliasThis(DSymbol* symbol,
 		DSymbol* s = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
 			CompletionKind.importSymbol, parts[0].type);
 		symbol.addChild(s, true);
+		auto symbolScope = moduleScope.getScopeByCursor(s.location);
+		if (symbolScope !is null)
+			symbolScope.addSymbol(s, false);
 	}
 }
 
