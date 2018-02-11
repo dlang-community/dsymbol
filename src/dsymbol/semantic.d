@@ -23,7 +23,7 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
-import std.experimental.allocator.mallocator : Mallocator;
+import stdx.allocator.mallocator : Mallocator;
 
 enum ResolutionFlags : ubyte
 {
@@ -56,8 +56,8 @@ public:
 
 	~this()
 	{
-		import std.experimental.allocator.mallocator : Mallocator;
-		import std.experimental.allocator : dispose;
+		import stdx.allocator.mallocator : Mallocator;
+		import stdx.allocator : dispose;
 
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
@@ -103,8 +103,8 @@ Type argumentsType;
 static this()
 {
 	import dsymbol.string_interning : internString;
-	import std.experimental.allocator : make;
-	import std.experimental.allocator.mallocator : Mallocator;
+	import stdx.allocator : make;
+	import stdx.allocator.mallocator : Mallocator;
 
 	// TODO: Replace these with DSymbols
 
