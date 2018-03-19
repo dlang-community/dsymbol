@@ -201,7 +201,7 @@ public:
 			typeid(DSymbol).destroy(type);
 	}
 
-	int opCmp(ref const DSymbol other) const pure nothrow @trusted
+	int opCmp(ref const DSymbol other) const pure nothrow @trusted @nogc
 	{
 		// Compare the pointers because the strings have been interned.
 		// Identical strings MUST have the same address
@@ -392,12 +392,12 @@ public:
 	/**
 	 * DSymbol location
 	 */
-	size_t location() const pure nothrow @nogc @property
+	size_t location() const pure nothrow @nogc @property @safe
 	{
 		return _location;
 	}
 
-	void location(size_t location) pure nothrow @nogc @property
+	void location(size_t location) pure nothrow @nogc @property @safe
 	{
 		// If the symbol was declared in a file, assert that it has a location
 		// in that file. Built-in symbols don't need a location.
@@ -429,7 +429,7 @@ public:
 
 struct UpdatePair
 {
-	int opCmp(ref const UpdatePair other) const
+	int opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
 	{
 		immutable size_t otherOld = cast(size_t) other.oldSymbol;
 		immutable size_t thisOld = cast(size_t) this.oldSymbol;
@@ -461,7 +461,7 @@ void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairC
 
 struct SymbolOwnership
 {
-	int opCmp(ref const SymbolOwnership other) const
+	int opCmp(ref const SymbolOwnership other) const @nogc
 	{
 		return this.ptr.opCmp(*other.ptr);
 	}
