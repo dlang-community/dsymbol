@@ -28,7 +28,7 @@ struct CacheEntry
 			typeid(DSymbol).destroy(symbol);
 	}
 
-	int opCmp(ref const CacheEntry other) const
+	int opCmp(ref const CacheEntry other) const pure nothrow @nogc @safe
 	{
 		immutable int r = path > other.path;
 		if (path < other.path)
@@ -36,7 +36,7 @@ struct CacheEntry
 		return r;
 	}
 
-	bool opEquals(ref const CacheEntry other) const
+	bool opEquals(ref const CacheEntry other) const pure nothrow @nogc @safe
 	{
 		return path == other.path;
 	}
