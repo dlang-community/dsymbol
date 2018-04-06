@@ -6,7 +6,7 @@
 	"authors": ["Brian Schott"],
 	"dependencies": {
 		"libdparse": "~>0.8.0-alpha.1",
-		"emsi_containers": "~>0.6.0",
+		"emsi_containers": "~>0.7.0",
 		"stdx-allocator": "~>2.77.0"
 	}
 }
