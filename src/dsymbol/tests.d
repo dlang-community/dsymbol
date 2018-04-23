@@ -20,184 +20,202 @@ import std.typecons : scoped;
  */
 version (unittest):
 void expectSymbolsAndTypes(const string source, const string[][] results,
-    string file = __FILE_FULL_PATH__, size_t line = __LINE__)
+	string file = __FILE_FULL_PATH__, size_t line = __LINE__)
 {
-    import core.exception : AssertError;
-    import std.exception : enforce;
+	import core.exception : AssertError;
+	import std.exception : enforce;
 
-    ModuleCache mcache = ModuleCache(theAllocator);
-    auto pair = generateAutocompleteTrees(source, mcache);
-    scope(exit) pair.destroy();
+	ModuleCache mcache = ModuleCache(theAllocator);
+	auto pair = generateAutocompleteTrees(source, mcache);
+	scope(exit) pair.destroy();
 
-    size_t i;
-    foreach(ss; (*pair.symbol)[])
-    {
-        if (ss.type)
-        {
-            enforce!AssertError(i <= results.length, "not enough results", file, line);
-            enforce!AssertError(results[i].length > 1,
-                "at least one type must be present in a result row", file, line);
-            enforce!AssertError(ss.name == results[i][0],
-                "expected variableName: `%s` but got `%s`".format(results[i][0], ss.name),
-                file, line);
+	size_t i;
+	foreach(ss; (*pair.symbol)[])
+	{
+		if (ss.type)
+		{
+			enforce!AssertError(i <= results.length, "not enough results", file, line);
+			enforce!AssertError(results[i].length > 1,
+				"at least one type must be present in a result row", file, line);
+			enforce!AssertError(ss.name == results[i][0],
+				"expected variableName: `%s` but got `%s`".format(results[i][0], ss.name),
+				file, line);
 
-            auto t = cast() ss.type;
-            foreach (immutable j; 1..results[i].length)
-            {
-                enforce!AssertError(t != null, "null symbol", file, line);
-                enforce!AssertError(t.name == results[i][j],
-                    "expected typeName: `%s` but got `%s`".format(results[i][j], t.name),
-                    file, line);
-                if (t.type is t && t.name.length && t.name[0] != '*')
-                    break;
-                t = t.type;
-            }
-            i++;
-        }
-    }
+			auto t = cast() ss.type;
+			foreach (immutable j; 1..results[i].length)
+			{
+				enforce!AssertError(t != null, "null symbol", file, line);
+				enforce!AssertError(t.name == results[i][j],
+					"expected typeName: `%s` but got `%s`".format(results[i][j], t.name),
+					file, line);
+				if (t.type is t && t.name.length && t.name[0] != '*')
+					break;
+				t = t.type;
+			}
+			i++;
+		}
+	}
 }
 
 @system unittest
 {
-    writeln("Running type deduction tests...");
-    q{bool b; int i;}.expectSymbolsAndTypes([["b", "bool"],["i", "int"]]);
-    q{auto b = false;}.expectSymbolsAndTypes([["b", "bool"]]);
-    q{auto b = true;}.expectSymbolsAndTypes([["b", "bool"]]);
-    q{auto b = [0];}.expectSymbolsAndTypes([["b", "*arr*", "int"]]);
-    q{auto b = [[0]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "int"]]);
-    q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
-    //q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
-    //q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
-}
-
-unittest
-{
-    ModuleCache cache = ModuleCache(theAllocator);
-
-    writeln("Running struct constructor tests...");
-    auto source = q{ struct A {int a; struct B {bool b;} int c;} };
-    auto pair = generateAutocompleteTrees(source, cache);
-    auto A = pair.symbol.getFirstPartNamed(internString("A"));
-    auto B = A.getFirstPartNamed(internString("B"));
-    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
-    auto BCtor = B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
-    assert(ACtor.callTip == "this(int a, int c)");
-    assert(BCtor.callTip == "this(bool b)");
+	writeln("Running type deduction tests...");
+	q{bool b; int i;}.expectSymbolsAndTypes([["b", "bool"],["i", "int"]]);
+	q{auto b = false;}.expectSymbolsAndTypes([["b", "bool"]]);
+	q{auto b = true;}.expectSymbolsAndTypes([["b", "bool"]]);
+	q{auto b = [0];}.expectSymbolsAndTypes([["b", "*arr*", "int"]]);
+	q{auto b = [[0]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "int"]]);
+	q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
+	//q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
+	//q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
 }
 
 unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
-    writeln("Running union constructor tests...");
-    auto source = q{ union A {int a; bool b;} };
-    auto pair = generateAutocompleteTrees(source, cache);
-    auto A = pair.symbol.getFirstPartNamed(internString("A"));
-    auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
-    assert(ACtor.callTip == "this(int a, bool b)");
+	writeln("Running struct constructor tests...");
+	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = A.getFirstPartNamed(internString("B"));
+	auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+	auto BCtor = B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+	assert(ACtor.callTip == "this(int a, int c)");
+	assert(BCtor.callTip == "this(bool b)");
 }
 
 unittest
 {
-    ModuleCache cache = ModuleCache(theAllocator);
-    writeln("Running non-importable symbols tests...");
-    auto source = q{
-        class A { this(int a){} }
-        class B : A {}
-        class C { A f; alias f this; }
-    };
-    auto pair = generateAutocompleteTrees(source, cache);
-    auto A = pair.symbol.getFirstPartNamed(internString("A"));
-    auto B = pair.symbol.getFirstPartNamed(internString("B"));
-    auto C = pair.symbol.getFirstPartNamed(internString("C"));
-    assert(A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) !is null);
-    assert(B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
-    assert(C.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running union constructor tests...");
+	auto source = q{ union A {int a; bool b;} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto ACtor = A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME);
+	assert(ACtor.callTip == "this(int a, bool b)");
 }
 
 unittest
 {
-    ModuleCache cache = ModuleCache(theAllocator);
+	ModuleCache cache = ModuleCache(theAllocator);
+	writeln("Running non-importable symbols tests...");
+	auto source = q{
+		class A { this(int a){} }
+		class B : A {}
+		class C { A f; alias f this; }
+	};
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	auto C = pair.symbol.getFirstPartNamed(internString("C"));
+	assert(A.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) !is null);
+	assert(B.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+	assert(C.getFirstPartNamed(CONSTRUCTOR_SYMBOL_NAME) is null);
+}
 
-    writeln("Running alias this tests...");
-    auto source = q{ struct A {int f;} struct B { A a; alias a this; void fun() { auto var = f; };} };
-    auto pair = generateAutocompleteTrees(source, cache);
-    auto A = pair.symbol.getFirstPartNamed(internString("A"));
-    auto B = pair.symbol.getFirstPartNamed(internString("B"));
-    auto Af = A.getFirstPartNamed(internString("f"));
-    auto fun = B.getFirstPartNamed(internString("fun"));
-    auto var = fun.getFirstPartNamed(internString("var"));
-    assert(Af is pair.scope_.getFirstSymbolByNameAndCursor(internString("f"), var.location));
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running alias this tests...");
+	auto source = q{ struct A {int f;} struct B { A a; alias a this; void fun() { auto var = f; };} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	auto Af = A.getFirstPartNamed(internString("f"));
+	auto fun = B.getFirstPartNamed(internString("fun"));
+	auto var = fun.getFirstPartNamed(internString("var"));
+	assert(Af is pair.scope_.getFirstSymbolByNameAndCursor(internString("f"), var.location));
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running `super` tests...");
+	auto source = q{ class A {} class B : A {} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	assert(pair.symbol);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	auto scopeA = (pair.scope_.getScopeByCursor(A.location + A.name.length));
+	auto scopeB = (pair.scope_.getScopeByCursor(B.location + B.name.length));
+	assert(scopeA !is scopeB);
+
+	assert(!scopeA.getSymbolsByName(SUPER_SYMBOL_NAME).length);
+	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
 }
 
 static StringCache stringCache = void;
 static this()
 {
-    stringCache = StringCache(StringCache.defaultBucketCount);
+	stringCache = StringCache(StringCache.defaultBucketCount);
 }
 
 const(Token)[] lex(string source)
 {
-    return lex(source, null);
+	return lex(source, null);
 }
 
 const(Token)[] lex(string source, string filename)
 {
-    import dparse.lexer : getTokensForParser;
-    import std.string : representation;
-    LexerConfig config;
-    config.fileName = filename;
-    return getTokensForParser(source.dup.representation, config, &stringCache);
+	import dparse.lexer : getTokensForParser;
+	import std.string : representation;
+	LexerConfig config;
+	config.fileName = filename;
+	return getTokensForParser(source.dup.representation, config, &stringCache);
 }
 
 unittest
 {
-    auto tokens = lex(q{int a = 9;});
-    foreach(i, t;
-        cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
-    {
-        assert(tokens[i] == t);
-    }
-    assert(tokens[1].text == "a", tokens[1].text);
-    assert(tokens[3].text == "9", tokens[3].text);
+	auto tokens = lex(q{int a = 9;});
+	foreach(i, t;
+		cast(IdType[]) [tok!"int", tok!"identifier", tok!"=", tok!"intLiteral", tok!";"])
+	{
+		assert(tokens[i] == t);
+	}
+	assert(tokens[1].text == "a", tokens[1].text);
+	assert(tokens[3].text == "9", tokens[3].text);
 }
 
 string randomDFilename()
 {
-    import std.uuid : randomUUID;
-    return "dsymbol_" ~ randomUUID().toString() ~ ".d";
+	import std.uuid : randomUUID;
+	return "dsymbol_" ~ randomUUID().toString() ~ ".d";
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, ref ModuleCache cache)
 {
-    return generateAutocompleteTrees(source, randomDFilename, cache);
+	return generateAutocompleteTrees(source, randomDFilename, cache);
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref ModuleCache cache)
 {
-    auto tokens = lex(source);
-    RollbackAllocator rba;
-    Module m = parseModule(tokens, filename, &rba);
+	auto tokens = lex(source);
+	RollbackAllocator rba;
+	Module m = parseModule(tokens, filename, &rba);
 
-    auto first = scoped!FirstPass(m, internString(filename),
-            theAllocator, theAllocator, true, &cache);
-    first.run();
+	auto first = scoped!FirstPass(m, internString(filename),
+			theAllocator, theAllocator, true, &cache);
+	first.run();
 
-    secondPass(first.rootSymbol, first.moduleScope, cache);
-    auto r = first.rootSymbol.acSymbol;
-    typeid(SemanticSymbol).destroy(first.rootSymbol);
-    return ScopeSymbolPair(r, first.moduleScope);
+	secondPass(first.rootSymbol, first.moduleScope, cache);
+	auto r = first.rootSymbol.acSymbol;
+	typeid(SemanticSymbol).destroy(first.rootSymbol);
+	return ScopeSymbolPair(r, first.moduleScope);
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, size_t cursorPosition, ref ModuleCache cache)
 {
-    return generateAutocompleteTrees(source, null, cache);
+	return generateAutocompleteTrees(source, null, cache);
 }
 
 ScopeSymbolPair generateAutocompleteTrees(string source, string filename, size_t cursorPosition, ref ModuleCache cache)
 {
-    auto tokens = lex(source);
-    RollbackAllocator rba;
-    return dsymbol.conversion.generateAutocompleteTrees(
-        tokens, theAllocator, &rba, cursorPosition, cache);
+	auto tokens = lex(source);
+	RollbackAllocator rba;
+	return dsymbol.conversion.generateAutocompleteTrees(
+		tokens, theAllocator, &rba, cursorPosition, cache);
 }
