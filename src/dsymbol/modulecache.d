@@ -193,9 +193,8 @@ struct ModuleCache
 		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
 
 		assert (symbolAllocator);
-		auto first = Mallocator.instance.make!FirstPass(m, cachedLocation, symbolAllocator,
+		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
 			semanticAllocator, false, &this, newEntry);
-		scope(exit) Mallocator.instance.dispose(first);
 		first.run();
 
 		secondPass(first.rootSymbol, first.moduleScope, this);
