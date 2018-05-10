@@ -90,19 +90,19 @@ static this()
 	assocArraySymbols.insert(init);
 	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("values"), CompletionKind.keyword));
 
-	DSymbol*[11] integralTypeArray;
+	DSymbol*[12] integralTypeArray;
 	integralTypeArray[0] = bool_;
 	integralTypeArray[1] = int_;
 	integralTypeArray[2] = long_;
 	integralTypeArray[3] = byte_;
 	integralTypeArray[4] = char_;
-	integralTypeArray[4] = dchar_;
-	integralTypeArray[5] = short_;
-	integralTypeArray[6] = ubyte_;
-	integralTypeArray[7] = uint_;
-	integralTypeArray[8] = ulong_;
-	integralTypeArray[9] = ushort_;
-	integralTypeArray[10] = wchar_;
+	integralTypeArray[5] = dchar_;
+	integralTypeArray[6] = short_;
+	integralTypeArray[7] = ubyte_;
+	integralTypeArray[8] = uint_;
+	integralTypeArray[9] = ulong_;
+	integralTypeArray[10] = ushort_;
+	integralTypeArray[11] = wchar_;
 
 	foreach (s; integralTypeArray)
 	{
