@@ -625,10 +625,10 @@ final class FirstPass : ASTVisitor
 	override void visit(const WithStatement withStatement)
 	{
 		if (withStatement.expression !is null
-			&& withStatement.statementNoCaseNoDefault !is null)
+			&& withStatement.declarationOrStatement !is null)
 		{
-			pushScope(withStatement.statementNoCaseNoDefault.startLocation,
-				withStatement.statementNoCaseNoDefault.endLocation);
+			pushScope(withStatement.declarationOrStatement.startLocation,
+				withStatement.declarationOrStatement.endLocation);
 			scope(exit) popScope();
 
 			pushSymbol(WITH_SYMBOL_NAME, CompletionKind.withSymbol, symbolFile,
