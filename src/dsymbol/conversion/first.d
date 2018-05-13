@@ -590,25 +590,45 @@ final class FirstPass : ASTVisitor
 	{
 		if (foreachTypeIndex++ == foreachTypeIndexOfInterest)
 		{
-		    SemanticSymbol* symbol = allocateSemanticSymbol(feType.identifier.text,
-			    CompletionKind.variableName, symbolFile, feType.identifier.index);
-		    if (feType.type !is null)
-			    addTypeToLookups(symbol.typeLookups, feType.type);
-		    symbol.parent = currentSymbol;
-		    currentSymbol.addChild(symbol, true);
-		    currentScope.addSymbol(symbol.acSymbol, true);
-		    if (symbol.typeLookups.empty && feExpression !is null)
-			    populateInitializer(symbol, feExpression, true);
+			SemanticSymbol* symbol = allocateSemanticSymbol(feType.identifier.text,
+				CompletionKind.variableName, symbolFile, feType.identifier.index);
+			if (feType.type !is null)
+				addTypeToLookups(symbol.typeLookups, feType.type);
+			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
+			currentScope.addSymbol(symbol.acSymbol, true);
+			if (symbol.typeLookups.empty && feExpression !is null)
+				populateInitializer(symbol, feExpression, true);
 		}
+	}
+
+	override void visit(const IfStatement ifs)
+	{
+		if (ifs.identifier != tok!"")
+		{
+			pushScope(ifs.thenStatement.startLocation, ifs.thenStatement.endLocation);
+			scope(exit) popScope();
+
+			SemanticSymbol* symbol = allocateSemanticSymbol(ifs.identifier.text,
+				CompletionKind.variableName, symbolFile, ifs.identifier.index);
+			if (ifs.type !is null)
+				addTypeToLookups(symbol.typeLookups, ifs.type);
+			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
+			currentScope.addSymbol(symbol.acSymbol, true);
+			if (symbol.typeLookups.empty && ifs.expression !is null)
+				populateInitializer(symbol, ifs.expression, true);
+		}
+		ifs.accept(this);
 	}
 
 	override void visit(const WithStatement withStatement)
 	{
 		if (withStatement.expression !is null
-			&& withStatement.statementNoCaseNoDefault !is null)
+			&& withStatement.declarationOrStatement !is null)
 		{
-			pushScope(withStatement.statementNoCaseNoDefault.startLocation,
-				withStatement.statementNoCaseNoDefault.endLocation);
+			pushScope(withStatement.declarationOrStatement.startLocation,
+				withStatement.declarationOrStatement.endLocation);
 			scope(exit) popScope();
 
 			pushSymbol(WITH_SYMBOL_NAME, CompletionKind.withSymbol, symbolFile,
