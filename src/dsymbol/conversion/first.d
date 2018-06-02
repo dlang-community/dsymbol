@@ -604,7 +604,7 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const IfStatement ifs)
 	{
-		if (ifs.identifier != tok!"")
+		if (ifs.identifier != tok!"" && ifs.thenStatement)
 		{
 			pushScope(ifs.thenStatement.startLocation, ifs.thenStatement.endLocation);
 			scope(exit) popScope();
