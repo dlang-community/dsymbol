@@ -101,11 +101,12 @@ struct ModuleCache
 
 		auto newPaths = paths
 			.map!(a => absolutePath(expandTilde(a)))
-			.filter!(a => existanceCheck(a) && !importPaths[].canFind(a));
+			.filter!(a => existanceCheck(a) && !importPaths[].canFind(a))
+			.map!(internString)
+			.array;
+		importPaths.insert(newPaths);
 
-		importPaths.insert(newPaths.save.map!(internString).array);
-
-		foreach (path; newPaths)
+		foreach (path; newPaths[])
 		{
 			if (path.isFile)
 			{
