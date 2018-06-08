@@ -426,15 +426,9 @@ public:
 
 struct UpdatePair
 {
-	int opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
+	ptrdiff_t opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
 	{
-		immutable size_t otherOld = cast(size_t) other.oldSymbol;
-		immutable size_t thisOld = cast(size_t) this.oldSymbol;
-		if (otherOld < thisOld)
-			return -1;
-		if (otherOld > thisOld)
-			return 1;
-		return 0;
+		return (cast(size_t) other.oldSymbol) - (cast(size_t) this.oldSymbol);
 	}
 
 	DSymbol* oldSymbol;

@@ -28,17 +28,14 @@ struct CacheEntry
 			typeid(DSymbol).destroy(symbol);
 	}
 
-	int opCmp(ref const CacheEntry other) const pure nothrow @nogc @safe
+	ptrdiff_t opCmp(ref const CacheEntry other) const pure nothrow @nogc @safe
 	{
-		immutable int r = path > other.path;
-		if (path < other.path)
-			return -1;
-		return r;
+		return (cast(size_t) path.ptr) - (cast(size_t) other.path.ptr);
 	}
 
 	bool opEquals(ref const CacheEntry other) const pure nothrow @nogc @safe
 	{
-		return path == other.path;
+		return path.ptr is other.path.ptr;
 	}
 
 	size_t toHash() const nothrow @safe
