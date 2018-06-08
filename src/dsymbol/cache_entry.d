@@ -28,12 +28,12 @@ struct CacheEntry
 			typeid(DSymbol).destroy(symbol);
 	}
 
-	ptrdiff_t opCmp(ref const CacheEntry other) const pure nothrow @nogc @safe
+	ptrdiff_t opCmp(ref const CacheEntry other) const pure nothrow @nogc @trusted
 	{
 		return (cast(size_t) path.ptr) - (cast(size_t) other.path.ptr);
 	}
 
-	bool opEquals(ref const CacheEntry other) const pure nothrow @nogc @safe
+	bool opEquals(ref const CacheEntry other) const pure nothrow @nogc @trusted
 	{
 		return path.ptr is other.path.ptr;
 	}
