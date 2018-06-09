@@ -201,19 +201,16 @@ public:
 			typeid(DSymbol).destroy(type);
 	}
 
-	int opCmp(ref const DSymbol other) const pure nothrow @trusted @nogc
+	ptrdiff_t opCmp(ref const DSymbol other) const pure nothrow @trusted @nogc
 	{
 		// Compare the pointers because the strings have been interned.
 		// Identical strings MUST have the same address
-		int r = name.ptr > other.name.ptr;
-		if (name.ptr < other.name.ptr)
-			r = -1;
-		return r;
+		return (cast(size_t) name.ptr) - (cast(size_t) other.name.ptr);
 	}
 
 	bool opEquals(ref const DSymbol other) const pure nothrow @trusted
 	{
-		return other.name.ptr == this.name.ptr;
+		return other.name.ptr is this.name.ptr;
 	}
 
 	size_t toHash() const pure nothrow @trusted
@@ -429,15 +426,9 @@ public:
 
 struct UpdatePair
 {
-	int opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
+	ptrdiff_t opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
 	{
-		immutable size_t otherOld = cast(size_t) other.oldSymbol;
-		immutable size_t thisOld = cast(size_t) this.oldSymbol;
-		if (otherOld < thisOld)
-			return -1;
-		if (otherOld > thisOld)
-			return 1;
-		return 0;
+		return (cast(size_t) other.oldSymbol) - (cast(size_t) this.oldSymbol);
 	}
 
 	DSymbol* oldSymbol;
@@ -461,7 +452,7 @@ void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairC
 
 struct SymbolOwnership
 {
-	int opCmp(ref const SymbolOwnership other) const @nogc
+	ptrdiff_t opCmp(ref const SymbolOwnership other) const @nogc
 	{
 		return this.ptr.opCmp(*other.ptr);
 	}
