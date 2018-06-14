@@ -180,7 +180,8 @@ class SimpleParser : Parser
 						skipBraces();
 				}
 			}
-			expect(tok!"body");
+			if (!currentIs(tok!"out") && current.text != "body")
+				error("Expected `do` or `body`", index < tokens.length);
 			if (currentIs(tok!"{"))
 				skipBraces();
 		}
