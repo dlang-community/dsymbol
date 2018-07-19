@@ -546,12 +546,35 @@ final class FirstPass : ASTVisitor
 		// TODO: support typeof here
 		if (tme.mixinTemplateName.symbol is null)
 			return;
+		const Symbol sym = tme.mixinTemplateName.symbol;
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate);
+
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
 
 		if (currentSymbol.acSymbol.kind != CompletionKind.functionName)
 			currentSymbol.typeLookups.insert(lookup);
+
+		/* If the mixin is named then do like if `mixin F f;` would be `mixin F; alias f = F;`
+		which's been empirically verified to produce the right completions for `f.`,
+		*/
+		if (tme.identifier != tok!"" && sym.identifierOrTemplateChain &&
+			sym.identifierOrTemplateChain.identifiersOrTemplateInstances.length)
+		{
+			SemanticSymbol* symbol = allocateSemanticSymbol(
+				tme.identifier.text, CompletionKind.aliasName, symbolFile, tme.identifier.index);
+			Type tp = Mallocator.instance.make!Type;
+			tp.type2 = Mallocator.instance.make!Type2;
+			tp.type2.typeIdentifierPart = Mallocator.instance.make!TypeIdentifierPart;
+			tp.type2.typeIdentifierPart.identifierOrTemplateInstance =
+				cast() sym.identifierOrTemplateChain.identifiersOrTemplateInstances[0];
+
+			addTypeToLookups(symbol.typeLookups, tp);
+			symbol.parent = currentSymbol;
+			currentSymbol.addChild(symbol, true);
+			currentScope.addSymbol(symbol.acSymbol, false);
+			symbol.protection = protection.current;
+		}
 	}
 
 	override void visit(const ForeachStatement feStatement)
