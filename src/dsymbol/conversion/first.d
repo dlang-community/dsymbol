@@ -561,14 +561,27 @@ final class FirstPass : ASTVisitor
 		if (tme.identifier != tok!"" && sym.identifierOrTemplateChain &&
 			sym.identifierOrTemplateChain.identifiersOrTemplateInstances.length)
 		{
-			SemanticSymbol* symbol = allocateSemanticSymbol(
-				tme.identifier.text, CompletionKind.aliasName, symbolFile, tme.identifier.index);
+			SemanticSymbol* symbol = allocateSemanticSymbol(tme.identifier.text,
+				CompletionKind.aliasName, symbolFile, tme.identifier.index);
 			Type tp = Mallocator.instance.make!Type;
 			tp.type2 = Mallocator.instance.make!Type2;
-			tp.type2.typeIdentifierPart = Mallocator.instance.make!TypeIdentifierPart;
-			tp.type2.typeIdentifierPart.identifierOrTemplateInstance =
-				cast() sym.identifierOrTemplateChain.identifiersOrTemplateInstances[0];
-
+			TypeIdentifierPart root;
+			TypeIdentifierPart current;
+			foreach(ioti; sym.identifierOrTemplateChain.identifiersOrTemplateInstances)
+			{
+				TypeIdentifierPart old = current;
+				current = Mallocator.instance.make!TypeIdentifierPart;
+				if (old)
+				{
+					old.typeIdentifierPart = current;
+				}
+				else
+				{
+					root = current;
+				}
+				current.identifierOrTemplateInstance = cast() ioti;
+			}
+			tp.type2.typeIdentifierPart = root;
 			addTypeToLookups(symbol.typeLookups, tp);
 			symbol.parent = currentSymbol;
 			currentSymbol.addChild(symbol, true);
