@@ -746,8 +746,8 @@ private:
 		import std.algorithm : max;
 
 		immutable scopeEnd = max(
-			functionBody.inStatement is null ? 0 : functionBody.inStatement.blockStatement.endLocation,
-			functionBody.outStatement is null ? 0 : functionBody.outStatement.blockStatement.endLocation,
+			functionBody.inStatements.length == 0 ? 0 : functionBody.inStatements[$-1].blockStatement.endLocation,
+			functionBody.outStatements.length == 0 ? 0 : functionBody.outStatements[$-1].blockStatement.endLocation,
 			functionBody.blockStatement is null ? 0 : functionBody.blockStatement.endLocation,
 			functionBody.bodyStatement is null ? 0 : functionBody.bodyStatement.blockStatement.endLocation);
 		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin, cast(uint) scopeEnd);
