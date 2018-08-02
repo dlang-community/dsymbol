@@ -146,25 +146,23 @@ class SimpleParser : Parser
 
 	override FunctionBody parseFunctionBody()
 	{
+		bool needDo;
 		if (currentIs(tok!";"))
 			advance();
 		else if (currentIs(tok!"{"))
 			skipBraces();
-		else
+		else while (true)
 		{
 			if (currentIs(tok!"in"))
 			{
 				advance();
 				if (currentIs(tok!"{"))
-					skipBraces();
-				if (currentIs(tok!"out"))
 				{
-					advance();
-					if (currentIs(tok!"("))
-						skipParens();
-					if (currentIs(tok!"{"))
-						skipBraces();
+					skipBraces();
+					needDo = true;
 				}
+				if (currentIs(tok!"("))
+					skipParens();
 			}
 			else if (currentIs(tok!"out"))
 			{
@@ -172,19 +170,22 @@ class SimpleParser : Parser
 				if (currentIs(tok!"("))
 					skipParens();
 				if (currentIs(tok!"{"))
-					skipBraces();
-				if (currentIs(tok!"in"))
 				{
-					advance();
-					if (currentIs(tok!"{"))
-						skipBraces();
+					skipBraces();
+					needDo = true;
 				}
+				if (currentIs(tok!"("))
+					skipParens();
 			}
-			if (!currentIs(tok!"out") && current.text != "body")
-				error("Expected `do` or `body`", index < tokens.length);
-			if (currentIs(tok!"{"))
-				skipBraces();
+			else break;
 		}
+		if (needDo && !currentIs(tok!"do") &&
+					  !(currentIs(tok!"identifier") && current.text == "body"))
+		{
+			error("Expected `do` or `body`", index < tokens.length);
+		}
+		if (currentIs(tok!"{"))
+			skipBraces();
 		return allocator.make!FunctionBody();
 	}
 }
