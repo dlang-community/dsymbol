@@ -444,6 +444,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 				{
 					lastSuffix = cache.symbolAllocator.make!(DSymbol)(a, CompletionKind.dummy, lastSuffix);
 					lastSuffix.qualifier = SymbolQualifier.array;
+					lastSuffix.ownType = true;
 
 					if (suffix is null)
 						suffix = lastSuffix;
