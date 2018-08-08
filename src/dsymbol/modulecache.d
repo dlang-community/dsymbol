@@ -78,18 +78,11 @@ struct ModuleCache
 
 	~this()
 	{
-		foreach (entry; ModuleCache.cache[])
-			Mallocator.instance.dispose(entry);
-		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.dispose(symbol);
-
-		// TODO: This call to deallocateAll is a workaround for issues of
-		// CAllocatorImpl and GCAllocator not interacting well.
-		symbolAllocator.deallocateAll();
+		clear();
 	}
 
 	/**
-	 * Adds the given path to the list of directories checked for imports.
+	 * Adds the given paths to the list of directories checked for imports.
 	 * Performs duplicate checking, so multiple instances of the same path will
 	 * not be present.
 	 */
@@ -138,10 +131,55 @@ struct ModuleCache
 		}
 	}
 
-	/// TODO: Implement
+	/**
+	 * Removes the given paths from the list of directories checked for
+	 * imports. Corresponding cache entries are removed.
+	 */
+	void removeImportPaths(const string[] paths)
+	{
+		foreach (path; paths[])
+		{
+			if (!importPaths[].canFind(path))
+			{
+				warning("Cannot remove ", path, " because it is not imported");
+				continue;
+			}
+
+			importPaths.remove(path);
+
+			foreach (cacheEntry; cache[])
+			{
+				if (cacheEntry.path.startsWith(path))
+				{
+					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.startsWith(cacheEntry.path)))
+					{
+						deferredSymbols.remove(deferredSymbol);
+						Mallocator.instance.dispose(deferredSymbol);
+					}
+
+					cache.remove(cacheEntry);
+					Mallocator.instance.dispose(cacheEntry);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Clears the cache from all import paths
+	 */
 	void clear()
 	{
-		info("ModuleCache.clear is not yet implemented.");
+		foreach (entry; cache[])
+			Mallocator.instance.dispose(entry);
+		foreach (symbol; deferredSymbols[])
+			Mallocator.instance.dispose(symbol);
+
+		// TODO: This call to deallocateAll is a workaround for issues of
+		// CAllocatorImpl and GCAllocator not interacting well.
+		symbolAllocator.deallocateAll();
+		cache.clear();
+		deferredSymbols.clear();
+		importPaths.clear();
 	}
 
 	/**
