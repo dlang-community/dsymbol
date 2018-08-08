@@ -78,14 +78,7 @@ struct ModuleCache
 
 	~this()
 	{
-		foreach (entry; ModuleCache.cache[])
-			Mallocator.instance.dispose(entry);
-		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.dispose(symbol);
-
-		// TODO: This call to deallocateAll is a workaround for issues of
-		// CAllocatorImpl and GCAllocator not interacting well.
-		symbolAllocator.deallocateAll();
+		clear();
 	}
 
 	/**
@@ -138,10 +131,22 @@ struct ModuleCache
 		}
 	}
 
-	/// TODO: Implement
+	/**
+	 * Clears the cache from all import paths
+	 */
 	void clear()
 	{
-		info("ModuleCache.clear is not yet implemented.");
+		foreach (entry; cache[])
+			Mallocator.instance.dispose(entry);
+		foreach (symbol; deferredSymbols[])
+			Mallocator.instance.dispose(symbol);
+
+		// TODO: This call to deallocateAll is a workaround for issues of
+		// CAllocatorImpl and GCAllocator not interacting well.
+		symbolAllocator.deallocateAll();
+		cache.clear();
+		deferredSymbols.clear();
+		importPaths.clear();
 	}
 
 	/**
