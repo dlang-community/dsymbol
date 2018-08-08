@@ -82,7 +82,7 @@ struct ModuleCache
 	}
 
 	/**
-	 * Adds the given path to the list of directories checked for imports.
+	 * Adds the given paths to the list of directories checked for imports.
 	 * Performs duplicate checking, so multiple instances of the same path will
 	 * not be present.
 	 */
