@@ -132,6 +132,39 @@ struct ModuleCache
 	}
 
 	/**
+	 * Removes the given paths from the list of directories checked for
+	 * imports. Corresponding cache entries are removed.
+	 */
+	void removeImportPaths(const string[] paths)
+	{
+		foreach (path; paths[])
+		{
+			if (!importPaths[].canFind(path))
+			{
+				warning("Cannot remove ", path, " because it is not imported");
+				continue;
+			}
+
+			importPaths.remove(path);
+
+			foreach (cacheEntry; cache[])
+			{
+				if (cacheEntry.path.startsWith(path))
+				{
+					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.startsWith(cacheEntry.path)))
+					{
+						deferredSymbols.remove(deferredSymbol);
+						Mallocator.instance.dispose(deferredSymbol);
+					}
+
+					cache.remove(cacheEntry);
+					Mallocator.instance.dispose(cacheEntry);
+				}
+			}
+		}
+	}
+
+	/**
 	 * Clears the cache from all import paths
 	 */
 	void clear()
