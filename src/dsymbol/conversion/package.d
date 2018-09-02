@@ -158,7 +158,8 @@ class SimpleParser : Parser
 		{
 			if (currentIs(tok!"in"))
 			{
-				advance();
+				if (moreTokens)
+					advance();
 				if (currentIs(tok!"{"))
 				{
 					skipBraces();
@@ -169,7 +170,8 @@ class SimpleParser : Parser
 			}
 			else if (currentIs(tok!"out"))
 			{
-				advance();
+				if (moreTokens)
+					advance();
 				if (currentIs(tok!"("))
 					skipParens();
 				if (currentIs(tok!"{"))
