@@ -147,10 +147,13 @@ class SimpleParser : Parser
 	override FunctionBody parseFunctionBody()
 	{
 		bool needDo;
+		// no impl
 		if (currentIs(tok!";"))
 			advance();
+		// no contracts
 		else if (currentIs(tok!"{"))
 			skipBraces();
+		// skip contracts
 		else while (true)
 		{
 			if (currentIs(tok!"in"))
@@ -179,11 +182,9 @@ class SimpleParser : Parser
 			}
 			else break;
 		}
-		if (needDo && !currentIs(tok!"do") &&
-					  !(currentIs(tok!"identifier") && current.text == "body"))
-		{
-			error("Expected `do` or `body`", index < tokens.length);
-		}
+		if (needDo && !currentIs(tok!"{"))
+			advance();
+		// body
 		if (currentIs(tok!"{"))
 			skipBraces();
 		return allocator.make!FunctionBody();
