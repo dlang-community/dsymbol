@@ -69,9 +69,9 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 	//q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
 	//q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
 
-	q{auto b = new class {int i;};}.expectSymbolsAndTypes([["b", "AnonClass1"]]);
+	q{auto b = new class {int i;};}.expectSymbolsAndTypes([["b", "__anonclass1"]]);
 
-	// got a crash before but solving is not yet working.
+	// got a crash before but solving is not yet working ("foo" instead of  "__anonclass1");
 	q{class Bar{} auto foo(){return new class Bar{};} auto b = foo();}.expectSymbolsAndTypes([["b", "foo"]]);
 }
 

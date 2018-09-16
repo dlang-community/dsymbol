@@ -1342,41 +1342,42 @@ class InitializerVisitor : ASTVisitor
 
 	// Skip these
 	override void visit(const ArgumentList) {}
+	override void visit(const NewAnonClassExpression) {}
 
 	override void visit(const NewExpression ne)
 	{
 		if (ne.newAnonClassExpression)
-		{
-			(cast() ne).assignExpression = lowerNewAnonToNew(ne);
-			(cast() ne).newAnonClassExpression = null;
-		}
+			lowerNewAnonToNew((cast() ne));
 		ne.accept(this);
 	}
 
-	private NewExpression lowerNewAnonToNew(const NewExpression ne)
+	private void lowerNewAnonToNew(NewExpression ne)
 	{
 		import std.format : format;
 
-		NewAnonClassExpression anonClassExp = cast() ne.newAnonClassExpression;
+		// here we follow DMDFE naming style
 		__gshared size_t anonIndex;
-		anonIndex++;
+		istring idt = "__anonclass%d".format(++anonIndex).internString;
 
-		// Lower the AnonClass to a standard ClassDeclaration and visit it.
+		// the goal is to replace it so we null the field
+		NewAnonClassExpression nace = ne.newAnonClassExpression;
+		ne.newAnonClassExpression = null;
+
+		// Lower the AnonClass body to a standard ClassDeclaration and visit it.
 		ClassDeclaration cd = theAllocator.make!(ClassDeclaration);
-		cd.baseClassList = anonClassExp.baseClassList;
-		cd.name = Token(tok!"identifier", "AnonClass%d".format(anonIndex), 1, 1, 1);
-		cd.structBody = anonClassExp.structBody;
+		cd.name = Token(tok!"identifier", idt, 1, 1, nace.structBody.startLocation - idt.length);
+		cd.baseClassList = nace.baseClassList;
+		cd.structBody = nace.structBody;
 		fp.visit(cd);
 
-		// Change the NewAnonClassExpression to a standard NewExpression using the fake named class
-		NewExpression lowered = theAllocator.make!(NewExpression);
-		lowered.type = theAllocator.make!(Type);
-		lowered.type.type2 = theAllocator.make!(Type2);
-		lowered.type.type2.typeIdentifierPart = theAllocator.make!(TypeIdentifierPart);
-		lowered.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.make!(IdentifierOrTemplateInstance);
-		lowered.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier = cd.name;
-
-		return lowered;
+		// Change the NewAnonClassExpression to a standard NewExpression using
+		// the ClassDeclaration created in previous step
+		ne.type = theAllocator.make!(Type);
+		ne.type.type2 = theAllocator.make!(Type2);
+		ne.type.type2.typeIdentifierPart = theAllocator.make!(TypeIdentifierPart);
+		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.make!(IdentifierOrTemplateInstance);
+		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier = cd.name;
+		ne.arguments = nace.constructorArguments;
 	}
 
 	override void visit(const Expression expression)
