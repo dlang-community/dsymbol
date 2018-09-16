@@ -7,10 +7,10 @@ os:
  #- osx
 d:
  - dmd
- - dmd-beta
- - dmd-nightly
+ #- dmd-beta
+ #- dmd-nightly
  - ldc
- - ldc-beta
+ #- ldc-beta
 
 script:
  - dub build --build=release --compiler=${DC}
