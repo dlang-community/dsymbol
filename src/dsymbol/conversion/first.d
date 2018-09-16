@@ -964,7 +964,7 @@ private:
 		bool appendForeach = false)
 	{
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.initializer);
-		auto visitor = scoped!InitializerVisitor(lookup, appendForeach);
+		auto visitor = scoped!(InitializerVisitor)(lookup, appendForeach, this);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
 	}
@@ -1239,10 +1239,11 @@ static istring convertChainToImportPath(const IdentifierChain ic)
 
 class InitializerVisitor : ASTVisitor
 {
-	this (TypeLookup* lookup, bool appendForeach = false)
+	this (TypeLookup* lookup, bool appendForeach, FirstPass fp)
 	{
 		this.lookup = lookup;
 		this.appendForeach = appendForeach;
+		this.fp = fp;
 	}
 
 	alias visit = ASTVisitor.visit;
@@ -1341,7 +1342,42 @@ class InitializerVisitor : ASTVisitor
 
 	// Skip these
 	override void visit(const ArgumentList) {}
-	override void visit(const NewAnonClassExpression) {}
+
+	override void visit(const NewExpression ne)
+	{
+		if (ne.newAnonClassExpression)
+		{
+			(cast() ne).assignExpression = lowerNewAnonToNew(ne);
+			(cast() ne).newAnonClassExpression = null;
+		}
+		ne.accept(this);
+	}
+
+	private NewExpression lowerNewAnonToNew(const NewExpression ne)
+	{
+		import std.format : format;
+
+		NewAnonClassExpression anonClassExp = cast() ne.newAnonClassExpression;
+		__gshared size_t anonIndex;
+		anonIndex++;
+
+		// Lower the AnonClass to a standard ClassDeclaration and visit it.
+		ClassDeclaration cd = theAllocator.make!(ClassDeclaration);
+		cd.baseClassList = anonClassExp.baseClassList;
+		cd.name = Token(tok!"identifier", "AnonClass%d".format(anonIndex), 1, 1, 1);
+		cd.structBody = anonClassExp.structBody;
+		fp.visit(cd);
+
+		// Change the NewAnonClassExpression to a standard NewExpression using the fake named class
+		NewExpression lowered = theAllocator.make!(NewExpression);
+		lowered.type = theAllocator.make!(Type);
+		lowered.type.type2 = theAllocator.make!(Type2);
+		lowered.type.type2.typeIdentifierPart = theAllocator.make!(TypeIdentifierPart);
+		lowered.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.make!(IdentifierOrTemplateInstance);
+		lowered.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier = cd.name;
+
+		return lowered;
+	}
 
 	override void visit(const Expression expression)
 	{
@@ -1364,4 +1400,5 @@ class InitializerVisitor : ASTVisitor
 	TypeLookup* lookup;
 	bool on = false;
 	const bool appendForeach;
+	FirstPass fp;
 }

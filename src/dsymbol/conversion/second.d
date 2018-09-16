@@ -401,6 +401,9 @@ void resolveMixinTemplates(DSymbol* symbol,
 void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,
 	Scope* moduleScope, ref ModuleCache cache)
 {
+
+	import std.conv;
+
 	if (typeLookups.length == 0)
 		return;
 	assert(typeLookups.length == 1);
@@ -409,6 +412,9 @@ void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, fal
 		resolveTypeFromType(symbol, lookup, moduleScope, cache, null);
 	else if (lookup.kind == TypeLookupKind.initializer)
 		resolveTypeFromInitializer(symbol, lookup, moduleScope, cache);
+	// issue 94
+	else if (lookup.kind == TypeLookupKind.inherit)
+		resolveInheritance(symbol, typeLookups, moduleScope, cache);
 	else
 		assert(false, "How did this happen?");
 }
