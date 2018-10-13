@@ -1,7 +1,7 @@
  project('dsymbol', 'd',
     meson_version: '>=0.44',
     license: 'BSL-1.0',
-    version: '0.4.3'
+    version: '0.4.8'
 )
 
 project_soversion = '0'
