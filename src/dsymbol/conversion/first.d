@@ -743,14 +743,8 @@ private:
 	void pushFunctionScope(const FunctionBody functionBody,
 		IAllocator semanticAllocator, size_t scopeBegin)
 	{
-		import std.algorithm : max;
-
-		immutable scopeEnd = max(
-			functionBody.inStatements.length == 0 ? 0 : functionBody.inStatements[$-1].blockStatement.endLocation,
-			functionBody.outStatements.length == 0 ? 0 : functionBody.outStatements[$-1].blockStatement.endLocation,
-			functionBody.blockStatement is null ? 0 : functionBody.blockStatement.endLocation,
-			functionBody.bodyStatement is null ? 0 : functionBody.bodyStatement.blockStatement.endLocation);
-		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin, cast(uint) scopeEnd);
+		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin,
+			cast(uint) functionBody.endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
