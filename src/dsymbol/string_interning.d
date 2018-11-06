@@ -46,8 +46,7 @@ private struct InternedString
 
 	size_t toHash() const nothrow @safe
 	{
-		import core.internal.hash : hashOf;
-		return hashOf(data);
+		return typeid(string).getHash(&data);
 	}
 
 	string data;
