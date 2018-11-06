@@ -207,7 +207,7 @@ struct ModuleCache
 			return null;
 
 		const(Token)[] tokens;
-		auto parseStringCache = StringCache(StringCache.defaultBucketCount);
+		auto parseStringCache = StringCache(fileSize.optimalBucketCount);
 		{
 			ubyte[] source = cast(ubyte[]) Mallocator.instance.allocate(fileSize);
 			scope (exit) Mallocator.instance.deallocate(source);
