@@ -143,14 +143,12 @@ class SimpleParser : Parser
 		return null;
 	}
 
-	override FunctionBody parseFunctionBody()
+	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
 	{
 		bool needDo;
-		// no impl
-		if (currentIs(tok!";"))
-			advance();
+
 		// no contracts
-		else if (currentIs(tok!"{"))
+		if (currentIs(tok!"{"))
 			skipBraces();
 		// skip contracts
 		else while (true)
@@ -188,7 +186,7 @@ class SimpleParser : Parser
 		// body
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return allocator.make!FunctionBody();
+		return allocator.make!SpecifiedFunctionBody;
 	}
 }
 
