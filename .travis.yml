@@ -32,7 +32,7 @@ before_script:
   export PATH=$PATH:$PWD/.ntmp
 
 script:
-  - meson build && ninja -j8 -C build
-  - ninja -j8 -C build test -v
+  - meson build && ninja -j2 -C build
+  - ninja -j2 -C build test -v
   - dub build --build=release --compiler=${DC}
   - dub test --compiler=${DC}
