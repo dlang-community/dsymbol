@@ -143,17 +143,38 @@ class SimpleParser : Parser
 		return null;
 	}
 
-	override FunctionBody parseFunctionBody()
+	override MissingFunctionBody parseMissingFunctionBody()
 	{
-		bool needDo;
-		// no impl
+		skipContracts();
+		if (moreTokens && (currentIs(tok!"do") || current.text == "body"))
+			return null;
 		if (currentIs(tok!";"))
 			advance();
+		return allocator.make!MissingFunctionBody;
+	}
+
+	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
+	{
+		bool needDo;
+
 		// no contracts
-		else if (currentIs(tok!"{"))
+		if (currentIs(tok!"{"))
 			skipBraces();
 		// skip contracts
-		else while (true)
+		else needDo = skipContracts();
+		if (needDo && !currentIs(tok!"{"))
+			advance();
+		// body
+		if (currentIs(tok!"{"))
+			skipBraces();
+		return allocator.make!SpecifiedFunctionBody;
+	}
+
+	private bool skipContracts()
+	{
+		bool needDo;
+
+		while (true)
 		{
 			if (currentIs(tok!"in"))
 			{
@@ -183,12 +204,8 @@ class SimpleParser : Parser
 			}
 			else break;
 		}
-		if (needDo && !currentIs(tok!"{"))
-			advance();
-		// body
-		if (currentIs(tok!"{"))
-			skipBraces();
-		return allocator.make!FunctionBody();
+
+		return needDo;
 	}
 }
 
