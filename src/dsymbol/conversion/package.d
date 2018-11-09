@@ -103,6 +103,8 @@ class AutocompleteParser : Parser
 {
 	override BlockStatement parseBlockStatement()
 	{
+		if (!currentIs(tok!"{"))
+			return null;
 		if (current.index > cursorPosition)
 		{
 			BlockStatement bs = allocator.make!(BlockStatement);
@@ -145,9 +147,16 @@ class SimpleParser : Parser
 
 	override MissingFunctionBody parseMissingFunctionBody()
 	{
-		skipContracts();
-		if (moreTokens && (currentIs(tok!"do") || current.text == "body"))
+		const bool needDo = skipContracts();
+		if (!needDo)
+		{
+			if (currentIs(tok!"{"))
+				return null;
+		}
+		else if (moreTokens && (currentIs(tok!"do") || current.text == "body"))
+		{
 			return null;
+		}
 		if (currentIs(tok!";"))
 			advance();
 		return allocator.make!MissingFunctionBody;
@@ -193,18 +202,29 @@ class SimpleParser : Parser
 				if (moreTokens)
 					advance();
 				if (currentIs(tok!"("))
+				{
+					bool asExpr;
+					if (index < tokens.length - 2 &&
+						 tokens[index + 1].type == tok!";" ||
+						(tokens[index + 1].type == tok!"identifier" && tokens[index + 2].type == tok!";"))
+					{
+						asExpr = true;
+					}
 					skipParens();
+					if (asExpr)
+					{
+						needDo = false;
+						continue;
+					}
+				}
 				if (currentIs(tok!"{"))
 				{
 					skipBraces();
 					needDo = true;
 				}
-				if (currentIs(tok!"("))
-					skipParens();
 			}
 			else break;
 		}
-
 		return needDo;
 	}
 }
