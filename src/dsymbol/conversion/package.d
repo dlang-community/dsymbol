@@ -203,13 +203,11 @@ class SimpleParser : Parser
 					advance();
 				if (currentIs(tok!"("))
 				{
-					bool asExpr;
-					if (index < tokens.length - 2 &&
+					immutable bool asExpr = (index < tokens.length - 2 &&
 						 tokens[index + 1].type == tok!";" ||
 						(tokens[index + 1].type == tok!"identifier" && tokens[index + 2].type == tok!";"))
-					{
-						asExpr = true;
-					}
+						? true
+						: false;
 					skipParens();
 					if (asExpr)
 					{
