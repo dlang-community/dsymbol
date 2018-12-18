@@ -153,6 +153,22 @@ unittest
 	assert(scopeB.getSymbolsByName(SUPER_SYMBOL_NAME)[0].type is A);
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running template type parameters tests...");
+	auto source = q{ struct Foo(T : int){} struct Bar(T : Foo){} };
+	auto pair = generateAutocompleteTrees(source, "", 0, cache);
+	DSymbol* T1 = pair.symbol.getFirstPartNamed(internString("Foo"));
+	DSymbol* T2 = T1.getFirstPartNamed(internString("T"));
+	assert(T2.type.name == "int");
+	DSymbol* T3 = pair.symbol.getFirstPartNamed(internString("Bar"));
+	DSymbol* T4 = T3.getFirstPartNamed(internString("T"));
+	assert(T4.type);
+	assert(T4.type == T1);
+}
+
 static StringCache stringCache = void;
 static this()
 {
