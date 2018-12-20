@@ -913,6 +913,11 @@ private:
 					name = p.templateTypeParameter.identifier.text;
 					kind = CompletionKind.aliasName;
 					index = p.templateTypeParameter.identifier.index;
+					// even if templates are not solved we can get the completions
+					// for the type the template parameter implicitly converts to,
+					// which is often useful for aggregate types.
+					if (p.templateTypeParameter.colonType)
+						type = p.templateTypeParameter.colonType;
 				}
 				else if (p.templateValueParameter !is null)
 				{
@@ -929,6 +934,8 @@ private:
 					addTypeToLookups(templateParameter.typeLookups, type);
 				templateParameter.parent = symbol;
 				symbol.addChild(templateParameter, true);
+				if (currentScope)
+					currentScope.addSymbol(templateParameter.acSymbol, false);
 			}
 		}
 	}
