@@ -371,7 +371,7 @@ public:
 	/**
 	 * Documentation for the symbol.
 	 */
-	istring doc;
+	DocString doc;
 
 	/**
 	 * The symbol that represents the type.
@@ -422,6 +422,30 @@ public:
 		ubyte, "", 5));
 	// dfmt on
 
+}
+
+/**
+ * istring with actual content and information if it was ditto
+ */
+struct DocString
+{
+	/// creates a non-ditto comment
+	this(istring content)
+	{
+		this.content = content;
+	}
+
+	/// creates a comment which may have been ditto
+	this(istring content, bool ditto)
+	{
+		this.content = content;
+		this.ditto = ditto;
+	}
+
+	alias content this;
+
+	istring content;
+	bool ditto;
 }
 
 struct UpdatePair

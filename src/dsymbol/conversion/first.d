@@ -138,7 +138,11 @@ final class FirstPass : ASTVisitor
 				dec.name.index, dec.returnType);
 		scope (exit) popSymbol();
 		currentSymbol.protection = protection.current;
-		currentSymbol.acSymbol.doc = internString(dec.comment);
+		currentSymbol.acSymbol.doc = makeDocumentation(dec.comment);
+
+		istring lastComment = this.lastComment;
+		this.lastComment = istring.init;
+		scope(exit) this.lastComment = lastComment;
 
 		if (dec.functionBody !is null)
 		{
@@ -206,7 +210,7 @@ final class FirstPass : ASTVisitor
 				addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
 			symbol.protection = protection.current;
-			symbol.acSymbol.doc = internString(declarator.comment);
+			symbol.acSymbol.doc = makeDocumentation(declarator.comment);
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
 
@@ -228,7 +232,7 @@ final class FirstPass : ASTVisitor
 				symbol.parent = currentSymbol;
 				populateInitializer(symbol, part.initializer);
 				symbol.protection = protection.current;
-				symbol.acSymbol.doc = internString(dec.comment);
+				symbol.acSymbol.doc = makeDocumentation(dec.comment);
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
 
@@ -257,7 +261,7 @@ final class FirstPass : ASTVisitor
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
 				symbol.protection = protection.current;
-				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
+				symbol.acSymbol.doc = makeDocumentation(aliasDeclaration.comment);
 			}
 		}
 		else
@@ -273,7 +277,7 @@ final class FirstPass : ASTVisitor
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
 				symbol.protection = protection.current;
-				symbol.acSymbol.doc = internString(aliasDeclaration.comment);
+				symbol.acSymbol.doc = makeDocumentation(aliasDeclaration.comment);
 			}
 		}
 	}
@@ -349,7 +353,12 @@ final class FirstPass : ASTVisitor
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		currentScope.addSymbol(symbol.acSymbol, false);
-		symbol.acSymbol.doc = internString(dec.comment);
+		symbol.acSymbol.doc = makeDocumentation(dec.comment);
+
+		istring lastComment = this.lastComment;
+		this.lastComment = istring.init;
+		scope(exit) this.lastComment = lastComment;
+
 		currentSymbol = symbol;
 
 		if (dec.enumBody !is null)
@@ -775,7 +784,7 @@ private:
 			pushSymbol(member.name.text, CompletionKind.enumMember, symbolFile,
 				member.name.index, member.type);
 			scope(exit) popSymbol();
-			currentSymbol.acSymbol.doc = internString(member.comment);
+			currentSymbol.acSymbol.doc = makeDocumentation(member.comment);
 		}
 	}
 
@@ -794,7 +803,11 @@ private:
 		else
 			currentSymbol.acSymbol.addChildren(aggregateSymbols[], false);
 		currentSymbol.protection = protection.current;
-		currentSymbol.acSymbol.doc = internString(dec.comment);
+		currentSymbol.acSymbol.doc = makeDocumentation(dec.comment);
+
+		istring lastComment = this.lastComment;
+		this.lastComment = istring.init;
+		scope(exit) this.lastComment = lastComment;
 
 		immutable size_t scopeBegin = dec.name.index + dec.name.text.length;
 		static if (is (AggType == const(TemplateDeclaration)))
@@ -819,7 +832,12 @@ private:
 		currentSymbol.addChild(symbol, true);
 		processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
 		symbol.protection = protection.current;
-		symbol.acSymbol.doc = internString(doc);
+		symbol.acSymbol.doc = makeDocumentation(doc);
+
+		istring lastComment = this.lastComment;
+		this.lastComment = istring.init;
+		scope(exit) this.lastComment = lastComment;
+
 		if (functionBody !is null)
 		{
 			pushFunctionScope(functionBody, semanticAllocator,
@@ -839,7 +857,12 @@ private:
 		currentSymbol.addChild(symbol, true);
 		symbol.acSymbol.callTip = internString("~this()");
 		symbol.protection = protection.current;
-		symbol.acSymbol.doc = internString(doc);
+		symbol.acSymbol.doc = makeDocumentation(doc);
+
+		istring lastComment = this.lastComment;
+		this.lastComment = istring.init;
+		scope(exit) this.lastComment = lastComment;
+
 		if (functionBody !is null)
 		{
 			pushFunctionScope(functionBody, semanticAllocator, location + 4); // 4 == "this".length
@@ -1034,6 +1057,17 @@ private:
 			lookups.insert(lookup);
 	}
 
+	DocString makeDocumentation(string documentation)
+	{
+		if (documentation.isDitto)
+			return DocString(lastComment, true);
+		else
+		{
+			lastComment = internString(documentation);
+			return DocString(lastComment, false);
+		}
+	}
+
 	/// Current protection type
 	ProtectionStack protection;
 
@@ -1054,6 +1088,9 @@ private:
 
 	/// Field names for struct constructor generation
 	UnrolledList!(istring) structFieldNames;
+
+	/// Last comment for ditto-ing
+	istring lastComment;
 
 	const Module mod;
 
@@ -1199,6 +1236,13 @@ auto byIdentifier(const TypeIdentifierPart tip) pure nothrow @trusted
 
 	Range range;
 	return range;
+}
+
+bool isDitto(in char[] comment)
+{
+	import std.uni : icmp;
+
+	return comment.length == 5 && icmp(comment, "ditto") == 0;
 }
 
 void writeIotcTo(T)(const TypeIdentifierPart tip, ref T output) nothrow
