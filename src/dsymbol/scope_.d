@@ -62,7 +62,7 @@ struct Scope
 	 * Returns:
 	 *     the innermost scope that contains the given cursor position
 	 */
-	Scope* getScopeByCursor(size_t cursorPosition) pure @nogc
+	Scope* getScopeByCursor(size_t cursorPosition) return pure @nogc
 	{
 		if (cursorPosition < startLocation) return null;
 		if (cursorPosition > endLocation) return null;
