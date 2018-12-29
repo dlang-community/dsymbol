@@ -376,7 +376,8 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const ModuleDeclaration moduleDeclaration)
 	{
-		rootSymbol.acSymbol.name = internString(moduleDeclaration.moduleName.identifiers[$ - 1].text);
+		const parts = moduleDeclaration.moduleName.identifiers;
+		rootSymbol.acSymbol.name = internString(parts.length ? parts[$ - 1].text : null);
 	}
 
 	override void visit(const StructBody structBody)
