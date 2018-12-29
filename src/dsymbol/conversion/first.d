@@ -1238,7 +1238,7 @@ auto byIdentifier(const TypeIdentifierPart tip) pure nothrow @trusted
 	return range;
 }
 
-bool isDitto(in char[] comment)
+bool isDitto(scope const(char)[] comment)
 {
 	import std.uni : icmp;
 

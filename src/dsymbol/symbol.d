@@ -429,13 +429,13 @@ public:
  */
 struct DocString
 {
-	/// creates a non-ditto comment
+	/// Creates a non-ditto comment.
 	this(istring content)
 	{
 		this.content = content;
 	}
 
-	/// creates a comment which may have been ditto
+	/// Creates a comment which may have been ditto, but has been resolved.
 	this(istring content, bool ditto)
 	{
 		this.content = content;
@@ -444,7 +444,9 @@ struct DocString
 
 	alias content this;
 
+	/// Contains the documentation string associated with this symbol, resolves ditto to the previous comment with correct scope.
 	istring content;
+	/// `true` if the documentation was just a "ditto" comment copying from the previous comment.
 	bool ditto;
 }
 
