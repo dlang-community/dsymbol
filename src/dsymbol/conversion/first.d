@@ -663,7 +663,7 @@ final class FirstPass : ASTVisitor
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, true);
 			if (symbol.typeLookups.empty && ifs.expression !is null)
-				populateInitializer(symbol, ifs.expression, true);
+				populateInitializer(symbol, ifs.expression, false);
 		}
 		ifs.accept(this);
 	}
