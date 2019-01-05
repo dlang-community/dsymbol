@@ -94,41 +94,10 @@ struct ModuleCache
 
 		auto newPaths = paths
 			.map!(a => absolutePath(expandTilde(a)))
-			.filter!(a => existanceCheck(a) && !importPaths[].canFind(a))
-			.map!(internString)
+			.filter!(a => existanceCheck(a) && !importPaths[].canFind!(b => b.path == a))
+			.map!(a => ImportPath(internString(a)))
 			.array;
 		importPaths.insert(newPaths);
-
-		foreach (path; newPaths[])
-		{
-			if (path.isFile)
-			{
-				if (path.baseName.startsWith(".#"))
-					continue;
-				cacheModule(path);
-			}
-			else
-			{
-				void scanFrom(const string root)
-				{
-					if (exists(buildPath(root, ".no-dcd")))
-						return;
-
-					try foreach (f; dirEntries(root, SpanMode.shallow))
-					{
-						if (f.name.isFile)
-						{
-							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
-								continue;
-							cacheModule(f.name);
-						}
-						else scanFrom(f.name);
-					}
-					catch(FileException) {}
-				}
-				scanFrom(path);
-			}
-		}
 	}
 
 	/**
@@ -139,13 +108,14 @@ struct ModuleCache
 	{
 		foreach (path; paths[])
 		{
-			if (!importPaths[].canFind(path))
+			if (!importPaths[].canFind!(a => a.path == path))
 			{
 				warning("Cannot remove ", path, " because it is not imported");
 				continue;
 			}
 
-			importPaths.remove(path);
+			foreach (ref importPath; importPaths[].filter!(a => a.path == path))
+				importPaths.remove(importPath);
 
 			foreach (cacheEntry; cache[])
 			{
@@ -329,8 +299,9 @@ struct ModuleCache
 		if (isRooted(moduleName))
 			return internString(moduleName);
 		string[] alternatives;
-		foreach (path; importPaths[])
+		foreach (importPath; importPaths[])
 		{
+			auto path = importPath.path;
 			if (path.isFile)
 			{
 				if (path.stripExtension.endsWith(moduleName))
@@ -363,11 +334,12 @@ struct ModuleCache
 
 	auto getImportPaths() const
 	{
-		return importPaths[];
+		return importPaths[].map!(a => a.path);
 	}
 
-	auto getAllSymbols() const
+	auto getAllSymbols()
 	{
+		scanAll();
 		return cache[];
 	}
 
@@ -411,11 +383,55 @@ private:
 		return r.front.modificationTime != modification;
 	}
 
+	void scanAll()
+	{
+		foreach (ref importPath; importPaths)
+		{
+			if (importPath.scanned)
+				continue;
+			scope(success) importPath.scanned = true;
+
+			if (importPath.path.isFile)
+			{
+				if (importPath.path.baseName.startsWith(".#"))
+					continue;
+				cacheModule(importPath.path);
+			}
+			else
+			{
+				void scanFrom(const string root)
+				{
+					if (exists(buildPath(root, ".no-dcd")))
+						return;
+
+					try foreach (f; dirEntries(root, SpanMode.shallow))
+					{
+						if (f.name.isFile)
+						{
+							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
+								continue;
+							cacheModule(f.name);
+						}
+						else scanFrom(f.name);
+					}
+					catch(FileException) {}
+				}
+				scanFrom(importPath.path);
+			}
+		}
+	}
+
 	// Mapping of file paths to their cached symbols.
 	TTree!(CacheEntry*) cache;
 
 	HashSet!string recursionGuard;
 
+	struct ImportPath
+	{
+		string path;
+		bool scanned;
+	}
+
 	// Listing of paths to check for imports
-	UnrolledList!string importPaths;
+	UnrolledList!ImportPath importPaths;
 }
