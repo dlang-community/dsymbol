@@ -97,8 +97,11 @@ enum CompletionKind : char
 	/// mixin template name
 	mixinTemplateName = 'T',
 
-	/// variadic template parameter
+	/// variadic template parameter (never in DCD responses)
 	variadicTmpParam = 'p',
+
+	/// type template parameter when no constraint (never in DCD responses)
+	typeTmpParam = 'h',
 }
 
 /**
