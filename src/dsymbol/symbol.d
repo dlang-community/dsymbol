@@ -247,6 +247,8 @@ public:
 	{
 		import std.algorithm.iteration : filter;
 
+		if (&this is null)
+			return;
 		if (visited.contains(cast(size_t) &this))
 			return;
 		visited.insert(cast(size_t) &this);
