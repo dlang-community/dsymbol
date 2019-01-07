@@ -169,6 +169,20 @@ unittest
 	assert(T4.type == T1);
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running template variadic parameters tests...");
+	auto source = q{ struct Foo(T...){ }};
+	auto pair = generateAutocompleteTrees(source, "", 0, cache);
+	DSymbol* T1 = pair.symbol.getFirstPartNamed(internString("Foo"));
+	assert(T1);
+	DSymbol* T2 = T1.getFirstPartNamed(internString("T"));
+	assert(T2);
+	assert(T2.kind == CompletionKind.variadicTmpParam);
+}
+
 static StringCache stringCache = void;
 static this()
 {

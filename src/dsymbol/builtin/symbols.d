@@ -38,6 +38,11 @@ TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
  */
 TTree!(DSymbol*, Mallocator, true, "a < b", false) enumSymbols;
 
+/**
+ * Variadic template parameters properties
+ */
+DSymbol* variadicTmpParamSymbol;
+
 static this()
 {
 	auto bool_ = make!DSymbol(Mallocator.instance, builtinTypeNames[13], CompletionKind.keyword);
@@ -63,6 +68,11 @@ static this()
 	auto dup = make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword);
 	auto length = make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_);
 	auto tupleof = make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.keyword);
+
+	variadicTmpParamSymbol = make!DSymbol(Mallocator.instance, internString("variadicTmpParam"), CompletionKind.keyword);
+	variadicTmpParamSymbol.addChild(init, false);
+	variadicTmpParamSymbol.addChild(length, false);
+	variadicTmpParamSymbol.addChild(stringof_, false);
 
 	arraySymbols.insert(alignof_);
 	arraySymbols.insert(dup);

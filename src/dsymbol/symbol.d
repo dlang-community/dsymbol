@@ -95,7 +95,10 @@ enum CompletionKind : char
 	templateName = 't',
 
 	/// mixin template name
-	mixinTemplateName = 'T'
+	mixinTemplateName = 'T',
+
+	/// variadic template parameter
+	variadicTmpParam = 'p',
 }
 
 /**
