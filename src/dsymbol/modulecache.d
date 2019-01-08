@@ -165,9 +165,11 @@ struct ModuleCache
 
 		istring cachedLocation = internString(location);
 
+		if (recursionGuard.contains(cachedLocation))
+			return null;
 
 		if (!needsReparsing(cachedLocation))
-			return getModuleSymbol(cachedLocation);
+			return getEntryFor(cachedLocation).symbol;
 
 		recursionGuard.insert(cachedLocation);
 
@@ -283,7 +285,7 @@ struct ModuleCache
 	DSymbol* getModuleSymbol(istring location)
 	{
 		auto existing = getEntryFor(location);
-		return existing is null ? null : existing.symbol;
+		return existing ? existing.symbol : cacheModule(location);
 	}
 
 	/**
@@ -368,8 +370,6 @@ private:
 	 */
 	bool needsReparsing(istring mod)
 	{
-		if (recursionGuard.contains(mod))
-			return false;
 		if (!exists(mod.data))
 			return true;
 		CacheEntry e;
