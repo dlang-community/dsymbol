@@ -60,6 +60,12 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 		if (currentSymbol.acSymbol.type is null)
 			resolveImport(currentSymbol.acSymbol, currentSymbol.typeLookups, cache);
 		break;
+	case variadicTmpParam:
+		currentSymbol.acSymbol.type = variadicTmpParamSymbol;
+		break;
+	case typeTmpParam:
+		currentSymbol.acSymbol.type = typeTmpParamSymbol;
+		break;
 	case structName:
 	case unionName:
 	case enumName:

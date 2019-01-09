@@ -942,6 +942,9 @@ private:
 					// which is often useful for aggregate types.
 					if (p.templateTypeParameter.colonType)
 						type = p.templateTypeParameter.colonType;
+					// otherwise just provide standard type properties
+					else
+						kind = CompletionKind.typeTmpParam;
 				}
 				else if (p.templateValueParameter !is null)
 				{
@@ -950,12 +953,32 @@ private:
 					index = p.templateValueParameter.identifier.index;
 					type = p.templateValueParameter.type;
 				}
+				else if (p.templateTupleParameter !is null)
+				{
+					name = p.templateTupleParameter.identifier.text;
+					kind = CompletionKind.variadicTmpParam;
+					index = p.templateTupleParameter.identifier.index;
+				}
 				else
 					continue;
 				SemanticSymbol* templateParameter = allocateSemanticSymbol(name,
 					kind, symbolFile, index);
 				if (type !is null)
 					addTypeToLookups(templateParameter.typeLookups, type);
+
+				if (p.templateTupleParameter !is null)
+				{
+					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
+						istring(name), TypeLookupKind.varOrFunType);
+					templateParameter.typeLookups.insert(tl);
+				}
+				else if (p.templateTypeParameter && kind == CompletionKind.typeTmpParam)
+				{
+					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
+						istring(name), TypeLookupKind.varOrFunType);
+					templateParameter.typeLookups.insert(tl);
+				}
+
 				templateParameter.parent = symbol;
 				symbol.addChild(templateParameter, true);
 				if (currentScope)
