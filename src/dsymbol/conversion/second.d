@@ -442,7 +442,76 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
 
-			// solves auto arrays
+			// solves auto variables from IndexExpression:
+			// e.g `auto toSolve = sourceArrayIdentifier[expr];`
+			if (crumb == ARRAY_ELEMENT_NAME)
+			{
+				size_t dims;
+				istring sourceArrayIdentifier;
+				foreach (c; crumbs)
+				{
+					dims += c == ARRAY_ELEMENT_NAME;
+					// the first non-dummy name is the source array identifier.
+					// the next non-dummies are likely the var identifiers used
+					// in the expression that gives the index.
+					if (!sourceArrayIdentifier.data.length && c[0] != '*')
+						sourceArrayIdentifier = c;
+				}
+				if (sourceArrayIdentifier.data.length)
+				{
+					DSymbol* suffix;
+					currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
+						symbolNameToTypeName(sourceArrayIdentifier), symbol.location);
+					if (!currentSymbol)
+						return;
+					typeSwap(currentSymbol);
+					if (!currentSymbol)
+						return;
+
+					// TODO: dims are not correctly processed
+					// for now we just add a single dim so that arrayproperties
+					// are proposed when there is 1 or more dims.
+					if (dims > 1)
+					{
+						suffix = cache.symbolAllocator.make!(DSymbol)
+							(ARRAY_SYMBOL_NAME, CompletionKind.dummy, suffix);
+						suffix.qualifier = SymbolQualifier.array;
+						suffix.ownType = true;
+					}
+					if (suffix)
+					{
+						suffix.type = currentSymbol.type;
+						suffix.addChildren(arraySymbols[], false);
+						suffix.ownType = false;
+					}
+					else
+					{
+						// Index expressions can be an array index or an AA index
+						if (currentSymbol.qualifier == SymbolQualifier.array
+								|| currentSymbol.qualifier == SymbolQualifier.assocArray
+								|| currentSymbol.kind == CompletionKind.aliasName)
+						{
+							if (currentSymbol.type !is null)
+								suffix = currentSymbol.type;
+							else
+								return;
+						}
+						else
+						{
+							if (auto opIndex = currentSymbol.getFirstPartNamed(internString("opIndex")))
+								suffix = opIndex.type;
+							else
+								return;
+						}
+					}
+					symbol.type = suffix;
+					symbol.ownType = dims > 1;
+					return;
+				}
+			}
+
+			// solves auto arrays from ArrayInitializer
+			// e.g auto toSolve = [elemType];
 			if (crumb == ARRAY_SYMBOL_NAME)
 			{
 				auto nestedArr = crumbs.save();

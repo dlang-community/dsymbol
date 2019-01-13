@@ -12,6 +12,8 @@ istring IMPORT_SYMBOL_NAME;
 /// ditto
 istring ARRAY_SYMBOL_NAME;
 /// ditto
+istring ARRAY_ELEMENT_NAME;
+/// ditto
 istring ASSOC_ARRAY_SYMBOL_NAME;
 /// ditto
 istring POINTER_SYMBOL_NAME;
@@ -133,6 +135,7 @@ static this()
 	FUNCTION_SYMBOL_NAME = internString("function");
 	IMPORT_SYMBOL_NAME = internString("import");
 	ARRAY_SYMBOL_NAME = internString("*arr*");
+	ARRAY_ELEMENT_NAME = internString("*arrelem*");
 	ASSOC_ARRAY_SYMBOL_NAME = internString("*aa*");
 	POINTER_SYMBOL_NAME = internString("*");
 	PARAMETERS_SYMBOL_NAME = internString("*parameters*");
