@@ -63,9 +63,9 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 	q{bool b; int i;}.expectSymbolsAndTypes([["b", "bool"],["i", "int"]]);
 	q{auto b = false;}.expectSymbolsAndTypes([["b", "bool"]]);
 	q{auto b = true;}.expectSymbolsAndTypes([["b", "bool"]]);
-	q{auto b = [0];}.expectSymbolsAndTypes([["b", "*arr*", "int"]]);
-	q{auto b = [[0]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "int"]]);
-	q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr*", "*arr*", "*arr*", "int"]]);
+	q{auto b = [0];}.expectSymbolsAndTypes([["b", "*arr-literal*", "int"]]);
+	q{auto b = [[0]];}.expectSymbolsAndTypes([["b", "*arr-literal*", "*arr-literal*", "int"]]);
+	q{auto b = [[[0]]];}.expectSymbolsAndTypes([["b", "*arr-literal*", "*arr-literal*", "*arr-literal*", "int"]]);
 	//q{int* b;}.expectSymbolsAndTypes([["b", "*", "int"]]);
 	//q{int*[] b;}.expectSymbolsAndTypes([["b", "*arr*", "*", "int"]]);
 
@@ -164,6 +164,14 @@ unittest
 		assert(S);
 		assert(b.type.name == ARRAY_SYMBOL_NAME);
 		assert(b.type.type is S);
+	}
+	{
+		auto source = q{struct S{}; S s; auto b = [s][0];};
+		auto pair = generateAutocompleteTrees(source, cache);
+		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
+		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
+		assert(S);
+		assert(b.type is S);
 	}
 }
 
