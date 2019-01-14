@@ -1390,10 +1390,12 @@ class InitializerVisitor : ASTVisitor
 		primary.accept(this);
 	}
 
-	override void visit(const IndexExpression index)
+	override void visit(const IndexExpression expr)
 	{
-		lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
-		index.accept(this);
+		expr.unaryExpression.accept(this);
+		foreach (index; expr.indexes)
+			if (index.high is null)
+				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
 	}
 
 	override void visit(const Initializer initializer)

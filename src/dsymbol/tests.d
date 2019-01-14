@@ -139,6 +139,38 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running the deduction from index expr tests...");
+	{
+		auto source = q{struct S{}; S[] s; auto b = s[i];};
+		auto pair = generateAutocompleteTrees(source, cache);
+		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
+		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
+		assert(S);
+		assert(b.type is S);
+	}
+	{
+		auto source = q{struct S{}; S[][] s; auto b = s[0];};
+		auto pair = generateAutocompleteTrees(source, cache);
+		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
+		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
+		assert(S);
+		assert(b.type.type is S);
+	}
+	{
+		auto source = q{struct S{}; S[][][] s; auto b = s[0][0];};
+		auto pair = generateAutocompleteTrees(source, cache);
+		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
+		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
+		assert(S);
+		assert(b.type.name == ARRAY_SYMBOL_NAME);
+		assert(b.type.type is S);
+	}
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running `super` tests...");
 	auto source = q{ class A {} class B : A {} };
 	auto pair = generateAutocompleteTrees(source, cache);
