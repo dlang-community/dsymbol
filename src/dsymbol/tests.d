@@ -141,7 +141,7 @@ unittest
 
 	writeln("Running the deduction from index expr tests...");
 	{
-		auto source = q{struct S{}; S[] s; auto b = s[i];};
+		auto source = q{struct S{} S[] s; auto b = s[i];};
 		auto pair = generateAutocompleteTrees(source, cache);
 		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
 		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
@@ -149,7 +149,15 @@ unittest
 		assert(b.type is S);
 	}
 	{
-		auto source = q{struct S{}; S[][] s; auto b = s[0];};
+		auto source = q{struct S{} S[1] s; auto b = s[i];};
+		auto pair = generateAutocompleteTrees(source, cache);
+		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
+		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
+		assert(S);
+		assert(b.type is S);
+	}
+	{
+		auto source = q{struct S{} S[][] s; auto b = s[0];};
 		auto pair = generateAutocompleteTrees(source, cache);
 		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
 		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
@@ -157,7 +165,7 @@ unittest
 		assert(b.type.type is S);
 	}
 	{
-		auto source = q{struct S{}; S[][][] s; auto b = s[0][0];};
+		auto source = q{struct S{} S[][][] s; auto b = s[0][0];};
 		auto pair = generateAutocompleteTrees(source, cache);
 		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
 		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));
@@ -166,7 +174,7 @@ unittest
 		assert(b.type.type is S);
 	}
 	{
-		auto source = q{struct S{}; S s; auto b = [s][0];};
+		auto source = q{struct S{} S s; auto b = [s][0];};
 		auto pair = generateAutocompleteTrees(source, cache);
 		DSymbol* S = pair.symbol.getFirstPartNamed(internString("S"));
 		DSymbol* b = pair.symbol.getFirstPartNamed(internString("b"));

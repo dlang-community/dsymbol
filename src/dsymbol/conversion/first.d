@@ -1229,39 +1229,6 @@ void formatNode(A, T)(ref A appender, const T node)
 
 private:
 
-auto byIdentifier(const TypeIdentifierPart tip) pure nothrow @trusted
-{
-	TypeIdentifierPart root = cast() tip;
-
-	struct Range
-	{
-		auto front() pure nothrow @nogc @safe
-		{
-			assert(root !is null);
-			assert(root.identifierOrTemplateInstance !is null);
-
-			with (root.identifierOrTemplateInstance)
-			return identifier != tok!""
-				? identifier.text
-				: templateInstance.identifier.text;
-		}
-
-		void popFront() pure nothrow @nogc @safe
-		{
-			assert(root !is null, "attempt to pop the front of an empty byIdentifier.Range");
-			root = cast() root.typeIdentifierPart;
-		}
-
-		bool empty() pure nothrow @nogc @safe
-		{
-			return root is null;
-		}
-	}
-
-	Range range;
-	return range;
-}
-
 bool isDitto(scope const(char)[] comment)
 {
 	import std.uni : icmp;
@@ -1271,9 +1238,21 @@ bool isDitto(scope const(char)[] comment)
 
 void writeIotcTo(T)(const TypeIdentifierPart tip, ref T output) nothrow
 {
-	import std.algorithm : each;
+	if (!tip.identifierOrTemplateInstance)
+		return;
+	if (tip.identifierOrTemplateInstance.identifier != tok!"")
+		output.insert(internString(tip.identifierOrTemplateInstance.identifier.text));
+	else
+		output.insert(internString(tip.identifierOrTemplateInstance.templateInstance.identifier.text));
 
-	byIdentifier(tip).each!(a => output.insert(internString(a)));
+	// the indexer of a TypeIdentifierPart means either that there's
+	// a static array dimension or that a type is selected in a type list.
+	// we can only handle the first case since dsymbol does not process templates yet.
+	if (tip.indexer)
+		output.insert(ARRAY_SYMBOL_NAME);
+
+	if (tip.typeIdentifierPart)
+		writeIotcTo(tip.typeIdentifierPart, output);
 }
 
 auto byIdentifier(const IdentifierOrTemplateChain iotc) nothrow
