@@ -75,6 +75,14 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 	q{class Bar{} auto foo(){return new class Bar{};} auto b = foo();}.expectSymbolsAndTypes([["b", "foo"]]);
 }
 
+// this one used to crash, see #125
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+	auto source = q{ auto a = true ? [42] : []; };
+	auto pair = generateAutocompleteTrees(source, cache);
+}
+
 unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);

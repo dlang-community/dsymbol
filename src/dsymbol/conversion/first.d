@@ -1388,7 +1388,7 @@ class InitializerVisitor : ASTVisitor
 	{
 		// If the array has any elements, assume all elements have the
 		// same type as the first element.
-		if (ai.arrayMemberInitializations.length)
+		if (ai.arrayMemberInitializations && ai.arrayMemberInitializations.length)
 			ai.arrayMemberInitializations[0].accept(this);
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
@@ -1396,7 +1396,7 @@ class InitializerVisitor : ASTVisitor
 	override void visit(const ArrayLiteral al)
 	{
 		// ditto
-		if (al.argumentList.items.length)
+		if (al.argumentList && al.argumentList.items.length)
 			al.argumentList.items[0].accept(this);
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
