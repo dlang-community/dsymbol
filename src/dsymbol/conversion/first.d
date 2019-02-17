@@ -188,8 +188,18 @@ final class FirstPass : ASTVisitor
 		visitAggregateDeclaration(dec, CompletionKind.structName);
 	}
 
+	override void visit(const NewAnonClassExpression nace)
+	{
+		// its base classes would be added as "inherit" breadcrumbs in the current symbol
+		skipBaseClassesOfNewAnon = true;
+		nace.accept(this);
+		skipBaseClassesOfNewAnon = false;
+	}
+
 	override void visit(const BaseClass bc)
 	{
+		if (skipBaseClassesOfNewAnon)
+			return;
 		if (bc.type2.typeIdentifierPart is null ||
 			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
@@ -1127,6 +1137,7 @@ private:
 	ModuleCache* cache;
 
 	bool includeParameterSymbols;
+	bool skipBaseClassesOfNewAnon;
 
 	ubyte foreachTypeIndexOfInterest;
 	ubyte foreachTypeIndex;
