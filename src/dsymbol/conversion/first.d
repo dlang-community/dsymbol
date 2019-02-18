@@ -294,6 +294,12 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const AliasThisDeclaration dec)
 	{
+		const k = currentSymbol.acSymbol.kind;
+		if (k != CompletionKind.structName && k != CompletionKind.className &&
+			k != CompletionKind.unionName && k != CompletionKind.mixinTemplateName)
+		{
+			return;
+		}
 		currentSymbol.typeLookups.insert(Mallocator.instance.make!TypeLookup(
 			internString(dec.identifier.text), TypeLookupKind.aliasThis));
 	}

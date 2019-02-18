@@ -91,6 +91,14 @@ unittest
 	auto pair = generateAutocompleteTrees(source, cache);
 }
 
+// https://github.com/dlang-community/D-Scanner/issues/738
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+	auto source = q{ void b() { c = } alias b this;  };
+	auto pair = generateAutocompleteTrees(source, cache);
+}
+
 unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
