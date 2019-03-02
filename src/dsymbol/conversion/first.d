@@ -1405,16 +1405,27 @@ class InitializerVisitor : ASTVisitor
 	{
 		// If the array has any elements, assume all elements have the
 		// same type as the first element.
-		if (ai.arrayMemberInitializations && ai.arrayMemberInitializations.length)
-			ai.arrayMemberInitializations[0].accept(this);
+		if (ai.arrayMemberInitializations)
+		{
+			if (ai.arrayMemberInitializations.length)
+				ai.arrayMemberInitializations[0].accept(this);
+			else
+				lookup.breadcrumbs.insert(VOID_SYMBOL_NAME);
+
+		}
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
 
 	override void visit(const ArrayLiteral al)
 	{
 		// ditto
-		if (al.argumentList && al.argumentList.items.length)
-			al.argumentList.items[0].accept(this);
+		if (al.argumentList)
+		{
+			if (al.argumentList.items.length)
+				al.argumentList.items[0].accept(this);
+			else
+				lookup.breadcrumbs.insert(VOID_SYMBOL_NAME);
+		}
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
 

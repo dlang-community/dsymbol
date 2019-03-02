@@ -65,6 +65,8 @@ istring STRING_LITERAL_SYMBOL_NAME;
 istring WSTRING_LITERAL_SYMBOL_NAME;
 /// ditto
 istring BOOL_VALUE_SYMBOL_NAME;
+/// ditto
+istring VOID_SYMBOL_NAME;
 
 /**
  * Translates the IDs for built-in types into an interned string.
@@ -162,6 +164,7 @@ static this()
 	STRING_LITERAL_SYMBOL_NAME = internString("*string");
 	WSTRING_LITERAL_SYMBOL_NAME = internString("*wstring");
 	BOOL_VALUE_SYMBOL_NAME = internString("*bool");
+	VOID_SYMBOL_NAME = internString("*void");
 }
 
 istring symbolNameToTypeName(istring name)
@@ -196,5 +199,7 @@ istring symbolNameToTypeName(istring name)
 		return internString("wstring");
 	if (name.ptr == BOOL_VALUE_SYMBOL_NAME.ptr)
 		return internString("bool");
+	if (name.ptr == VOID_SYMBOL_NAME.ptr)
+		return internString("void");
 	return name;
 }
