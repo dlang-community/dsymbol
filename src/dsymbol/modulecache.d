@@ -165,13 +165,13 @@ struct ModuleCache
 
 		istring cachedLocation = internString(location);
 
-		if (recursionGuard.contains(cachedLocation))
+		if (recursionGuard.contains(&cachedLocation.data[0]))
 			return null;
 
 		if (!needsReparsing(cachedLocation))
 			return getEntryFor(cachedLocation).symbol;
 
-		recursionGuard.insert(cachedLocation);
+		recursionGuard.insert(&cachedLocation.data[0]);
 
 		File f = File(cachedLocation);
 		immutable fileSize = cast(size_t) f.size;
@@ -236,7 +236,7 @@ struct ModuleCache
 		}
 
 		cache.insert(newEntry);
-		recursionGuard.remove(cachedLocation);
+		recursionGuard.remove(&cachedLocation.data[0]);
 
 		resolveDeferredTypes(cachedLocation);
 
@@ -424,7 +424,7 @@ private:
 	// Mapping of file paths to their cached symbols.
 	TTree!(CacheEntry*) cache;
 
-	HashSet!string recursionGuard;
+	HashSet!(immutable(char)*) recursionGuard;
 
 	struct ImportPath
 	{
