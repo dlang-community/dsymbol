@@ -268,6 +268,15 @@ unittest
 	assert(T2.kind == CompletionKind.variadicTmpParam);
 }
 
+// this is for testing that internString data is always on the same address
+// since we use this special property for modulecache recursion guard
+unittest
+{
+	istring a = internString("foo_bar_baz".idup);
+	istring b = internString("foo_bar_baz".idup);
+	assert(a.data.ptr == b.data.ptr);
+}
+
 static StringCache stringCache = void;
 static this()
 {
