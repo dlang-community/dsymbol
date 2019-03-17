@@ -7,7 +7,7 @@
 project_soversion = '0'
 
 pkgc = import('pkgconfig')
-allocator_dep = dependency('stdx-allocator', version: '= 2.77.2', fallback: ['stdx-allocator', 'allocator_dep'])
+allocator_dep = dependency('stdx-allocator', version: '>= 2.77.5', fallback: ['stdx-allocator', 'allocator_dep'])
 dparse_dep = dependency('dparse', version: '>= 0.9.0', fallback: ['dparse', 'dparse_dep'])
 dcontainers_dep = dependency('dcontainers', version: '>= 0.8.0', fallback: ['dcontainers', 'dcontainers_dep'])
 
