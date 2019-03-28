@@ -807,7 +807,8 @@ private:
 
 	void visitAggregateDeclaration(AggType)(AggType dec, CompletionKind kind)
 	{
-		if (kind == CompletionKind.unionName && dec.name == tok!"")
+		if ((kind == CompletionKind.unionName || kind == CompletionKind.structName) &&
+			dec.name == tok!"")
 		{
 			dec.accept(this);
 			return;

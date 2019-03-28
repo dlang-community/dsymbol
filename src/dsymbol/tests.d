@@ -165,6 +165,19 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running anon struct tests...");
+	auto source = q{ struct A { struct {int a;}} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	assert(A);
+	auto Aa = A.getFirstPartNamed(internString("a"));
+	assert(Aa);
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running the deduction from index expr tests...");
 	{
 		auto source = q{struct S{} S[] s; auto b = s[i];};
