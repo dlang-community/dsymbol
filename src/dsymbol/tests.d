@@ -231,6 +231,23 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running the \"access chain with inherited type\" tests...");
+	auto source = q{ class A {} class B : A {} };
+	auto pair = generateAutocompleteTrees(source, cache);
+	assert(pair.symbol);
+	auto A = pair.symbol.getFirstPartNamed(internString("A"));
+	assert(A);
+	auto B = pair.symbol.getFirstPartNamed(internString("B"));
+	assert(B);
+	auto AfromB = B.getFirstPartNamed(internString("A"));
+	assert(AfromB.kind == CompletionKind.aliasName);
+	assert(AfromB.type is A);
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running template type parameters tests...");
 	{
 		auto source = q{ struct Foo(T : int){} struct Bar(T : Foo){} };
