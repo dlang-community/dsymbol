@@ -206,6 +206,21 @@ final class FirstPass : ASTVisitor
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
 		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
+
+		// create an alias to the BaseClass to allow completions
+		// of the form : `instance.BaseClass.`, which is
+		// mostly used to bypass the most derived overrides.
+		const idt = lookup.breadcrumbs.back;
+		if (!idt.length)
+			return;
+		SemanticSymbol* symbol = allocateSemanticSymbol(idt,
+			CompletionKind.aliasName, symbolFile, currentScope.endLocation);
+		Type t = Mallocator.instance.make!Type;
+		t.type2 = cast() bc.type2;
+		addTypeToLookups(symbol.typeLookups, t);
+		symbol.parent = currentSymbol;
+		currentSymbol.addChild(symbol, true);
+		symbol.protection = protection.current;
 	}
 
 	override void visit(const VariableDeclaration dec)
