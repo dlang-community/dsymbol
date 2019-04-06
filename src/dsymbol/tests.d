@@ -261,6 +261,30 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running the forwared declarations tests...");
+	auto source = q{
+
+		enum MyAggregate a = {};
+		auto varA = a.field;
+		auto varB = a.func;
+		struct MyAggregate
+		{
+		    int field;
+		    int func() { return 0; }
+		}
+	};
+	auto pair = generateAutocompleteTrees(source, cache);
+	assert(pair.symbol);
+	auto A = pair.symbol.getFirstPartNamed(internString("varA"));
+	assert(A);
+	assert(A.type);
+	assert(A.type.name == "int");
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running template type parameters tests...");
 	{
 		auto source = q{ struct Foo(T : int){} struct Bar(T : Foo){} };

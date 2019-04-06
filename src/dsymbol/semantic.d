@@ -88,6 +88,9 @@ public:
 
 	/// Protection level for this symobol
 	IdType protection;
+
+	/// Flag used to solve forward declarations
+	bool secondPassDone;
 }
 
 /**

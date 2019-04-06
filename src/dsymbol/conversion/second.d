@@ -35,8 +35,16 @@ import std.experimental.logger;
 import dparse.ast;
 import dparse.lexer;
 
-void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
+/**
+ * Runs the second semantic pass.
+ * Returns: The count failed solvings.
+ */
+size_t secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {
+	if (currentSymbol.secondPassDone)
+		return 0;
+	currentSymbol.secondPassDone = true;
+
 	with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
 	{
 	case className:
@@ -54,6 +62,8 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 		{
 			resolveType(currentSymbol.acSymbol, currentSymbol.typeLookups,
 				moduleScope, cache);
+			if (currentSymbol.acSymbol.type is null)
+				currentSymbol.secondPassDone = false;
 		}
 		break;
 	case importSymbol:
@@ -79,8 +89,17 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 		break;
 	}
 
+	size_t unsolved, passCount;
+	LAgain:
+	unsolved = 0;
 	foreach (child; currentSymbol.children)
-		secondPass(child, moduleScope, cache);
+		unsolved += secondPass(child, moduleScope, cache);
+	if (unsolved && passCount++ < 10)
+	{
+		// this one might be okay but still not the children
+		currentSymbol.secondPassDone = false;
+		goto LAgain;
+	}
 
 	// Alias this and mixin templates are resolved after child nodes are
 	// resolved so that the correct symbol information will be available.
@@ -97,6 +116,8 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 	default:
 		break;
 	}
+
+	return unsolved + ubyte(currentSymbol.acSymbol.type is null);
 }
 
 void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,
