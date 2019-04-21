@@ -201,7 +201,7 @@ public:
 				typeid(DSymbol).destroy(part.ptr);
 			}
 			else
-				part = null;
+				part.ptr = null;
 		}
 		if (ownType)
 			typeid(DSymbol).destroy(type);
