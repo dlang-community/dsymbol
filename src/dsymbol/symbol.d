@@ -430,6 +430,9 @@ public:
 		ubyte, "", 5));
 	// dfmt on
 
+	/// Protection level for this symobol
+	IdType protection;
+
 }
 
 /**
