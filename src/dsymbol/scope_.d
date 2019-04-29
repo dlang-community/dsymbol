@@ -23,6 +23,7 @@ import dsymbol.import_;
 import dsymbol.builtin.names;
 import containers.ttree;
 import containers.unrolledlist;
+import std.algorithm : canFind, any;
 import std.experimental.logger;
 import stdx.allocator.mallocator : Mallocator;
 
@@ -213,6 +214,11 @@ struct Scope
 		if (parent !is null)
 			return parent.getSymbolsAtGlobalScope(name);
 		return getSymbolsByName(name);
+	}
+
+	bool hasSymbolRecursive(const(DSymbol)* symbol) const
+	{
+		return _symbols[].canFind!(a => a == symbol) || children[].any!(a => a.hasSymbolRecursive(symbol));
 	}
 
 	/// The scope that contains this one
