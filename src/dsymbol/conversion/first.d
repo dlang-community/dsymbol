@@ -137,7 +137,7 @@ final class FirstPass : ASTVisitor
 		pushSymbol(dec.name.text, CompletionKind.functionName, symbolFile,
 				dec.name.index, dec.returnType);
 		scope (exit) popSymbol();
-		currentSymbol.protection = protection.current;
+		currentSymbol.acSymbol.protection = protection.current;
 		currentSymbol.acSymbol.doc = makeDocumentation(dec.comment);
 
 		istring lastComment = this.lastComment;
@@ -220,7 +220,7 @@ final class FirstPass : ASTVisitor
 		addTypeToLookups(symbol.typeLookups, t);
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
-		symbol.protection = protection.current;
+		symbol.acSymbol.protection = protection.current;
 	}
 
 	override void visit(const VariableDeclaration dec)
@@ -234,7 +234,7 @@ final class FirstPass : ASTVisitor
 			if (dec.type !is null)
 				addTypeToLookups(symbol.typeLookups, dec.type);
 			symbol.parent = currentSymbol;
-			symbol.protection = protection.current;
+			symbol.acSymbol.protection = protection.current;
 			symbol.acSymbol.doc = makeDocumentation(declarator.comment);
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
@@ -256,7 +256,7 @@ final class FirstPass : ASTVisitor
 					symbolFile, part.identifier.index);
 				symbol.parent = currentSymbol;
 				populateInitializer(symbol, part.initializer);
-				symbol.protection = protection.current;
+				symbol.acSymbol.protection = protection.current;
 				symbol.acSymbol.doc = makeDocumentation(dec.comment);
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
@@ -285,7 +285,7 @@ final class FirstPass : ASTVisitor
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
-				symbol.protection = protection.current;
+				symbol.acSymbol.protection = protection.current;
 				symbol.acSymbol.doc = makeDocumentation(aliasDeclaration.comment);
 			}
 		}
@@ -301,7 +301,7 @@ final class FirstPass : ASTVisitor
 				symbol.parent = currentSymbol;
 				currentSymbol.addChild(symbol, true);
 				currentScope.addSymbol(symbol.acSymbol, false);
-				symbol.protection = protection.current;
+				symbol.acSymbol.protection = protection.current;
 				symbol.acSymbol.doc = makeDocumentation(aliasDeclaration.comment);
 			}
 		}
@@ -627,7 +627,7 @@ final class FirstPass : ASTVisitor
 			symbol.parent = currentSymbol;
 			currentSymbol.addChild(symbol, true);
 			currentScope.addSymbol(symbol.acSymbol, false);
-			symbol.protection = protection.current;
+			symbol.acSymbol.protection = protection.current;
 		}
 	}
 
@@ -835,7 +835,7 @@ private:
 			currentSymbol.acSymbol.addChildren(classSymbols[], false);
 		else
 			currentSymbol.acSymbol.addChildren(aggregateSymbols[], false);
-		currentSymbol.protection = protection.current;
+		currentSymbol.acSymbol.protection = protection.current;
 		currentSymbol.acSymbol.doc = makeDocumentation(dec.comment);
 
 		istring lastComment = this.lastComment;
@@ -864,7 +864,7 @@ private:
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		processParameters(symbol, null, THIS_SYMBOL_NAME, parameters, templateParameters);
-		symbol.protection = protection.current;
+		symbol.acSymbol.protection = protection.current;
 		symbol.acSymbol.doc = makeDocumentation(doc);
 
 		istring lastComment = this.lastComment;
@@ -889,7 +889,7 @@ private:
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
 		symbol.acSymbol.callTip = internString("~this()");
-		symbol.protection = protection.current;
+		symbol.acSymbol.protection = protection.current;
 		symbol.acSymbol.doc = makeDocumentation(doc);
 
 		istring lastComment = this.lastComment;

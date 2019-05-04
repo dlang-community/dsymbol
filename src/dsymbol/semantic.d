@@ -87,7 +87,10 @@ public:
 	SemanticSymbol* parent;
 
 	/// Protection level for this symobol
-	IdType protection;
+	deprecated("Use acSymbol.protection instead") ref inout(IdType) protection() @property inout
+	{
+		return acSymbol.protection;
+	}
 }
 
 /**
