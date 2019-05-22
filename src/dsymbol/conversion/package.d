@@ -101,6 +101,43 @@ Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
 
 class AutocompleteParser : Parser
 {
+	override DeclarationOrStatement parseDeclarationOrStatement()
+	{
+		auto result = super.parseDeclarationOrStatement();
+		// try to append `with(StructType)` before a  `StructType ts = {};`
+		// in order to get completion in the struct initializer.
+		if (result && result.declaration && result.declaration.variableDeclaration)
+		{
+			const VariableDeclaration vd = result.declaration.variableDeclaration;
+			if (vd && vd.declarators.length && vd.declarators[0].initializer &&
+				vd.declarators[0].initializer.nonVoidInitializer &&
+				vd.declarators[0].initializer.nonVoidInitializer.structInitializer)
+			{
+				if (vd.type && vd.type.type2 && vd.type.type2.typeIdentifierPart &&
+					vd.type.type2.typeIdentifierPart.identifierOrTemplateInstance)
+				{
+					DeclarationOrStatement r = theAllocator.make!DeclarationOrStatement;
+					Statement s				 = theAllocator.make!Statement;
+					WithStatement with_ 	 = theAllocator.make!WithStatement;
+					PrimaryExpression p 	 = theAllocator.make!PrimaryExpression;
+					IdentifierOrTemplateInstance iot = theAllocator.make!IdentifierOrTemplateInstance;
+					StatementNoCaseNoDefault st = theAllocator.make!StatementNoCaseNoDefault;
+
+					iot.identifier = vd.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier;
+					p.identifierOrTemplateInstance = iot;
+					with_.expression = theAllocator.make!Expression;
+					with_.expression.items = [p];
+					with_.declarationOrStatement = result;
+					r.statement = s;
+					s.statementNoCaseNoDefault = st;
+					st.withStatement = with_;
+					return r;
+				}
+			}
+		}
+		return result;
+	}
+
 	override BlockStatement parseBlockStatement()
 	{
 		if (!currentIs(tok!"{"))
