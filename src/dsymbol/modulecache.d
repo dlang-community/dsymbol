@@ -304,7 +304,7 @@ struct ModuleCache
 		foreach (importPath; importPaths[])
 		{
 			auto path = importPath.path;
-			if (path.isFile)
+			if (path.existsAnd!isFile)
 			{
 				if (path.stripExtension.endsWith(moduleName))
 					alternatives ~= path;
@@ -314,19 +314,19 @@ struct ModuleCache
 				string dotDi = buildPath(path, moduleName) ~ ".di";
 				string dotD = dotDi[0 .. $ - 1];
 				string withoutSuffix = dotDi[0 .. $ - 3];
-				if (exists(dotD) && isFile(dotD))
+				if (existsAnd!isFile(dotD))
 					alternatives = dotD ~ alternatives;
-				else if (exists(dotDi) && isFile(dotDi))
+				else if (existsAnd!isFile(dotDi))
 					alternatives ~= dotDi;
-				else if (exists(withoutSuffix) && isDir(withoutSuffix))
+				else if (existsAnd!isDir(withoutSuffix))
 				{
 					string packagePath = buildPath(withoutSuffix, "package.di");
-					if (exists(packagePath) && isFile(packagePath))
+					if (existsAnd!isFile(packagePath))
 					{
 						alternatives ~= packagePath;
 						continue;
 					}
-					if (exists(packagePath[0 .. $ - 1]) && isFile(packagePath[0 .. $ - 1]))
+					if (existsAnd!isFile(packagePath[0 .. $ - 1]))
 						alternatives ~= packagePath[0 .. $ - 1];
 				}
 			}
@@ -391,7 +391,7 @@ private:
 				continue;
 			scope(success) importPath.scanned = true;
 
-			if (importPath.path.isFile)
+			if (importPath.path.existsAnd!isFile)
 			{
 				if (importPath.path.baseName.startsWith(".#"))
 					continue;
@@ -406,7 +406,7 @@ private:
 
 					try foreach (f; dirEntries(root, SpanMode.shallow))
 					{
-						if (f.name.isFile)
+						if (f.name.existsAnd!isFile)
 						{
 							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
 								continue;
@@ -434,4 +434,14 @@ private:
 
 	// Listing of paths to check for imports
 	UnrolledList!ImportPath importPaths;
+}
+
+/// Wrapper to check some attribute of a path, ignoring errors
+/// (such as on a broken symlink).
+private static bool existsAnd(alias fun)(string fn)
+{
+	try
+		return fun(fn);
+	catch (FileException e)
+		return false;
 }
