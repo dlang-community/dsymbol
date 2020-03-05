@@ -169,37 +169,37 @@ static this()
 
 istring symbolNameToTypeName(istring name)
 {
-	if (name.ptr == DOUBLE_LITERAL_SYMBOL_NAME.ptr)
+	if (name == DOUBLE_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[2];
-	if (name.ptr == FLOAT_LITERAL_SYMBOL_NAME.ptr)
+	if (name == FLOAT_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[4];
-	if (name.ptr == IDOUBLE_LITERAL_SYMBOL_NAME.ptr)
+	if (name == IDOUBLE_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[3];
-	if (name.ptr == IFLOAT_LITERAL_SYMBOL_NAME.ptr)
+	if (name == IFLOAT_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[5];
-	if (name.ptr == INT_LITERAL_SYMBOL_NAME.ptr)
+	if (name == INT_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[0];
-	if (name.ptr == LONG_LITERAL_SYMBOL_NAME.ptr)
+	if (name == LONG_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[8];
-	if (name.ptr == REAL_LITERAL_SYMBOL_NAME.ptr)
+	if (name == REAL_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[17];
-	if (name.ptr == IREAL_LITERAL_SYMBOL_NAME.ptr)
+	if (name == IREAL_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[18];
-	if (name.ptr == UINT_LITERAL_SYMBOL_NAME.ptr)
+	if (name == UINT_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[1];
-	if (name.ptr == ULONG_LITERAL_SYMBOL_NAME.ptr)
+	if (name == ULONG_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[9];
-	if (name.ptr == CHAR_LITERAL_SYMBOL_NAME.ptr)
+	if (name == CHAR_LITERAL_SYMBOL_NAME)
 		return builtinTypeNames[10];
-	if (name.ptr == DSTRING_LITERAL_SYMBOL_NAME.ptr)
-		return internString("dstring");
-	if (name.ptr == STRING_LITERAL_SYMBOL_NAME.ptr)
-		return internString("string");
-	if (name.ptr == WSTRING_LITERAL_SYMBOL_NAME.ptr)
-		return internString("wstring");
-	if (name.ptr == BOOL_VALUE_SYMBOL_NAME.ptr)
-		return internString("bool");
-	if (name.ptr == VOID_SYMBOL_NAME.ptr)
-		return internString("void");
+	if (name == DSTRING_LITERAL_SYMBOL_NAME)
+		return istring("dstring");
+	if (name == STRING_LITERAL_SYMBOL_NAME)
+		return istring("string");
+	if (name == WSTRING_LITERAL_SYMBOL_NAME)
+		return istring("wstring");
+	if (name == BOOL_VALUE_SYMBOL_NAME)
+		return istring("bool");
+	if (name == VOID_SYMBOL_NAME)
+		return istring("void");
 	return name;
 }

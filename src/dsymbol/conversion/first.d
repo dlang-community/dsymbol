@@ -741,7 +741,7 @@ private:
 		import std.array : appender;
 		import std.range : zip;
 
-		auto app = appender!(char[])();
+		auto app = appender!string();
 		app.put("this(");
 		bool first = true;
 		foreach (field; zip(structFieldTypes[], structFieldNames[]))
@@ -757,12 +757,12 @@ private:
 				app.formatNode(field[0]);
 				app.put(" ");
 			}
-			app.put(field[1]);
+			app.put(field[1].data);
 		}
 		app.put(")");
 		SemanticSymbol* symbol = allocateSemanticSymbol(CONSTRUCTOR_SYMBOL_NAME,
 			CompletionKind.functionName, symbolFile, currentSymbol.acSymbol.location);
-		symbol.acSymbol.callTip = internString(cast(string) app.data);
+		symbol.acSymbol.callTip = istring(app.data);
 		currentSymbol.addChild(symbol, true);
 	}
 
@@ -1024,7 +1024,7 @@ private:
 	{
 		import std.array : appender;
 
-		auto app = appender!(char[])();
+		auto app = appender!string();
 		if (returnType !is null)
 		{
 			app.formatNode(returnType);
@@ -1037,7 +1037,7 @@ private:
 			app.put("()");
 		else
 			app.formatNode(parameters);
-		return internString(cast(string) app.data);
+		return istring(app.data);
 	}
 
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
@@ -1100,9 +1100,9 @@ private:
 			else if (suffix.delegateOrFunction != tok!"")
 			{
 				import std.array : appender;
-				auto app = appender!(char[])();
+				auto app = appender!string();
 				formatNode(app, type);
-				istring callTip = internString(cast(string) app.data);
+				istring callTip = istring(app.data);
 				// Insert the call tip and THEN the "function" string because
 				// the breadcrumbs are processed in reverse order
 				lookup.breadcrumbs.insert(callTip);
@@ -1308,14 +1308,14 @@ static istring convertChainToImportPath(const IdentifierChain ic)
 {
 	import std.path : dirSeparator;
 	import std.array : appender;
-	auto app = appender!(char[])();
+	auto app = appender!string();
 	foreach (i, ident; ic.identifiers)
 	{
 		app.put(ident.text);
 		if (i + 1 < ic.identifiers.length)
 			app.put(dirSeparator);
 	}
-	return internString(cast(string) app.data);
+	return istring(app.data);
 }
 
 class InitializerVisitor : ASTVisitor
@@ -1462,7 +1462,7 @@ class InitializerVisitor : ASTVisitor
 
 		// here we follow DMDFE naming style
 		__gshared size_t anonIndex;
-		istring idt = "__anonclass%d".format(++anonIndex).internString;
+		const idt = istring("__anonclass%d".format(++anonIndex));
 
 		// the goal is to replace it so we null the field
 		NewAnonClassExpression nace = ne.newAnonClassExpression;
