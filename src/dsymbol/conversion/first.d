@@ -1057,7 +1057,7 @@ private:
 	}
 	body
 	{
-		DSymbol* acSymbol = make!DSymbol(symbolAllocator, name, kind);
+		DSymbol* acSymbol = make!DSymbol(symbolAllocator, istring(name), kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
 		symbolsAllocated++;

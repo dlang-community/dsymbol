@@ -135,55 +135,17 @@ enum SymbolQualifier : ubyte
  */
 struct DSymbol
 {
-public:
-
-	/**
-	 * Copying is disabled.
-	 */
+	// Copying is disabled
 	@disable this();
-
-	/// ditto
 	@disable this(this);
 
-	/// ditto
-	this(istring name) /+nothrow+/ /+@safe+/
-	{
-		this.name = name;
-	}
-
 	/**
 	 * Params:
 	 *     name = the symbol's name
 	 *     kind = the symbol's completion kind
+	 *     type = the resolved type of the symbol
 	 */
-	this(string name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
-	{
-		this.name = istring(name);
-		this.kind = kind;
-	}
-
-	/// ditto
-	this(istring name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
-	{
-		this.name = name;
-		this.kind = kind;
-	}
-
-	/**
-	 * Params:
-	 *     name = the symbol's name
-	 *     kind = the symbol's completion kind
-	 *     resolvedType = the resolved type of the symbol
-	 */
-	this(string name, CompletionKind kind, DSymbol* type)
-	{
-		this.name = istring(name);
-		this.kind = kind;
-		this.type = type;
-	}
-
-	/// ditto
-	this(istring name, CompletionKind kind, DSymbol* type)
+	this(istring name, CompletionKind kind = CompletionKind.dummy, DSymbol* type = null) nothrow @nogc @safe
 	{
 		this.name = name;
 		this.kind = kind;
