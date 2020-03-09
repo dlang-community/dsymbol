@@ -32,6 +32,11 @@ static this()
 	stringCache = StringCache(StringCache.defaultBucketCount);
 }
 
+static ~this()
+{
+	destroy(stringCache);
+}
+
 private StringCache stringCache = void;
 
 struct istring

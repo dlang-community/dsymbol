@@ -133,3 +133,22 @@ static this()
 	argumentsType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
 	argumentsType.typeSuffixes[0] = argumentsTypeSuffix;
 }
+
+static ~this()
+{
+	import stdx.allocator : dispose;
+	import stdx.allocator.mallocator : Mallocator;
+
+	dispose(Mallocator.instance, argumentsType.typeSuffixes[0]);
+	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
+	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart);
+	dispose(Mallocator.instance, argumentsType.type2);
+	dispose(Mallocator.instance, argptrType.typeSuffixes[0]);
+	dispose(Mallocator.instance, argptrType.type2);
+
+	Mallocator.instance.deallocate(argumentsType.typeSuffixes);
+	Mallocator.instance.deallocate(argptrType.typeSuffixes);
+
+	dispose(Mallocator.instance, argumentsType);
+	dispose(Mallocator.instance, argptrType);
+}
