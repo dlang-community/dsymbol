@@ -145,6 +145,13 @@ struct DSymbol
 	 *     kind = the symbol's completion kind
 	 *     type = the resolved type of the symbol
 	 */
+	this(string name, CompletionKind kind = CompletionKind.dummy, DSymbol* type = null) nothrow @nogc @safe
+	{
+		this.name = istring(name);
+		this.kind = kind;
+		this.type = type;
+	}
+	/// ditto
 	this(istring name, CompletionKind kind = CompletionKind.dummy, DSymbol* type = null) nothrow @nogc @safe
 	{
 		this.name = name;
