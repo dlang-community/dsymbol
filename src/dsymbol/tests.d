@@ -298,6 +298,42 @@ unittest
 	assert(T2.kind == CompletionKind.variadicTmpParam);
 }
 
+// check for memory leaks on thread termination (in static constructors)
+version (linux)
+unittest
+{
+	import core.memory : GC;
+	import core.thread : Thread;
+	import fs = std.file;
+	import std.array : split;
+	import std.conv : to;
+
+	// get the resident set size
+	static long getRSS()
+	{
+		GC.collect();
+		GC.minimize();
+		// read Linux process statistics
+		const txt = fs.readText("/proc/self/stat");
+		const parts = split(txt);
+		return to!long(parts[23]);
+	}
+
+	const rssBefore = getRSS();
+	// create and destroy a lot of dummy threads
+	foreach (j; 0 .. 50)
+	{
+		Thread[100] arr;
+		foreach (i; 0 .. 100)
+			arr[i] = new Thread({}).start();
+		foreach (i; 0 .. 100)
+			arr[i].join();
+	}
+	const rssAfter = getRSS();
+	// check the process memory increase with some eyeballed threshold
+	assert(rssAfter - rssBefore < 5000);
+}
+
 // this is for testing that internString data is always on the same address
 // since we use this special property for modulecache recursion guard
 unittest
@@ -307,10 +343,14 @@ unittest
 	assert(a.data.ptr == b.data.ptr);
 }
 
-static StringCache stringCache = void;
+private StringCache stringCache = void;
 static this()
 {
 	stringCache = StringCache(StringCache.defaultBucketCount);
+}
+static ~this()
+{
+	destroy(stringCache);
 }
 
 const(Token)[] lex(string source)
