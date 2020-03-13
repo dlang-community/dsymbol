@@ -43,7 +43,7 @@ struct DeferredSymbol
 	bool dependsOn(istring modulePath)
 	{
 		foreach (i; imports[])
-			if (i.symbolFile.ptr == modulePath.ptr)
+			if (i.symbolFile == modulePath)
 				return true;
 		return false;
 	}

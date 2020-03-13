@@ -156,10 +156,10 @@ struct Scope
 				return cast(typeof(return)) app.data;
 		}
 
-		if (name.ptr != CONSTRUCTOR_SYMBOL_NAME.ptr
-				&& name.ptr != DESTRUCTOR_SYMBOL_NAME.ptr
-				&& name.ptr != UNITTEST_SYMBOL_NAME.ptr
-				&& name.ptr != THIS_SYMBOL_NAME.ptr)
+		if (name != CONSTRUCTOR_SYMBOL_NAME &&
+			name != DESTRUCTOR_SYMBOL_NAME &&
+			name != UNITTEST_SYMBOL_NAME &&
+			name != THIS_SYMBOL_NAME)
 		{
 			// Check imported symbols
 			DSymbol ir = DSymbol(IMPORT_SYMBOL_NAME);
@@ -169,8 +169,7 @@ struct Scope
 			{
 				if (e.type is null)
 					continue;
-				if (e.qualifier == SymbolQualifier.selectiveImport &&
-						e.type.name.ptr == name.ptr)
+				if (e.qualifier == SymbolQualifier.selectiveImport && e.type.name == name)
 					app.put(cast(DSymbol*) e.type);
 				else
 					foreach (importedSymbol; e.type.getPartsByName(s.name))

@@ -1,12 +1,12 @@
 module dsymbol.builtin.symbols;
 
-import dsymbol.symbol;
+import containers.hashset;
+import containers.ttree;
+import dparse.rollback_allocator;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
-import containers.ttree;
-import stdx.allocator;
+import dsymbol.symbol;
 import stdx.allocator.mallocator;
-import dparse.lexer;
 
 /**
  * Symbols for the built in types
@@ -50,36 +50,36 @@ DSymbol* typeTmpParamSymbol;
 
 static this()
 {
-	auto bool_ = make!DSymbol(Mallocator.instance, builtinTypeNames[13], CompletionKind.keyword);
-	auto int_ = make!DSymbol(Mallocator.instance, builtinTypeNames[0], CompletionKind.keyword);
-	auto long_ = make!DSymbol(Mallocator.instance, builtinTypeNames[8], CompletionKind.keyword);
-	auto byte_ = make!DSymbol(Mallocator.instance, builtinTypeNames[19], CompletionKind.keyword);
-	auto char_ = make!DSymbol(Mallocator.instance, builtinTypeNames[10], CompletionKind.keyword);
-	auto dchar_ = make!DSymbol(Mallocator.instance, builtinTypeNames[12], CompletionKind.keyword);
-	auto short_ = make!DSymbol(Mallocator.instance, builtinTypeNames[6], CompletionKind.keyword);
-	auto ubyte_ = make!DSymbol(Mallocator.instance, builtinTypeNames[20], CompletionKind.keyword);
-	auto uint_ = make!DSymbol(Mallocator.instance, builtinTypeNames[1], CompletionKind.keyword);
-	auto ulong_ = make!DSymbol(Mallocator.instance, builtinTypeNames[9], CompletionKind.keyword);
-	auto ushort_ = make!DSymbol(Mallocator.instance, builtinTypeNames[7], CompletionKind.keyword);
-	auto wchar_ = make!DSymbol(Mallocator.instance, builtinTypeNames[11], CompletionKind.keyword);
+	auto bool_ = makeSymbol(builtinTypeNames[13], CompletionKind.keyword);
+	auto int_ = makeSymbol(builtinTypeNames[0], CompletionKind.keyword);
+	auto long_ = makeSymbol(builtinTypeNames[8], CompletionKind.keyword);
+	auto byte_ = makeSymbol(builtinTypeNames[19], CompletionKind.keyword);
+	auto char_ = makeSymbol(builtinTypeNames[10], CompletionKind.keyword);
+	auto dchar_ = makeSymbol(builtinTypeNames[12], CompletionKind.keyword);
+	auto short_ = makeSymbol(builtinTypeNames[6], CompletionKind.keyword);
+	auto ubyte_ = makeSymbol(builtinTypeNames[20], CompletionKind.keyword);
+	auto uint_ = makeSymbol(builtinTypeNames[1], CompletionKind.keyword);
+	auto ulong_ = makeSymbol(builtinTypeNames[9], CompletionKind.keyword);
+	auto ushort_ = makeSymbol(builtinTypeNames[7], CompletionKind.keyword);
+	auto wchar_ = makeSymbol(builtinTypeNames[11], CompletionKind.keyword);
 
-	auto alignof_ = make!DSymbol(Mallocator.instance, internString("alignof"), CompletionKind.keyword);
-	auto mangleof_ = make!DSymbol(Mallocator.instance, internString("mangleof"), CompletionKind.keyword);
-	auto sizeof_ = make!DSymbol(Mallocator.instance, internString("sizeof"), CompletionKind.keyword);
-	auto stringof_ = make!DSymbol(Mallocator.instance, internString("stringof"), CompletionKind.keyword);
-	auto init = make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword);
-	auto min = make!DSymbol(Mallocator.instance, internString("min"), CompletionKind.keyword);
-	auto max = make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword);
-	auto dup = make!DSymbol(Mallocator.instance, internString("dup"), CompletionKind.keyword);
-	auto length = make!DSymbol(Mallocator.instance, internString("length"), CompletionKind.keyword, ulong_);
-	auto tupleof = make!DSymbol(Mallocator.instance, internString("tupleof"), CompletionKind.keyword);
+	auto alignof_ = makeSymbol("alignof", CompletionKind.keyword);
+	auto mangleof_ = makeSymbol("mangleof", CompletionKind.keyword);
+	auto sizeof_ = makeSymbol("sizeof", CompletionKind.keyword);
+	auto stringof_ = makeSymbol("stringof", CompletionKind.keyword);
+	auto init = makeSymbol("init", CompletionKind.keyword);
+	auto min = makeSymbol("min", CompletionKind.keyword);
+	auto max = makeSymbol("max", CompletionKind.keyword);
+	auto dup = makeSymbol("dup", CompletionKind.keyword);
+	auto length = makeSymbol("length", CompletionKind.keyword, ulong_);
+	auto tupleof = makeSymbol("tupleof", CompletionKind.keyword);
 
-	variadicTmpParamSymbol = make!DSymbol(Mallocator.instance, internString("variadicTmpParam"), CompletionKind.keyword);
+	variadicTmpParamSymbol = makeSymbol("variadicTmpParam", CompletionKind.keyword);
 	variadicTmpParamSymbol.addChild(init, false);
 	variadicTmpParamSymbol.addChild(length, false);
 	variadicTmpParamSymbol.addChild(stringof_, false);
 
-	typeTmpParamSymbol = make!DSymbol(Mallocator.instance, internString("typeTmpParam"), CompletionKind.keyword);
+	typeTmpParamSymbol = makeSymbol("typeTmpParam", CompletionKind.keyword);
 	typeTmpParamSymbol.addChild(alignof_, false);
 	typeTmpParamSymbol.addChild(init, false);
 	typeTmpParamSymbol.addChild(mangleof_, false);
@@ -88,29 +88,29 @@ static this()
 
 	arraySymbols.insert(alignof_);
 	arraySymbols.insert(dup);
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("idup"), CompletionKind.keyword));
+	arraySymbols.insert(makeSymbol("idup", CompletionKind.keyword));
 	arraySymbols.insert(init);
 	arraySymbols.insert(length);
 	arraySymbols.insert(mangleof_);
-	arraySymbols.insert(make!DSymbol(Mallocator.instance, internString("ptr"), CompletionKind.keyword));
+	arraySymbols.insert(makeSymbol("ptr", CompletionKind.keyword));
 	arraySymbols.insert(sizeof_);
 	arraySymbols.insert(stringof_);
 
 	assocArraySymbols.insert(alignof_);
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byKey"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("byValue"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("clear"), CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("byKey", CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("byValue", CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("clear", CompletionKind.keyword));
 	assocArraySymbols.insert(dup);
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("get"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword));
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("keys"), CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("get", CompletionKind.keyword));
+	assocArraySymbols.insert(init);
+	assocArraySymbols.insert(makeSymbol("keys", CompletionKind.keyword));
 	assocArraySymbols.insert(length);
 	assocArraySymbols.insert(mangleof_);
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("rehash"), CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("rehash", CompletionKind.keyword));
 	assocArraySymbols.insert(sizeof_);
 	assocArraySymbols.insert(stringof_);
 	assocArraySymbols.insert(init);
-	assocArraySymbols.insert(make!DSymbol(Mallocator.instance, internString("values"), CompletionKind.keyword));
+	assocArraySymbols.insert(makeSymbol("values", CompletionKind.keyword));
 
 	DSymbol*[12] integralTypeArray;
 	integralTypeArray[0] = bool_;
@@ -128,26 +128,26 @@ static this()
 
 	foreach (s; integralTypeArray)
 	{
-		s.addChild(make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("min"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword, s), true);
+		s.addChild(makeSymbol("init", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("min", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("max", CompletionKind.keyword, s), false);
 		s.addChild(alignof_, false);
 		s.addChild(sizeof_, false);
 		s.addChild(stringof_, false);
 		s.addChild(mangleof_, false);
 	}
 
-	auto cdouble_ = make!DSymbol(Mallocator.instance, builtinTypeNames[21], CompletionKind.keyword);
-	auto cent_ = make!DSymbol(Mallocator.instance, builtinTypeNames[15], CompletionKind.keyword);
-	auto cfloat_ = make!DSymbol(Mallocator.instance, builtinTypeNames[22], CompletionKind.keyword);
-	auto creal_ = make!DSymbol(Mallocator.instance, builtinTypeNames[23], CompletionKind.keyword);
-	auto double_ = make!DSymbol(Mallocator.instance, builtinTypeNames[2], CompletionKind.keyword);
-	auto float_ = make!DSymbol(Mallocator.instance, builtinTypeNames[4], CompletionKind.keyword);
-	auto idouble_ = make!DSymbol(Mallocator.instance, builtinTypeNames[3], CompletionKind.keyword);
-	auto ifloat_ = make!DSymbol(Mallocator.instance, builtinTypeNames[5], CompletionKind.keyword);
-	auto ireal_ = make!DSymbol(Mallocator.instance, builtinTypeNames[18], CompletionKind.keyword);
-	auto real_ = make!DSymbol(Mallocator.instance, builtinTypeNames[17], CompletionKind.keyword);
-	auto ucent_ = make!DSymbol(Mallocator.instance, builtinTypeNames[16], CompletionKind.keyword);
+	auto cdouble_ = makeSymbol(builtinTypeNames[21], CompletionKind.keyword);
+	auto cent_ = makeSymbol(builtinTypeNames[15], CompletionKind.keyword);
+	auto cfloat_ = makeSymbol(builtinTypeNames[22], CompletionKind.keyword);
+	auto creal_ = makeSymbol(builtinTypeNames[23], CompletionKind.keyword);
+	auto double_ = makeSymbol(builtinTypeNames[2], CompletionKind.keyword);
+	auto float_ = makeSymbol(builtinTypeNames[4], CompletionKind.keyword);
+	auto idouble_ = makeSymbol(builtinTypeNames[3], CompletionKind.keyword);
+	auto ifloat_ = makeSymbol(builtinTypeNames[5], CompletionKind.keyword);
+	auto ireal_ = makeSymbol(builtinTypeNames[18], CompletionKind.keyword);
+	auto real_ = makeSymbol(builtinTypeNames[17], CompletionKind.keyword);
+	auto ucent_ = makeSymbol(builtinTypeNames[16], CompletionKind.keyword);
 
 	DSymbol*[11] floatTypeArray;
 	floatTypeArray[0] = cdouble_;
@@ -165,19 +165,19 @@ static this()
 	foreach (s; floatTypeArray)
 	{
 		s.addChild(alignof_, false);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("dig"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("epsilon"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("infinity"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("init"), CompletionKind.keyword, s), true);
+		s.addChild(makeSymbol("dig", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("epsilon", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("infinity", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("init", CompletionKind.keyword, s), false);
 		s.addChild(mangleof_, false);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("mant_dig"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("max"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("max_10_exp"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("max_exp"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("min_exp"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("min_10_exp"), CompletionKind.keyword, int_), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("min_normal"), CompletionKind.keyword, s), true);
-		s.addChild(make!DSymbol(Mallocator.instance, internString("nan"), CompletionKind.keyword, s), true);
+		s.addChild(makeSymbol("mant_dig", CompletionKind.keyword, int_), false);
+		s.addChild(makeSymbol("max", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("max_10_exp", CompletionKind.keyword, int_), false);
+		s.addChild(makeSymbol("max_exp", CompletionKind.keyword, int_), false);
+		s.addChild(makeSymbol("min_exp", CompletionKind.keyword, int_), false);
+		s.addChild(makeSymbol("min_10_exp", CompletionKind.keyword, int_), false);
+		s.addChild(makeSymbol("min_normal", CompletionKind.keyword, s), false);
+		s.addChild(makeSymbol("nan", CompletionKind.keyword, s), false);
 		s.addChild(sizeof_, false);
 		s.addChild(stringof_, false);
 	}
@@ -189,10 +189,10 @@ static this()
 	aggregateSymbols.insert(stringof_);
 	aggregateSymbols.insert(init);
 
-	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("classinfo"), CompletionKind.variableName));
+	classSymbols.insert(makeSymbol("classinfo", CompletionKind.variableName));
 	classSymbols.insert(tupleof);
-	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("__vptr"), CompletionKind.variableName));
-	classSymbols.insert(make!DSymbol(Mallocator.instance, internString("__monitor"), CompletionKind.variableName));
+	classSymbols.insert(makeSymbol("__vptr", CompletionKind.variableName));
+	classSymbols.insert(makeSymbol("__monitor", CompletionKind.variableName));
 	classSymbols.insert(mangleof_);
 	classSymbols.insert(alignof_);
 	classSymbols.insert(sizeof_);
@@ -208,14 +208,14 @@ static this()
 	enumSymbols.insert(max);
 
 
-	ireal_.addChild(make!DSymbol(Mallocator.instance, internString("im"), CompletionKind.keyword, real_), true);
-	ifloat_.addChild(make!DSymbol(Mallocator.instance, internString("im"), CompletionKind.keyword, float_), true);
-	idouble_.addChild(make!DSymbol(Mallocator.instance, internString("im"), CompletionKind.keyword, double_), true);
-	ireal_.addChild(make!DSymbol(Mallocator.instance, internString("re"), CompletionKind.keyword, real_), true);
-	ifloat_.addChild(make!DSymbol(Mallocator.instance, internString("re"), CompletionKind.keyword, float_), true);
-	idouble_.addChild(make!DSymbol(Mallocator.instance, internString("re"), CompletionKind.keyword, double_), true);
+	ireal_.addChild(makeSymbol("im", CompletionKind.keyword, real_), false);
+	ifloat_.addChild(makeSymbol("im", CompletionKind.keyword, float_), false);
+	idouble_.addChild(makeSymbol("im", CompletionKind.keyword, double_), false);
+	ireal_.addChild(makeSymbol("re", CompletionKind.keyword, real_), false);
+	ifloat_.addChild(makeSymbol("re", CompletionKind.keyword, float_), false);
+	idouble_.addChild(makeSymbol("re", CompletionKind.keyword, double_), false);
 
-	auto void_ = make!DSymbol(Mallocator.instance, builtinTypeNames[14], CompletionKind.keyword);
+	auto void_ = makeSymbol(builtinTypeNames[14], CompletionKind.keyword);
 
 	builtinSymbols.insert(bool_);
 	bool_.type = bool_;
@@ -270,5 +270,39 @@ static this()
 	foreach (s; ["__DATE__", "__EOF__", "__TIME__", "__TIMESTAMP__", "__VENDOR__",
 			"__VERSION__", "__FUNCTION__", "__PRETTY_FUNCTION__", "__MODULE__",
 			"__FILE__", "__LINE__", "__FILE_FULL_PATH__"])
-		builtinSymbols.insert(make!DSymbol(Mallocator.instance, internString(s), CompletionKind.keyword));
+		builtinSymbols.insert(makeSymbol(s, CompletionKind.keyword));
+}
+
+static ~this()
+{
+	destroy(builtinSymbols);
+	destroy(arraySymbols);
+	destroy(assocArraySymbols);
+	destroy(aggregateSymbols);
+	destroy(classSymbols);
+	destroy(enumSymbols);
+
+	foreach (sym; symbolsMadeHere[])
+		destroy(*sym);
+
+	destroy(symbolsMadeHere);
+	destroy(rba);
+}
+
+private RollbackAllocator rba;
+private HashSet!(DSymbol*) symbolsMadeHere;
+
+private DSymbol* makeSymbol(string s, CompletionKind kind, DSymbol* type = null)
+{
+	auto sym = rba.make!DSymbol(istring(s), kind, type);
+	sym.ownType = false;
+	symbolsMadeHere.insert(sym);
+	return sym;
+}
+private DSymbol* makeSymbol(istring s, CompletionKind kind, DSymbol* type = null)
+{
+	auto sym = rba.make!DSymbol(s, kind, type);
+	sym.ownType = false;
+	symbolsMadeHere.insert(sym);
+	return sym;
 }

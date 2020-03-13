@@ -88,14 +88,13 @@ struct ModuleCache
 	 */
 	void addImportPaths(const string[] paths)
 	{
-		import dsymbol.string_interning : internString;
 		import std.path : baseName;
 		import std.array : array;
 
 		auto newPaths = paths
 			.map!(a => absolutePath(expandTilde(a)))
 			.filter!(a => existanceCheck(a) && !importPaths[].canFind!(b => b.path == a))
-			.map!(a => ImportPath(internString(a)))
+			.map!(a => ImportPath(istring(a)))
 			.array;
 		importPaths.insert(newPaths);
 	}
@@ -119,9 +118,9 @@ struct ModuleCache
 
 			foreach (cacheEntry; cache[])
 			{
-				if (cacheEntry.path.startsWith(path))
+				if (cacheEntry.path.data.startsWith(path))
 				{
-					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.startsWith(cacheEntry.path)))
+					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.data.startsWith(cacheEntry.path.data)))
 					{
 						deferredSymbols.remove(deferredSymbol);
 						Mallocator.instance.dispose(deferredSymbol);
@@ -157,13 +156,12 @@ struct ModuleCache
 	 */
 	DSymbol* cacheModule(string location)
 	{
-		import dsymbol.string_interning : internString;
 		import std.stdio : File;
 		import std.typecons : scoped;
 
 		assert (location !is null);
 
-		istring cachedLocation = internString(location);
+		const cachedLocation = istring(location);
 
 		if (recursionGuard.contains(&cachedLocation.data[0]))
 			return null;
@@ -299,7 +297,7 @@ struct ModuleCache
 	{
 		assert(moduleName !is null, "module name is null");
 		if (isRooted(moduleName))
-			return internString(moduleName);
+			return istring(moduleName);
 		string[] alternatives;
 		foreach (importPath; importPaths[])
 		{
@@ -331,7 +329,7 @@ struct ModuleCache
 				}
 			}
 		}
-		return alternatives.length > 0 ? internString(alternatives[0]) : istring(null);
+		return alternatives.length > 0 ? istring(alternatives[0]) : istring(null);
 	}
 
 	auto getImportPaths() const

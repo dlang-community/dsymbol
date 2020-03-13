@@ -30,8 +30,7 @@ import dparse.lexer;
 import std.bitmanip;
 
 import dsymbol.builtin.names;
-import dsymbol.string_interning;
-public import dsymbol.string_interning : istring;
+public import dsymbol.string_interning;
 
 import std.range : isOutputRange;
 
@@ -136,55 +135,24 @@ enum SymbolQualifier : ubyte
  */
 struct DSymbol
 {
-public:
-
-	/**
-	 * Copying is disabled.
-	 */
+	// Copying is disabled
 	@disable this();
-
-	/// ditto
 	@disable this(this);
 
-	/// ditto
-	this(istring name) /+nothrow+/ /+@safe+/
-	{
-		this.name = name;
-	}
-
 	/**
 	 * Params:
 	 *     name = the symbol's name
 	 *     kind = the symbol's completion kind
+	 *     type = the resolved type of the symbol
 	 */
-	this(string name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
+	this(string name, CompletionKind kind = CompletionKind.dummy, DSymbol* type = null) nothrow @nogc @safe
 	{
-		this.name = name is null ? istring(name) : internString(name);
-		this.kind = kind;
-	}
-
-	/// ditto
-	this(istring name, CompletionKind kind) /+nothrow+/ /+@safe+/ /+@nogc+/
-	{
-		this.name = name;
-		this.kind = kind;
-	}
-
-	/**
-	 * Params:
-	 *     name = the symbol's name
-	 *     kind = the symbol's completion kind
-	 *     resolvedType = the resolved type of the symbol
-	 */
-	this(string name, CompletionKind kind, DSymbol* type)
-	{
-		this.name = name is null ? istring(name) : internString(name);
+		this.name = istring(name);
 		this.kind = kind;
 		this.type = type;
 	}
-
 	/// ditto
-	this(istring name, CompletionKind kind, DSymbol* type)
+	this(istring name, CompletionKind kind = CompletionKind.dummy, DSymbol* type = null) nothrow @nogc @safe
 	{
 		this.name = name;
 		this.kind = kind;
@@ -207,21 +175,19 @@ public:
 			typeid(DSymbol).destroy(type);
 	}
 
-	ptrdiff_t opCmp(ref const DSymbol other) const pure nothrow @trusted @nogc
+	ptrdiff_t opCmp(ref const DSymbol other) const pure nothrow @nogc @safe
 	{
-		// Compare the pointers because the strings have been interned.
-		// Identical strings MUST have the same address
-		return (cast(size_t) name.ptr) - (cast(size_t) other.name.ptr);
+		return name.opCmp(other.name);
 	}
 
-	bool opEquals(ref const DSymbol other) const pure nothrow @trusted
+	bool opEquals(ref const DSymbol other) const pure nothrow @nogc @safe
 	{
-		return other.name.ptr is this.name.ptr;
+		return name == other.name;
 	}
 
-	size_t toHash() const pure nothrow @trusted
+	size_t toHash() const pure nothrow @nogc @safe
 	{
-		return (cast(size_t) name.ptr) * 27_644_437;
+		return name.toHash();
 	}
 
 	/**
@@ -261,7 +227,7 @@ public:
 
 		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
 		if (qualifier == SymbolQualifier.selectiveImport && type !is null
-				&& (name is null ? true : type.name.ptr == name.ptr))
+				&& (name is null || type.name == name))
 		{
 			app.put(cast(DSymbol*) type);
 			if (onlyOne)
@@ -269,7 +235,7 @@ public:
 		}
 		else
 		{
-			if (name == "")
+			if (name is null)
 			{
 				foreach (part; parts[].filter!(a => a.name != IMPORT_SYMBOL_NAME))
 				{
@@ -290,10 +256,10 @@ public:
 					if (onlyOne)
 						return;
 				}
-				if (name.ptr == CONSTRUCTOR_SYMBOL_NAME.ptr
-						|| name.ptr == DESTRUCTOR_SYMBOL_NAME.ptr
-						|| name.ptr == UNITTEST_SYMBOL_NAME.ptr
-						|| name.ptr == THIS_SYMBOL_NAME.ptr)
+				if (name == CONSTRUCTOR_SYMBOL_NAME ||
+					name == DESTRUCTOR_SYMBOL_NAME ||
+					name == UNITTEST_SYMBOL_NAME ||
+					name == THIS_SYMBOL_NAME)
 					return;	// these symbols should not be imported
 				foreach (im; parts.equalRange(SymbolOwnership(&p)))
 					if (im.type !is null && !im.skipOver)
@@ -309,7 +275,7 @@ public:
 	{
 		auto app = appender!(DSymbol*[])();
 		HashSet!size_t visited;
-		getParts!(typeof(app))(internString(null), app, visited);
+		getParts!(typeof(app))(istring(null), app, visited);
 		return cast(typeof(return)) app.data;
 	}
 
@@ -465,7 +431,7 @@ struct UpdatePair
 {
 	ptrdiff_t opCmp(ref const UpdatePair other) const pure nothrow @nogc @safe
 	{
-		return (cast(size_t) other.oldSymbol) - (cast(size_t) this.oldSymbol);
+		return (cast(ptrdiff_t) other.oldSymbol) - (cast(ptrdiff_t) this.oldSymbol);
 	}
 
 	DSymbol* oldSymbol;

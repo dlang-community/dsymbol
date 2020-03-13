@@ -18,14 +18,13 @@
 
 module dsymbol.string_interning;
 
+import std.traits : Unqual;
 import dparse.lexer;
 
-/**
- * Interns the given string and returns the interned version.
- */
-istring internString(string s) nothrow @safe @nogc
+/// Obsolete, use `istring` constructor instead
+istring internString(string s) nothrow @nogc @safe
 {
-	return istring(stringCache.intern(s));
+	return istring(s);
 }
 
 static this()
@@ -33,24 +32,66 @@ static this()
 	stringCache = StringCache(StringCache.defaultBucketCount);
 }
 
-alias istring = InternedString;
+static ~this()
+{
+	destroy(stringCache);
+}
 
 private StringCache stringCache = void;
 
-private struct InternedString
+struct istring
 {
+nothrow @nogc @safe:
+	/// Interns the given string and returns the interned version. Handles empty strings too.
+	this(string s)
+	{
+		if (s.length > 0)
+			_data = stringCache.intern(s);
+	}
+
+pure:
 	void opAssign(T)(T other) if (is(Unqual!T == istring))
 	{
-		this.data = other.data;
+		_data = other._data;
 	}
 
-	size_t toHash() const nothrow @safe
+	bool opCast(To : bool)() const
 	{
-		return typeid(string).getHash(&data);
+		return _data.length > 0;
 	}
 
-	string data;
+	ptrdiff_t opCmp(const istring another) const @trusted
+	{
+		// Interned strings can be compared by the pointers.
+		// Identical strings MUST have the same address
+		return (cast(ptrdiff_t) _data.ptr) - (cast(ptrdiff_t) another._data.ptr);
+	}
+	ptrdiff_t opCmp(const string another) const
+	{
+		import std.algorithm.comparison : cmp;
+		// Compare as usual, because another string may come from somewhere else
+		return cmp(_data, another);
+	}
+
+	bool opEquals(const istring another) const @trusted
+	{
+		return _data.ptr is another._data.ptr;
+	}
+	bool opEquals(const string another) const
+	{
+		return _data == another;
+	}
+
+	size_t toHash() const @trusted
+	{
+		return (cast(size_t) _data.ptr) * 27_644_437;
+	}
+
+	string data() const
+	{
+		return _data;
+	}
+
 	alias data this;
-private:
-	import std.traits : Unqual;
+	private string _data;
 }
