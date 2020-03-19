@@ -6,7 +6,7 @@
 	"targetPath": "build",
 	"targetType": "library",
 	"dependencies": {
-		"libdparse": "~>0.13.0",
+		"libdparse": "~>0.14.0",
 		"emsi_containers": "~>0.8.0-alpha.15",
 		"stdx-allocator": "~>2.77.5"
 	}
