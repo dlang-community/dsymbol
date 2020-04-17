@@ -720,6 +720,12 @@ final class FirstPass : ASTVisitor
 			withStatement.accept(this);
 	}
 
+	override void visit(const ArgumentList list)
+	{
+		auto visitor = scoped!(ArgumentListVisitor)(this);
+		visitor.visit(list);
+	}
+
 	alias visit = ASTVisitor.visit;
 
 	/// Module scope
@@ -1445,8 +1451,7 @@ class InitializerVisitor : ASTVisitor
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
 
-	// Skip these
-	override void visit(const ArgumentList) {}
+	// Skip it
 	override void visit(const NewAnonClassExpression) {}
 
 	override void visit(const NewExpression ne)
@@ -1485,6 +1490,12 @@ class InitializerVisitor : ASTVisitor
 		ne.arguments = nace.constructorArguments;
 	}
 
+	override void visit(const ArgumentList list)
+	{
+		auto visitor = scoped!(ArgumentListVisitor)(fp);
+		visitor.visit(list);
+	}
+
 	override void visit(const Expression expression)
 	{
 		on = true;
@@ -1506,5 +1517,24 @@ class InitializerVisitor : ASTVisitor
 	TypeLookup* lookup;
 	bool on = false;
 	const bool appendForeach;
+	FirstPass fp;
+}
+
+class ArgumentListVisitor : ASTVisitor
+{
+	this(FirstPass fp)
+	{
+		assert(fp);
+		this.fp = fp;
+	}
+
+	alias visit = ASTVisitor.visit;
+
+	override void visit(const NewAnonClassExpression exp)
+	{
+		fp.visit(exp);
+	}
+
+private:
 	FirstPass fp;
 }
