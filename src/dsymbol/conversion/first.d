@@ -163,6 +163,28 @@ final class FirstPass : ASTVisitor
 		}
 	}
 
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		assert(exp);
+
+		auto fbody = exp.specifiedFunctionBody;
+		if (fbody is null)
+			return;
+		auto block = fbody.blockStatement;
+		if (block is null)
+			return;
+
+		pushSymbol(FUNCTION_LITERAL_SYMBOL_NAME, CompletionKind.dummy, symbolFile,
+			block.startLocation, null);
+		scope(exit) popSymbol();
+
+		pushScope(block.startLocation, block.endLocation);
+		scope (exit) popScope();
+		processParameters(currentSymbol, exp.returnType,
+				FUNCTION_LITERAL_SYMBOL_NAME, exp.parameters, null);
+		block.accept(this);
+	}
+
 	override void visit(const ClassDeclaration dec)
 	{
 		visitAggregateDeclaration(dec, CompletionKind.className);
@@ -1335,6 +1357,11 @@ class InitializerVisitor : ASTVisitor
 
 	alias visit = ASTVisitor.visit;
 
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		fp.visit(exp);
+	}
+
 	override void visit(const IdentifierOrTemplateInstance ioti)
 	{
 		if (on && ioti.identifier != tok!"")
@@ -1529,6 +1556,11 @@ class ArgumentListVisitor : ASTVisitor
 	}
 
 	alias visit = ASTVisitor.visit;
+
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		fp.visit(exp);
+	}
 
 	override void visit(const NewAnonClassExpression exp)
 	{
