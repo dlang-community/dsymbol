@@ -105,6 +105,31 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running function literal tests...");
+	const sources = [
+		q{            int a;   auto dg = {     };    },
+		q{ void f() { int a;   auto dg = {     };  } },
+		q{ auto f =              (int a) {     };    },
+		q{ auto f() { return     (int a) {     };  } },
+		q{ auto f() { return   g((int a) {     }); } },
+		q{ void f() {          g((int a) {     }); } },
+		q{ void f() { auto x =   (int a) {     };  } },
+		q{ void f() { auto x = g((int a) {     }); } },
+	];
+	foreach (src; sources)
+	{
+		auto pair = generateAutocompleteTrees(src, cache);
+		auto a = pair.scope_.getFirstSymbolByNameAndCursor(istring("a"), 35);
+		assert(a, src);
+		assert(a.type, src);
+		assert(a.type.name == "int", src);
+	}
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running struct constructor tests...");
 	auto source = q{ struct A {int a; struct B {bool b;} int c;} };
 	auto pair = generateAutocompleteTrees(source, cache);
