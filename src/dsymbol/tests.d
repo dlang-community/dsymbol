@@ -203,6 +203,35 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
+	writeln("Running anon class tests...");
+	const sources = [
+		q{            auto a =   new class Object { int i;                };    },
+		q{            auto a =   new class Object { int i; void m() {   } };    },
+		q{            auto a = g(new class Object { int i;                });   },
+		q{            auto a = g(new class Object { int i; void m() {   } });   },
+		q{ void f() {            new class Object { int i;                };  } },
+		q{ void f() {            new class Object { int i; void m() {   } };  } },
+		q{ void f() {          g(new class Object { int i;                }); } },
+		q{ void f() {          g(new class Object { int i; void m() {   } }); } },
+		q{ void f() { auto a =   new class Object { int i;                };  } },
+		q{ void f() { auto a =   new class Object { int i; void m() {   } };  } },
+		q{ void f() { auto a = g(new class Object { int i;                }); } },
+		q{ void f() { auto a = g(new class Object { int i; void m() {   } }); } },
+	];
+	foreach (src; sources)
+	{
+		auto pair = generateAutocompleteTrees(src, cache);
+		auto a = pair.scope_.getFirstSymbolByNameAndCursor(istring("i"), 60);
+		assert(a, src);
+		assert(a.type, src);
+		assert(a.type.name == "int", src);
+	}
+}
+
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
 	writeln("Running the deduction from index expr tests...");
 	{
 		auto source = q{struct S{} S[] s; auto b = s[i];};
