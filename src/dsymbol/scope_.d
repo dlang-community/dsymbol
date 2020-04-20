@@ -89,9 +89,8 @@ struct Scope
 		import std.algorithm.iteration : map;
 
 		auto s = getScopeByCursor(cursorPosition);
-
 		if (s is null)
-			return [];
+			return null;
 
 		UnrolledList!(DSymbol*) retVal;
 		Scope* sc = s;
@@ -112,7 +111,7 @@ struct Scope
 						foreach (i; item.ptr.type.opSlice())
 							retVal.insert(i);
 					}
-					else if (item.ptr !is null)
+					else
 						retVal.insert(item.ptr.type);
 				}
 				else

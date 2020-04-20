@@ -225,45 +225,62 @@ struct DSymbol
 			return;
 		visited.insert(cast(size_t) &this);
 
-		DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
-		if (qualifier == SymbolQualifier.selectiveImport && type !is null
-				&& (name is null || type.name == name))
+		if (name is null)
 		{
-			app.put(cast(DSymbol*) type);
-			if (onlyOne)
-				return;
+			foreach (part; parts[].filter!(a => a.name != IMPORT_SYMBOL_NAME))
+			{
+				app.put(cast(DSymbol*) part);
+				if (onlyOne)
+					return;
+			}
+			DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
+			foreach (im; parts.equalRange(SymbolOwnership(&p)))
+			{
+				if (im.type !is null && !im.skipOver)
+				{
+					if (im.qualifier == SymbolQualifier.selectiveImport)
+					{
+						app.put(cast(DSymbol*) im.type);
+						if (onlyOne)
+							return;
+					}
+					else
+						im.type.getParts(name, app, visited, onlyOne);
+				}
+			}
 		}
 		else
 		{
-			if (name is null)
+			DSymbol s = DSymbol(name);
+			foreach (part; parts.equalRange(SymbolOwnership(&s)))
 			{
-				foreach (part; parts[].filter!(a => a.name != IMPORT_SYMBOL_NAME))
-				{
-					app.put(cast(DSymbol*) part);
-					if (onlyOne)
-						return;
-				}
-				foreach (im; parts.equalRange(SymbolOwnership(&p)))
-					if (im.type !is null && !im.skipOver)
-						im.type.getParts(name, app, visited, onlyOne);
+				app.put(cast(DSymbol*) part);
+				if (onlyOne)
+					return;
 			}
-			else
+			if (name == CONSTRUCTOR_SYMBOL_NAME ||
+				name == DESTRUCTOR_SYMBOL_NAME ||
+				name == UNITTEST_SYMBOL_NAME ||
+				name == THIS_SYMBOL_NAME)
+				return;	// these symbols should not be imported
+
+			DSymbol p = DSymbol(IMPORT_SYMBOL_NAME);
+			foreach (im; parts.equalRange(SymbolOwnership(&p)))
 			{
-				DSymbol s = DSymbol(name);
-				foreach (part; parts.equalRange(SymbolOwnership(&s)))
+				if (im.type !is null && !im.skipOver)
 				{
-					app.put(cast(DSymbol*) part);
-					if (onlyOne)
-						return;
-				}
-				if (name == CONSTRUCTOR_SYMBOL_NAME ||
-					name == DESTRUCTOR_SYMBOL_NAME ||
-					name == UNITTEST_SYMBOL_NAME ||
-					name == THIS_SYMBOL_NAME)
-					return;	// these symbols should not be imported
-				foreach (im; parts.equalRange(SymbolOwnership(&p)))
-					if (im.type !is null && !im.skipOver)
+					if (im.qualifier == SymbolQualifier.selectiveImport)
+					{
+						if (im.type.name == name)
+						{
+							app.put(cast(DSymbol*) im.type);
+							if (onlyOne)
+								return;
+						}
+					}
+					else
 						im.type.getParts(name, app, visited, onlyOne);
+				}
 			}
 		}
 	}
@@ -396,7 +413,7 @@ struct DSymbol
 		ubyte, "", 5));
 	// dfmt on
 
-	/// Protection level for this symobol
+	/// Protection level for this symbol
 	IdType protection;
 
 }

@@ -518,7 +518,7 @@ final class FirstPass : ASTVisitor
 				SemanticSymbol* renameSymbol = allocateSemanticSymbol(
 					internString(single.rename.text), CompletionKind.aliasName,
 					modulePath);
-				renameSymbol.acSymbol.skipOver = protection.current != tok!"public";
+				renameSymbol.acSymbol.skipOver = protection.currentForImport != tok!"public";
 				renameSymbol.acSymbol.type = importSymbol.acSymbol;
 				renameSymbol.acSymbol.ownType = true;
 				renameSymbol.addChild(importSymbol, true);
@@ -562,7 +562,7 @@ final class FirstPass : ASTVisitor
 
 			importSymbol.acSymbol.qualifier = SymbolQualifier.selectiveImport;
 			importSymbol.typeLookups.insert(lookup);
-			importSymbol.acSymbol.skipOver = protection.current != tok!"public";
+			importSymbol.acSymbol.skipOver = protection.currentForImport != tok!"public";
 			currentSymbol.addChild(importSymbol, true);
 			currentScope.addSymbol(importSymbol.acSymbol, false);
 		}

@@ -103,14 +103,14 @@ void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, Mallocator,
 	ref ModuleCache cache)
 in
 {
-	assert (acSymbol.kind == CompletionKind.importSymbol);
+	assert(acSymbol.kind == CompletionKind.importSymbol);
+	assert(acSymbol.symbolFile !is null);
 }
 body
 {
+	DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
 	{
-		assert(acSymbol.symbolFile !is null);
-		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
 		tryAgain:
@@ -128,7 +128,7 @@ body
 
 			istring symbolName = typeLookups.front.breadcrumbs.front;
 			DSymbol* selected = moduleSymbol.getFirstPartNamed(symbolName);
-			if (acSymbol is null)
+			if (selected is null)
 				goto tryAgain;
 			acSymbol.type = selected;
 			acSymbol.ownType = false;
@@ -144,8 +144,6 @@ body
 	}
 	else
 	{
-		assert(acSymbol.symbolFile !is null);
-		DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 		if (moduleSymbol is null)
 		{
 			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
