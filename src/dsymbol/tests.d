@@ -298,6 +298,81 @@ unittest
 	assert(T2.kind == CompletionKind.variadicTmpParam);
 }
 
+unittest
+{
+	writeln("Running public import tests...");
+
+	const dir = buildPath(tempDir(), "dsymbol");
+	const fnameA = buildPath(dir, "a.d");
+	const fnameB = buildPath(dir, "b.d");
+	const fnameC = buildPath(dir, "c.d");
+	const fnameD = buildPath(dir, "d.d");
+	const srcA = q{ int x; int w; };
+	const srcB = q{ float y; private float z; };
+	const srcC = q{ public { import a : x; import b; } import a : w; long t; };
+	const srcD = q{ public import c; };
+	// A simpler diagram:
+	// a = x w
+	// b = y [z]
+	// c = t + (x y) [w]
+	// d = (t x y)
+
+	mkdir(dir);
+	write(fnameA, srcA);
+	write(fnameB, srcB);
+	write(fnameC, srcC);
+	write(fnameD, srcD);
+	scope (exit)
+	{
+		remove(fnameA);
+		remove(fnameB);
+		remove(fnameC);
+		remove(fnameD);
+		rmdir(dir);
+	}
+
+	ModuleCache cache = ModuleCache(theAllocator);
+	cache.addImportPaths([dir]);
+
+	const a = cache.getModuleSymbol(istring(fnameA));
+	const b = cache.getModuleSymbol(istring(fnameB));
+	const c = cache.getModuleSymbol(istring(fnameC));
+	const d = cache.getModuleSymbol(istring(fnameD));
+	const ax = a.getFirstPartNamed(istring("x"));
+	const aw = a.getFirstPartNamed(istring("w"));
+	assert(ax);
+	assert(aw);
+	assert(ax.type && ax.type.name == "int");
+	assert(aw.type && aw.type.name == "int");
+	const by = b.getFirstPartNamed(istring("y"));
+	const bz = b.getFirstPartNamed(istring("z"));
+	assert(by);
+	assert(bz);
+	assert(by.type && by.type.name == "float");
+	assert(bz.type && bz.type.name == "float");
+	const ct = c.getFirstPartNamed(istring("t"));
+	const cw = c.getFirstPartNamed(istring("w"));
+	const cx = c.getFirstPartNamed(istring("x"));
+	const cy = c.getFirstPartNamed(istring("y"));
+	const cz = c.getFirstPartNamed(istring("z"));
+	assert(ct);
+	assert(ct.type && ct.type.name == "long");
+	assert(cw is null); // skipOver is true
+	assert(cx is ax);
+	assert(cy is by);
+	assert(cz is bz); // should not be there, but it is handled by DCD
+	const dt = d.getFirstPartNamed(istring("t"));
+	const dw = d.getFirstPartNamed(istring("w"));
+	const dx = d.getFirstPartNamed(istring("x"));
+	const dy = d.getFirstPartNamed(istring("y"));
+	const dz = d.getFirstPartNamed(istring("z"));
+	assert(dt is ct);
+	assert(dw is null);
+	assert(dx is cx);
+	assert(dy is cy);
+	assert(dz is cz);
+}
+
 // check for memory leaks on thread termination (in static constructors)
 version (linux)
 unittest
