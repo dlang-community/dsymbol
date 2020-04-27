@@ -60,7 +60,7 @@ pure:
 		return _data.length > 0;
 	}
 
-	ptrdiff_t opCmp(const istring another) const @trusted
+	ptrdiff_t opCmpFast(const istring another) const @trusted
 	{
 		// Interned strings can be compared by the pointers.
 		// Identical strings MUST have the same address

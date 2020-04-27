@@ -32,7 +32,7 @@ pure nothrow @nogc @safe:
 
 	ptrdiff_t opCmp(ref const CacheEntry other) const
 	{
-		return path.opCmp(other.path);
+		return path.opCmpFast(other.path);
 	}
 
 	bool opEquals(ref const CacheEntry other) const
