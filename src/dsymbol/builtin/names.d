@@ -8,6 +8,8 @@ package istring[24] builtinTypeNames;
 /// Constants for buit-in or dummy symbol names
 istring FUNCTION_SYMBOL_NAME;
 /// ditto
+istring FUNCTION_LITERAL_SYMBOL_NAME;
+/// ditto
 istring IMPORT_SYMBOL_NAME;
 /// ditto
 istring ARRAY_SYMBOL_NAME;
@@ -135,6 +137,7 @@ static this()
 	builtinTypeNames[23] = internString("creal");
 
 	FUNCTION_SYMBOL_NAME = internString("function");
+	FUNCTION_LITERAL_SYMBOL_NAME = internString("*function-literal*");
 	IMPORT_SYMBOL_NAME = internString("import");
 	ARRAY_SYMBOL_NAME = internString("*arr*");
 	ARRAY_LITERAL_SYMBOL_NAME = internString("*arr-literal*");
