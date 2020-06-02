@@ -604,6 +604,34 @@ final class FirstPass : ASTVisitor
 		}
 	}
 
+	// Create attribute/protection scope for conditional compilation declaration
+	// blocks.
+	override void visit(const ConditionalDeclaration conditionalDecl)
+	{
+		if (conditionalDecl.compileCondition !is null)
+			visit(conditionalDecl.compileCondition);
+
+		if (conditionalDecl.trueDeclarations.length)
+		{
+			protection.beginScope();
+			scope (exit) protection.endScope();
+
+			foreach (decl; conditionalDecl.trueDeclarations)
+				if (decl !is null)
+					visit (decl);
+		}
+
+		if (conditionalDecl.falseDeclarations.length)
+		{
+			protection.beginScope();
+			scope (exit) protection.endScope();
+
+			foreach (decl; conditionalDecl.falseDeclarations)
+				if (decl !is null)
+					visit (decl);
+		}
+	}
+
 	override void visit(const TemplateMixinExpression tme)
 	{
 		// TODO: support typeof here
