@@ -352,6 +352,18 @@ unittest
 	assert(T2.kind == CompletionKind.variadicTmpParam);
 }
 
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Testing protection scopes");
+	auto source = q{version(all) { private: } struct Foo{ }};
+	auto pair = generateAutocompleteTrees(source, "", 0, cache);
+	DSymbol* T1 = pair.symbol.getFirstPartNamed(internString("Foo"));
+	assert(T1);
+	assert(T1.protection != tok!"private");
+}
+
 // check for memory leaks on thread termination (in static constructors)
 version (linux)
 unittest
