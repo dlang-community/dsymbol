@@ -13,6 +13,10 @@ addons:
     packages:
       - pkg-config
 
+env:
+- LIBDPARSE_VERSION=max
+- LIBDPARSE_VERSION=min
+
 branches:
   only:
   - master
@@ -31,5 +35,5 @@ before_script:
 script:
   - meson build && ninja -j2 -C build
   - ninja -j2 -C build test -v
-  - dub build --build=release --compiler=${DC}
-  - dub test --compiler=${DC}
+  - rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release --compiler=${DC}
+  - rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test --compiler=${DC}
