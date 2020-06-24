@@ -163,6 +163,28 @@ final class FirstPass : ASTVisitor
 		}
 	}
 
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		assert(exp);
+
+		auto fbody = exp.specifiedFunctionBody;
+		if (fbody is null)
+			return;
+		auto block = fbody.blockStatement;
+		if (block is null)
+			return;
+
+		pushSymbol(FUNCTION_LITERAL_SYMBOL_NAME, CompletionKind.dummy, symbolFile,
+			block.startLocation, null);
+		scope(exit) popSymbol();
+
+		pushScope(block.startLocation, block.endLocation);
+		scope (exit) popScope();
+		processParameters(currentSymbol, exp.returnType,
+				FUNCTION_LITERAL_SYMBOL_NAME, exp.parameters, null);
+		block.accept(this);
+	}
+
 	override void visit(const ClassDeclaration dec)
 	{
 		visitAggregateDeclaration(dec, CompletionKind.className);
@@ -582,6 +604,34 @@ final class FirstPass : ASTVisitor
 		}
 	}
 
+	// Create attribute/protection scope for conditional compilation declaration
+	// blocks.
+	override void visit(const ConditionalDeclaration conditionalDecl)
+	{
+		if (conditionalDecl.compileCondition !is null)
+			visit(conditionalDecl.compileCondition);
+
+		if (conditionalDecl.trueDeclarations.length)
+		{
+			protection.beginScope();
+			scope (exit) protection.endScope();
+
+			foreach (decl; conditionalDecl.trueDeclarations)
+				if (decl !is null)
+					visit (decl);
+		}
+
+		if (conditionalDecl.falseDeclarations.length)
+		{
+			protection.beginScope();
+			scope (exit) protection.endScope();
+
+			foreach (decl; conditionalDecl.falseDeclarations)
+				if (decl !is null)
+					visit (decl);
+		}
+	}
+
 	override void visit(const TemplateMixinExpression tme)
 	{
 		// TODO: support typeof here
@@ -718,6 +768,12 @@ final class FirstPass : ASTVisitor
 		}
 		else
 			withStatement.accept(this);
+	}
+
+	override void visit(const ArgumentList list)
+	{
+		auto visitor = scoped!(ArgumentListVisitor)(this);
+		visitor.visit(list);
 	}
 
 	alias visit = ASTVisitor.visit;
@@ -1329,6 +1385,11 @@ class InitializerVisitor : ASTVisitor
 
 	alias visit = ASTVisitor.visit;
 
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		fp.visit(exp);
+	}
+
 	override void visit(const IdentifierOrTemplateInstance ioti)
 	{
 		if (on && ioti.identifier != tok!"")
@@ -1445,8 +1506,7 @@ class InitializerVisitor : ASTVisitor
 		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
 	}
 
-	// Skip these
-	override void visit(const ArgumentList) {}
+	// Skip it
 	override void visit(const NewAnonClassExpression) {}
 
 	override void visit(const NewExpression ne)
@@ -1485,6 +1545,12 @@ class InitializerVisitor : ASTVisitor
 		ne.arguments = nace.constructorArguments;
 	}
 
+	override void visit(const ArgumentList list)
+	{
+		auto visitor = scoped!(ArgumentListVisitor)(fp);
+		visitor.visit(list);
+	}
+
 	override void visit(const Expression expression)
 	{
 		on = true;
@@ -1506,5 +1572,29 @@ class InitializerVisitor : ASTVisitor
 	TypeLookup* lookup;
 	bool on = false;
 	const bool appendForeach;
+	FirstPass fp;
+}
+
+class ArgumentListVisitor : ASTVisitor
+{
+	this(FirstPass fp)
+	{
+		assert(fp);
+		this.fp = fp;
+	}
+
+	alias visit = ASTVisitor.visit;
+
+	override void visit(const FunctionLiteralExpression exp)
+	{
+		fp.visit(exp);
+	}
+
+	override void visit(const NewAnonClassExpression exp)
+	{
+		fp.visit(exp);
+	}
+
+private:
 	FirstPass fp;
 }

@@ -177,7 +177,7 @@ struct DSymbol
 
 	ptrdiff_t opCmp(ref const DSymbol other) const pure nothrow @nogc @safe
 	{
-		return name.opCmp(other.name);
+		return name.opCmpFast(other.name);
 	}
 
 	bool opEquals(ref const DSymbol other) const pure nothrow @nogc @safe
