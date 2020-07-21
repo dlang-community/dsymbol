@@ -313,7 +313,7 @@ struct ModuleCache
 				string dotD = dotDi[0 .. $ - 1];
 				string withoutSuffix = dotDi[0 .. $ - 3];
 				if (existsAnd!isFile(dotD))
-					alternatives = dotD ~ alternatives;
+					return istring(dotD); // return early for exactly matching .d files
 				else if (existsAnd!isFile(dotDi))
 					alternatives ~= dotDi;
 				else if (existsAnd!isDir(withoutSuffix))
