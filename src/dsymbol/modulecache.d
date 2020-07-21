@@ -298,16 +298,20 @@ struct ModuleCache
 		assert(moduleName !is null, "module name is null");
 		if (isRooted(moduleName))
 			return istring(moduleName);
-		string[] alternatives;
+		string alternative;
 		foreach (importPath; importPaths[])
 		{
 			auto path = importPath.path;
-			if (path.existsAnd!isFile)
+			// import path is a filename
+			// first check string if this is a feasable path (no filesystem usage)
+			if (path.stripExtension.endsWith(moduleName)
+				&& path.existsAnd!isFile)
 			{
-				if (path.stripExtension.endsWith(moduleName))
-					alternatives ~= path;
+				// prefer exact import names above .di/package.d files
+				return istring(path);
 			}
-			else
+			// no exact matches and no .di/package.d matches either
+			else if (!alternative.length)
 			{
 				string dotDi = buildPath(path, moduleName) ~ ".di";
 				string dotD = dotDi[0 .. $ - 1];
@@ -315,21 +319,26 @@ struct ModuleCache
 				if (existsAnd!isFile(dotD))
 					return istring(dotD); // return early for exactly matching .d files
 				else if (existsAnd!isFile(dotDi))
-					alternatives ~= dotDi;
+					alternative = dotDi;
 				else if (existsAnd!isDir(withoutSuffix))
 				{
 					string packagePath = buildPath(withoutSuffix, "package.di");
-					if (existsAnd!isFile(packagePath))
-					{
-						alternatives ~= packagePath;
-						continue;
-					}
 					if (existsAnd!isFile(packagePath[0 .. $ - 1]))
-						alternatives ~= packagePath[0 .. $ - 1];
+						alternative = packagePath[0 .. $ - 1];
+					else if (existsAnd!isFile(packagePath))
+						alternative = packagePath;
 				}
 			}
+			// we have a potential .di/package.d file but continue searching for
+			// exact .d file matches to use instead
+			else
+			{
+				string dotD = buildPath(path, moduleName) ~ ".d";
+				if (existsAnd!isFile(dotD))
+					return istring(dotD); // return early for exactly matching .d files
+			}
 		}
-		return alternatives.length > 0 ? istring(alternatives[0]) : istring(null);
+		return alternative.length > 0 ? istring(alternative) : istring(null);
 	}
 
 	auto getImportPaths() const
