@@ -436,10 +436,92 @@ private:
 
 /// Wrapper to check some attribute of a path, ignoring errors
 /// (such as on a broken symlink).
-private static bool existsAnd(alias fun)(string fn)
+private static bool existsAnd(alias fun)(string file)
 {
 	try
-		return fun(fn);
+		return fun(file);
 	catch (FileException e)
 		return false;
+}
+
+/// same as getAttributes without throwing
+/// Returns: true if exists, false otherwise
+private static bool getFileAttributesFast(R)(R name, uint* attributes)
+{
+	version (Windows)
+	{
+		import std.internal.cstring : tempCStringW;
+		import core.sys.windows.winnt : INVALID_FILE_ATTRIBUTES,
+			FILE_ATTRIBUTE_DIRECTORY;
+		import core.sys.windows.winbase : GetFileAttributesW;
+
+		auto namez = tempCStringW(name);
+		static auto trustedGetFileAttributesW(const(wchar)* namez) @trusted
+		{
+			return GetFileAttributesW(namez);
+		}
+		*attributes = trustedGetFileAttributesW(namez);
+		return *attributes != INVALID_FILE_ATTRIBUTES;
+	}
+	else version (Posix)
+	{
+		import core.sys.posix.sys.stat : stat, stat_t, S_IFMT, S_IFREG, S_IFDIR;
+		import std.internal.cstring : tempCString;
+
+		auto namez = tempCString(name);
+		static auto trustedStat(const(char)* namez, out stat_t statbuf) @trusted
+		{
+			return stat(namez, &statbuf);
+		}
+
+		stat_t statbuf;
+		const ret = trustedStat(namez, statbuf) == 0;
+		*attributes = statbuf.st_mode;
+		return ret;
+	}
+	else
+	{
+		static assert(false, "Unimplemented getAttributes check");
+	}
+}
+
+private static bool existsAnd(alias fun : isFile)(string file)
+{
+	uint attributes;
+	if (!getFileAttributesFast(file, &attributes))
+		return false;
+	return attrIsFile(attributes);
+}
+
+private static bool existsAnd(alias fun : isDir)(string file)
+{
+	uint attributes;
+	if (!getFileAttributesFast(file, &attributes))
+		return false;
+	return attrIsDir(attributes);
+}
+
+version (Windows)
+{
+	unittest
+	{
+		assert(existsAnd!isFile(`C:\Windows\regedit.exe`));
+		assert(existsAnd!isDir(`C:\Windows`));
+		assert(!existsAnd!isDir(`C:\Windows\regedit.exe`));
+		assert(!existsAnd!isDir(`C:\SomewhereNonExistant\nonexistant.exe`));
+		assert(!existsAnd!isFile(`C:\SomewhereNonExistant\nonexistant.exe`));
+		assert(!existsAnd!isFile(`C:\Windows`));
+	}
+}
+else version (Posix)
+{
+	unittest
+	{
+		assert(existsAnd!isFile(`/bin/true`));
+		assert(existsAnd!isDir(`/bin`));
+		assert(!existsAnd!isDir(`/bin/true`));
+		assert(!existsAnd!isDir(`/nonexistant_dir/__nonexistant`));
+		assert(!existsAnd!isFile(`/nonexistant_dir/__nonexistant`));
+		assert(!existsAnd!isFile(`/bin`));
+	}
 }
