@@ -460,8 +460,7 @@ private static bool getFileAttributesFast(R)(R name, uint* attributes)
 	version (Windows)
 	{
 		import std.internal.cstring : tempCStringW;
-		import core.sys.windows.winnt : INVALID_FILE_ATTRIBUTES,
-			FILE_ATTRIBUTE_DIRECTORY;
+		import core.sys.windows.winnt : INVALID_FILE_ATTRIBUTES;
 		import core.sys.windows.winbase : GetFileAttributesW;
 
 		auto namez = tempCStringW(name);
@@ -474,7 +473,7 @@ private static bool getFileAttributesFast(R)(R name, uint* attributes)
 	}
 	else version (Posix)
 	{
-		import core.sys.posix.sys.stat : stat, stat_t, S_IFMT, S_IFREG, S_IFDIR;
+		import core.sys.posix.sys.stat : stat, stat_t;
 		import std.internal.cstring : tempCString;
 
 		auto namez = tempCString(name);
