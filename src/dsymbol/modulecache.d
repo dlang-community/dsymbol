@@ -298,38 +298,47 @@ struct ModuleCache
 		assert(moduleName !is null, "module name is null");
 		if (isRooted(moduleName))
 			return istring(moduleName);
-		string[] alternatives;
+		string alternative;
 		foreach (importPath; importPaths[])
 		{
 			auto path = importPath.path;
-			if (path.existsAnd!isFile)
+			// import path is a filename
+			// first check string if this is a feasable path (no filesystem usage)
+			if (path.stripExtension.endsWith(moduleName)
+				&& path.existsAnd!isFile)
 			{
-				if (path.stripExtension.endsWith(moduleName))
-					alternatives ~= path;
+				// prefer exact import names above .di/package.d files
+				return istring(path);
 			}
-			else
+			// no exact matches and no .di/package.d matches either
+			else if (!alternative.length)
 			{
 				string dotDi = buildPath(path, moduleName) ~ ".di";
 				string dotD = dotDi[0 .. $ - 1];
 				string withoutSuffix = dotDi[0 .. $ - 3];
 				if (existsAnd!isFile(dotD))
-					alternatives = dotD ~ alternatives;
+					return istring(dotD); // return early for exactly matching .d files
 				else if (existsAnd!isFile(dotDi))
-					alternatives ~= dotDi;
+					alternative = dotDi;
 				else if (existsAnd!isDir(withoutSuffix))
 				{
 					string packagePath = buildPath(withoutSuffix, "package.di");
-					if (existsAnd!isFile(packagePath))
-					{
-						alternatives ~= packagePath;
-						continue;
-					}
 					if (existsAnd!isFile(packagePath[0 .. $ - 1]))
-						alternatives ~= packagePath[0 .. $ - 1];
+						alternative = packagePath[0 .. $ - 1];
+					else if (existsAnd!isFile(packagePath))
+						alternative = packagePath;
 				}
 			}
+			// we have a potential .di/package.d file but continue searching for
+			// exact .d file matches to use instead
+			else
+			{
+				string dotD = buildPath(path, moduleName) ~ ".d";
+				if (existsAnd!isFile(dotD))
+					return istring(dotD); // return early for exactly matching .d files
+			}
 		}
-		return alternatives.length > 0 ? istring(alternatives[0]) : istring(null);
+		return alternative.length > 0 ? istring(alternative) : istring(null);
 	}
 
 	auto getImportPaths() const
@@ -436,10 +445,91 @@ private:
 
 /// Wrapper to check some attribute of a path, ignoring errors
 /// (such as on a broken symlink).
-private static bool existsAnd(alias fun)(string fn)
+private static bool existsAnd(alias fun)(string file)
 {
 	try
-		return fun(fn);
+		return fun(file);
 	catch (FileException e)
 		return false;
+}
+
+/// same as getAttributes without throwing
+/// Returns: true if exists, false otherwise
+private static bool getFileAttributesFast(R)(R name, uint* attributes)
+{
+	version (Windows)
+	{
+		import std.internal.cstring : tempCStringW;
+		import core.sys.windows.winnt : INVALID_FILE_ATTRIBUTES;
+		import core.sys.windows.winbase : GetFileAttributesW;
+
+		auto namez = tempCStringW(name);
+		static auto trustedGetFileAttributesW(const(wchar)* namez) @trusted
+		{
+			return GetFileAttributesW(namez);
+		}
+		*attributes = trustedGetFileAttributesW(namez);
+		return *attributes != INVALID_FILE_ATTRIBUTES;
+	}
+	else version (Posix)
+	{
+		import core.sys.posix.sys.stat : stat, stat_t;
+		import std.internal.cstring : tempCString;
+
+		auto namez = tempCString(name);
+		static auto trustedStat(const(char)* namez, out stat_t statbuf) @trusted
+		{
+			return stat(namez, &statbuf);
+		}
+
+		stat_t statbuf;
+		const ret = trustedStat(namez, statbuf) == 0;
+		*attributes = statbuf.st_mode;
+		return ret;
+	}
+	else
+	{
+		static assert(false, "Unimplemented getAttributes check");
+	}
+}
+
+private static bool existsAnd(alias fun : isFile)(string file)
+{
+	uint attributes;
+	if (!getFileAttributesFast(file, &attributes))
+		return false;
+	return attrIsFile(attributes);
+}
+
+private static bool existsAnd(alias fun : isDir)(string file)
+{
+	uint attributes;
+	if (!getFileAttributesFast(file, &attributes))
+		return false;
+	return attrIsDir(attributes);
+}
+
+version (Windows)
+{
+	unittest
+	{
+		assert(existsAnd!isFile(`C:\Windows\regedit.exe`));
+		assert(existsAnd!isDir(`C:\Windows`));
+		assert(!existsAnd!isDir(`C:\Windows\regedit.exe`));
+		assert(!existsAnd!isDir(`C:\SomewhereNonExistant\nonexistant.exe`));
+		assert(!existsAnd!isFile(`C:\SomewhereNonExistant\nonexistant.exe`));
+		assert(!existsAnd!isFile(`C:\Windows`));
+	}
+}
+else version (Posix)
+{
+	unittest
+	{
+		assert(existsAnd!isFile(`/bin/true`));
+		assert(existsAnd!isDir(`/bin`));
+		assert(!existsAnd!isDir(`/bin/true`));
+		assert(!existsAnd!isDir(`/nonexistant_dir/__nonexistant`));
+		assert(!existsAnd!isFile(`/nonexistant_dir/__nonexistant`));
+		assert(!existsAnd!isFile(`/bin`));
+	}
 }
