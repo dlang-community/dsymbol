@@ -478,7 +478,7 @@ final class FirstPass : ASTVisitor
 			istring modulePath = cache.resolveImportLocation(importPath);
 			if (modulePath is null)
 			{
-				warning("Could not resolve location of module '", importPath, "'");
+				warning("Could not resolve location of module '", importPath.data, "'");
 				continue;
 			}
 			SemanticSymbol* importSymbol = allocateSemanticSymbol(IMPORT_SYMBOL_NAME,
