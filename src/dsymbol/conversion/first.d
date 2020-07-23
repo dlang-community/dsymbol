@@ -504,6 +504,7 @@ final class FirstPass : ASTVisitor
 						{
 							currentImportSymbol = symbolAllocator.make!DSymbol(ip, kind);
 							currentImportSymbol.protection = protection.currentForImport;
+							currentImportSymbol.skipOver = protection.currentForImport != tok!"public";
 							currentScope.addSymbol(currentImportSymbol, true);
 							if (last)
 							{
@@ -522,6 +523,7 @@ final class FirstPass : ASTVisitor
 						{
 							auto sym = symbolAllocator.make!DSymbol(ip, kind);
 							sym.protection = protection.currentForImport;
+							sym.skipOver = protection.currentForImport != tok!"public";
 							currentImportSymbol.addChild(sym, true);
 							currentImportSymbol = sym;
 							if (last)
@@ -1241,7 +1243,8 @@ struct ProtectionStack
 
 	IdType currentForImport() const
 	{
-		return stack.empty ? tok!"public" : current();
+		// Imports are private unless specified otherwise.
+		return stack.empty ? tok!"private" : current();
 	}
 
 	IdType current() const
