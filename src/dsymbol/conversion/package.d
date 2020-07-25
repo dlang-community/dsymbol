@@ -142,7 +142,7 @@ class SimpleParser : Parser
 		expect(tok!"unittest");
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return new Unittest;
+		return allocator.make!Unittest;
 	}
 
 	override MissingFunctionBody parseMissingFunctionBody()
