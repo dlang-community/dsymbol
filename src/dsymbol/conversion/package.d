@@ -142,43 +142,46 @@ class SimpleParser : Parser
 		expect(tok!"unittest");
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return null;
+		return new Unittest;
 	}
 
 	override MissingFunctionBody parseMissingFunctionBody()
 	{
+		// Unlike many of the other parsing functions, it is valid and expected
+		// for this one to return `null` on valid code. Returning `null` in
+		// this function means that we are looking at a SpecifiedFunctionBody.
+		// The super-class will handle re-trying with the correct parsing
+		// function.
+
 		const bool needDo = skipContracts();
-		if (!needDo)
-		{
-			if (currentIs(tok!"{"))
-				return null;
-		}
-		else if (moreTokens && (currentIs(tok!"do") || current.text == "body"))
-		{
+		if (needDo && moreTokens && (currentIs(tok!"do") || current.text == "body"))
 			return null;
-		}
 		if (currentIs(tok!";"))
 			advance();
+		else
+			return null;
 		return allocator.make!MissingFunctionBody;
 	}
 
 	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
 	{
-		bool needDo;
-
-		// no contracts
 		if (currentIs(tok!"{"))
 			skipBraces();
-		// skip contracts
-		else needDo = skipContracts();
-		if (needDo && !currentIs(tok!"{"))
-			advance();
-		// body
-		if (currentIs(tok!"{"))
-			skipBraces();
+		else
+		{
+			skipContracts();
+			if (currentIs(tok!"do") || (currentIs(tok!"identifier") && current.text == "body"))
+				advance();
+			if (currentIs(tok!"{"))
+				skipBraces();
+		}
 		return allocator.make!SpecifiedFunctionBody;
 	}
 
+	/**
+	 * Skip contracts, and return `true` if the type of contract used requires
+	 * that the next token is `do`.
+	 */
 	private bool skipContracts()
 	{
 		bool needDo;
@@ -187,8 +190,7 @@ class SimpleParser : Parser
 		{
 			if (currentIs(tok!"in"))
 			{
-				if (moreTokens)
-					advance();
+				advance();
 				if (currentIs(tok!"{"))
 				{
 					skipBraces();
@@ -199,13 +201,12 @@ class SimpleParser : Parser
 			}
 			else if (currentIs(tok!"out"))
 			{
-				if (moreTokens)
-					advance();
+				advance();
 				if (currentIs(tok!"("))
 				{
-					immutable bool asExpr = index < tokens.length - 2 &&
-						 tokens[index + 1].type == tok!";" ||
-						(tokens[index + 1].type == tok!"identifier" && tokens[index + 2].type == tok!";");
+					immutable bool asExpr = peekIs(tok!";")
+						|| (peekIs(tok!"identifier")
+							&& index + 2 < tokens.length && tokens[index + 2].type == tok!";");
 					skipParens();
 					if (asExpr)
 					{
@@ -219,7 +220,8 @@ class SimpleParser : Parser
 					needDo = true;
 				}
 			}
-			else break;
+			else
+				break;
 		}
 		return needDo;
 	}
