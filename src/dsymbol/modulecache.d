@@ -276,7 +276,7 @@ struct ModuleCache
 	/**
 	 * Make sure our imports are properly cached and up to date
 	 */
-	void ensureImportsAreCached()
+	void ensureImportCacheValidity()
 	{
 		foreach (ref importPath; importPaths)
 		{
