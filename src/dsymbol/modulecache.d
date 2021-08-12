@@ -274,64 +274,30 @@ struct ModuleCache
 	}
 
 	/**
-	 * Make sure our imports are properly cached and up to date
+	 * Make sure our cache is still valid
 	 */
-	void ensureImportCacheValidity()
+	void ensureCacheValidity()
 	{
 		import std.string;
 
-		// this will check if the module was already cached
-		// if it is cached, it'll check if it needs to be reparsed
-		// by comparing modified time in the file attribute
-		// it is a workaround for: https://github.com/Pure-D/serve-d/issues/146
-		// ideally we shouldn't have to do this for each requests
-
-		foreach (ref importPath; importPaths)
+		foreach (cached; cache)
 		{
-			// skip modules from std/dub and only focus on our code
-			version(Windows)
+			auto path = cached.path;
+
+			// skip std/dub packages
+			version (Windows)
 			{
-				if (indexOf(importPath.path, "src\\druntime") != -1 ) continue;
-				if (indexOf(importPath.path, "src\\phobos") != -1 ) continue;
-				if (indexOf(importPath.path, "dub\\packages") != -1 ) continue;
+				if (indexOf(path, "src\\druntime") != -1 ) continue;
+				if (indexOf(path, "src\\phobos") != -1 ) continue;
+				if (indexOf(path, "dub\\packages") != -1 ) continue;
 			}
-			else version (Posix)
+			else version (linux)
 			{
-			    if (indexOf(importPath.path, "src/druntime") != -1 ) continue;
-			    if (indexOf(importPath.path, "src/phobos") != -1 ) continue;
-			    if (indexOf(importPath.path, "dub/packages") != -1 ) continue;
+			    if (indexOf(path, "src/druntime") != -1 ) continue;
+			    if (indexOf(path, "src/phobos") != -1 ) continue;
+			    if (indexOf(path, "dub/packages") != -1 ) continue;
 			}
-
-			if (importPath.path.existsAnd!isFile)
-			{
-				if (importPath.path.baseName.startsWith(".#"))
-					continue;
-
-				cacheModule(importPath.path);
-			}
-			else
-			{
-				void scanFrom(const string root)
-				{
-					if (exists(buildPath(root, ".no-dcd")))
-						return;
-
-					try foreach (f; dirEntries(root, SpanMode.shallow))
-					{
-						if (f.name.existsAnd!isFile)
-						{
-							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
-								continue;
-
-							cacheModule(f.name);
-						}
-						else scanFrom(f.name);
-					}
-					catch(FileException) {}
-				}
-
-				scanFrom(importPath.path);
-			}
+			cacheModule(path);
 		}
 	}
 
