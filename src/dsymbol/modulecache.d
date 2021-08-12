@@ -295,7 +295,7 @@ struct ModuleCache
 				if (indexOf(importPath.path, "src\\phobos") != -1 ) continue;
 				if (indexOf(importPath.path, "dub\\packages") != -1 ) continue;
 			}
-			else version (linux)
+			else version (Posix)
 			{
 			    if (indexOf(importPath.path, "src/druntime") != -1 ) continue;
 			    if (indexOf(importPath.path, "src/phobos") != -1 ) continue;
