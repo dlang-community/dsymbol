@@ -278,6 +278,11 @@ struct ModuleCache
 	 */
 	void ensureImportCacheValidity()
 	{
+		// this will check if the module was already cached
+		// if it is cached, it'll check if it needs to be reparsed
+		// by comparing modified time in the file attribute
+		// it is a workaround for: https://github.com/Pure-D/serve-d/issues/146
+		// ideally we shouldn't have to do this for each requests
 		foreach (ref importPath; importPaths)
 		{
 			// only check for our actual files
@@ -286,10 +291,28 @@ struct ModuleCache
 				if (importPath.path.baseName.startsWith(".#"))
 					continue;
 
-				// this will check if the module was already cached
-				// if it is cached, it'll check if it needs to be reparsed
-				// by comparing modified time in the file attribute
 				cacheModule(importPath.path);
+			}
+			else
+			{
+				void scanFrom(const string root)
+				{
+					if (exists(buildPath(root, ".no-dcd")))
+						return;
+
+					try foreach (f; dirEntries(root, SpanMode.shallow))
+					{
+						if (f.name.existsAnd!isFile)
+						{
+							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
+								continue;
+							cacheModule(f.name);
+						}
+						else scanFrom(f.name);
+					}
+					catch(FileException) {}
+				}
+				scanFrom(importPath.path);
 			}
 		}
 	}
