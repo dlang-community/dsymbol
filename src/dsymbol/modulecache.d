@@ -341,6 +341,14 @@ struct ModuleCache
 		return alternative.length > 0 ? istring(alternative) : istring(null);
 	}
 
+	/**
+	 * Force scanning all the imports
+	 */
+	void forceScan()
+	{
+		scanAll(true);
+	}
+
 	auto getImportPaths() const
 	{
 		return importPaths[].map!(a => a.path);
@@ -390,13 +398,17 @@ private:
 		return r.front.modificationTime != modification;
 	}
 
-	void scanAll()
+	/**
+	 * Params:
+	 *     force = force scanning the imports
+	 */
+	void scanAll(bool force = false)
 	{
 		foreach (ref importPath; importPaths)
 		{
-			if (importPath.scanned)
+			if (!force && importPath.scanned)
 				continue;
-			scope(success) importPath.scanned = true;
+			scope(success) if(!force) importPath.scanned = true;
 
 			if (importPath.path.existsAnd!isFile)
 			{
