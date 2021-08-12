@@ -274,6 +274,27 @@ struct ModuleCache
 	}
 
 	/**
+	 * Make sure our imports are properly cached and up to date
+	 */
+	void ensureImportsAreCached()
+	{
+		foreach (ref importPath; importPaths)
+		{
+			// only check for our actual files
+			if (importPath.path.existsAnd!isFile)
+			{
+				if (importPath.path.baseName.startsWith(".#"))
+					continue;
+
+				// this will check if the module was already cached
+				// if it is cached, it'll check if it needs to be reparsed
+				// by comparing modified time in the file attribute
+				cacheModule(importPath.path);
+			}
+		}
+	}
+
+	/**
 	 * Params:
 	 *     moduleName = the name of the module in "a/b/c" form
 	 * Returns:
@@ -341,14 +362,6 @@ struct ModuleCache
 		return alternative.length > 0 ? istring(alternative) : istring(null);
 	}
 
-	/**
-	 * Force scanning all the imports
-	 */
-	void forceScan()
-	{
-		scanAll(true);
-	}
-
 	auto getImportPaths() const
 	{
 		return importPaths[].map!(a => a.path);
@@ -398,17 +411,13 @@ private:
 		return r.front.modificationTime != modification;
 	}
 
-	/**
-	 * Params:
-	 *     force = force scanning the imports
-	 */
-	void scanAll(bool force = false)
+	void scanAll()
 	{
 		foreach (ref importPath; importPaths)
 		{
-			if (!force && importPath.scanned)
+			if (importPath.scanned)
 				continue;
-			scope(success) if(!force) importPath.scanned = true;
+			scope(success) importPath.scanned = true;
 
 			if (importPath.path.existsAnd!isFile)
 			{
