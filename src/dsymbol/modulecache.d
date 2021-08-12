@@ -278,14 +278,30 @@ struct ModuleCache
 	 */
 	void ensureImportCacheValidity()
 	{
+		import std.string;
+
 		// this will check if the module was already cached
 		// if it is cached, it'll check if it needs to be reparsed
 		// by comparing modified time in the file attribute
 		// it is a workaround for: https://github.com/Pure-D/serve-d/issues/146
 		// ideally we shouldn't have to do this for each requests
+
 		foreach (ref importPath; importPaths)
 		{
-			// only check for our actual files
+			// skip modules from std/dub and only focus on our code
+			version(Windows)
+			{
+				if (indexOf(importPath.path, "src\\druntime") != -1 ) continue;
+				if (indexOf(importPath.path, "src\\phobos") != -1 ) continue;
+				if (indexOf(importPath.path, "dub\\packages") != -1 ) continue;
+			}
+			else version (linux)
+			{
+			    if (indexOf(importPath.path, "src/druntime") != -1 ) continue;
+			    if (indexOf(importPath.path, "src/phobos") != -1 ) continue;
+			    if (indexOf(importPath.path, "dub/packages") != -1 ) continue;
+			}
+
 			if (importPath.path.existsAnd!isFile)
 			{
 				if (importPath.path.baseName.startsWith(".#"))
@@ -306,12 +322,14 @@ struct ModuleCache
 						{
 							if (!f.name.extension.among(".d", ".di") || f.name.baseName.startsWith(".#"))
 								continue;
+
 							cacheModule(f.name);
 						}
 						else scanFrom(f.name);
 					}
 					catch(FileException) {}
 				}
+
 				scanFrom(importPath.path);
 			}
 		}
