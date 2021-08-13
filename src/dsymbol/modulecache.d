@@ -287,15 +287,15 @@ struct ModuleCache
 			// skip std/dub packages
 			version (Windows)
 			{
-				if (indexOf(path, "src\\druntime") != -1 ) continue;
-				if (indexOf(path, "src\\phobos") != -1 ) continue;
-				if (indexOf(path, "dub\\packages") != -1 ) continue;
+				if (indexOf(path, "src\\druntime") != -1) continue;
+				if (indexOf(path, "src\\phobos") != -1) continue;
+				if (indexOf(path, "dub\\packages") != -1) continue;
 			}
 			else version (linux)
 			{
-			    if (indexOf(path, "src/druntime") != -1 ) continue;
-			    if (indexOf(path, "src/phobos") != -1 ) continue;
-			    if (indexOf(path, "dub/packages") != -1 ) continue;
+			    if (indexOf(path, "src/druntime") != -1) continue;
+			    if (indexOf(path, "src/phobos") != -1) continue;
+			    if (indexOf(path, "dub/packages") != -1) continue;
 			}
 			cacheModule(path);
 		}
