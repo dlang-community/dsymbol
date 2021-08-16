@@ -50,6 +50,8 @@ import std.path;
 alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
 	n => Region!Mallocator(1024 * 128), Mallocator));
 
+@safe:
+
 /**
  * Returns: true if a file exists at the given path.
  */
@@ -96,14 +98,14 @@ struct ModuleCache
 			.filter!(a => existanceCheck(a) && !importPaths[].canFind!(b => b.path == a))
 			.map!(a => ImportPath(istring(a)))
 			.array;
-		importPaths.insert(newPaths);
+        () @trusted { importPaths.insert(newPaths); } ();
 	}
 
 	/**
 	 * Removes the given paths from the list of directories checked for
 	 * imports. Corresponding cache entries are removed.
 	 */
-	void removeImportPaths(const string[] paths)
+	void removeImportPaths(const string[] paths) @trusted
 	{
 		foreach (path; paths[])
 		{
@@ -114,7 +116,7 @@ struct ModuleCache
 			}
 
 			foreach (ref importPath; importPaths[].filter!(a => a.path == path))
-				importPaths.remove(importPath);
+                () @trusted { importPaths.remove(importPath); } ();
 
 			foreach (cacheEntry; cache[])
 			{
@@ -136,7 +138,7 @@ struct ModuleCache
 	/**
 	 * Clears the cache from all import paths
 	 */
-	void clear()
+	void clear() @trusted
 	{
 		foreach (entry; cache[])
 			Mallocator.instance.dispose(entry);
@@ -154,7 +156,7 @@ struct ModuleCache
 	/**
 	 * Caches the module at the given location
 	 */
-	DSymbol* cacheModule(string location)
+	DSymbol* cacheModule(string location) @trusted
 	{
 		import std.stdio : File;
 		import std.typecons : scoped;
@@ -195,13 +197,13 @@ struct ModuleCache
 
 		CacheEntry* newEntry = Mallocator.instance.make!CacheEntry();
 
-		auto semanticAllocator = scoped!(ASTAllocator);
+		scope semanticAllocator = new ASTAllocator();
 		import dparse.rollback_allocator:RollbackAllocator;
 		RollbackAllocator parseAllocator;
 		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
 
 		assert (symbolAllocator);
-		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
+		scope first = new FirstPass(m, cachedLocation, symbolAllocator,
 			semanticAllocator, false, &this, newEntry);
 		first.run();
 
@@ -246,18 +248,26 @@ struct ModuleCache
 	/**
 	 * Resolves types for deferred symbols
 	 */
-	void resolveDeferredTypes(istring location)
+	void resolveDeferredTypes(istring location) @trusted
 	{
 		UnrolledList!(DeferredSymbol*) temp;
 		temp.insert(deferredSymbols[]);
 		deferredSymbols.clear();
-		foreach (deferred; temp[])
+		foreach (DeferredSymbol* deferred; temp[])
 		{
+            if (deferred is null ||
+                deferred.symbol is null ||
+                deferred.symbol.type is null ||
+                deferred.symbol.name.length == 0)
+                return;
 			if (!deferred.imports.empty && !deferred.dependsOn(location))
 			{
 				deferredSymbols.insert(deferred);
 				continue;
 			}
+            import std.stdio;
+            if (deferred && deferred.symbol)
+                writeln("location:", location, " name:", deferred.symbol.name, " kind:", deferred.symbol.kind);
 			assert(deferred.symbol.type is null);
 			if (deferred.symbol.kind == CompletionKind.importSymbol)
 			{
@@ -361,7 +371,7 @@ struct ModuleCache
 
 private:
 
-	CacheEntry* getEntryFor(istring cachedLocation)
+	CacheEntry* getEntryFor(istring cachedLocation) @trusted
 	{
 		CacheEntry dummy;
 		dummy.path = cachedLocation;
@@ -375,7 +385,7 @@ private:
 	 * Returns:
 	 *     true  if the module needs to be reparsed, false otherwise
 	 */
-	bool needsReparsing(istring mod)
+	bool needsReparsing(istring mod) @trusted
 	{
 		if (!exists(mod.data))
 			return true;
@@ -406,7 +416,7 @@ private:
 			}
 			else
 			{
-				void scanFrom(const string root)
+				void scanFrom(const string root) @trusted
 				{
 					if (exists(buildPath(root, ".no-dcd")))
 						return;
@@ -423,7 +433,7 @@ private:
 					}
 					catch(FileException) {}
 				}
-				scanFrom(importPath.path);
+                scanFrom(importPath.path);
 			}
 		}
 	}
@@ -455,7 +465,7 @@ private static bool existsAnd(alias fun)(string file)
 
 /// same as getAttributes without throwing
 /// Returns: true if exists, false otherwise
-private static bool getFileAttributesFast(R)(R name, uint* attributes)
+private static bool getFileAttributesFast(R)(R name, uint* attributes) // TODO make qualify attributes as out
 {
 	version (Windows)
 	{
@@ -493,7 +503,7 @@ private static bool getFileAttributesFast(R)(R name, uint* attributes)
 	}
 }
 
-private static bool existsAnd(alias fun : isFile)(string file)
+private static bool existsAnd(alias fun : isFile)(string file) @trusted
 {
 	uint attributes;
 	if (!getFileAttributesFast(file, &attributes))
@@ -501,7 +511,7 @@ private static bool existsAnd(alias fun : isFile)(string file)
 	return attrIsFile(attributes);
 }
 
-private static bool existsAnd(alias fun : isDir)(string file)
+private static bool existsAnd(alias fun : isDir)(string file) @trusted
 {
 	uint attributes;
 	if (!getFileAttributesFast(file, &attributes))

@@ -3,6 +3,8 @@ module dsymbol.builtin.names;
 import dparse.lexer;
 import dsymbol.string_interning;
 
+@safe:
+
 package istring[24] builtinTypeNames;
 
 /// Constants for buit-in or dummy symbol names

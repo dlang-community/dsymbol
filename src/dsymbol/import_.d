@@ -22,6 +22,8 @@ import containers.unrolledlist;
 import dsymbol.string_interning;
 import std.typecons;
 
+@safe:
+
 /**
  * Import information
  */

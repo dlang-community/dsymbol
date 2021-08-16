@@ -27,12 +27,14 @@ import dsymbol.type_lookup;
 import stdx.allocator;
 import stdx.allocator.mallocator;
 
+@safe:
+
 /**
  * Contains information for deferred type resolution
  */
 struct DeferredSymbol
 {
-	~this()
+	~this() @trusted
 	{
 		foreach (l; typeLookups[])
 			Mallocator.instance.dispose(l);

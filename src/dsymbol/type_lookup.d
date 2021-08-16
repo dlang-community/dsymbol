@@ -3,6 +3,8 @@ module dsymbol.type_lookup;
 import dsymbol.string_interning;
 import containers.unrolledlist;
 
+@safe:
+
 /**
  * The type lookup kind.
  */
@@ -29,7 +31,7 @@ struct TypeLookup
 
 	this(istring name, TypeLookupKind kind)
 	{
-		breadcrumbs.insert(name);
+        () @trusted { breadcrumbs.insert(name); } ();
 		this.kind = kind;
 	}
 

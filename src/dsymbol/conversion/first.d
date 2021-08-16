@@ -38,6 +38,8 @@ import stdx.allocator.mallocator;
 import std.experimental.logger;
 import std.typecons;
 
+@safe:
+
 /**
  * First Pass handles the following:
  * $(UL
@@ -51,7 +53,7 @@ import std.typecons;
  *     $(LI symbol file path)
  * )
  */
-final class FirstPass : ASTVisitor
+@safe final class FirstPass : ASTVisitor
 {
 	/**
 	 * Params:
@@ -72,7 +74,7 @@ final class FirstPass : ASTVisitor
 		assert(semanticAllocator);
 		assert(cache);
 	}
-	body
+	do
 	{
 		this.mod = mod;
 		this.symbolFile = symbolFile;
@@ -98,7 +100,7 @@ final class FirstPass : ASTVisitor
 		pushSymbol(UNITTEST_SYMBOL_NAME,
 			CompletionKind.dummy, istring(null));
 		scope(exit) popSymbol();
-		u.accept(this);
+        () @trusted { u.accept(this); } ();
 	}
 
 	override void visit(const Constructor con)
@@ -151,7 +153,7 @@ final class FirstPass : ASTVisitor
 			scope (exit) popScope();
 			processParameters(currentSymbol, dec.returnType,
 					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
-			dec.functionBody.accept(this);
+            () @trusted { dec.functionBody.accept(this); } ();
 		}
 		else
 		{
@@ -182,7 +184,7 @@ final class FirstPass : ASTVisitor
 		scope (exit) popScope();
 		processParameters(currentSymbol, exp.returnType,
 				FUNCTION_LITERAL_SYMBOL_NAME, exp.parameters, null);
-		block.accept(this);
+        () @trusted { block.accept(this); } ();
 	}
 
 	override void visit(const ClassDeclaration dec)
@@ -214,7 +216,7 @@ final class FirstPass : ASTVisitor
 	{
 		// its base classes would be added as "inherit" breadcrumbs in the current symbol
 		skipBaseClassesOfNewAnon = true;
-		nace.accept(this);
+        () @trusted { nace.accept(this); } ();
 		skipBaseClassesOfNewAnon = false;
 	}
 
@@ -225,7 +227,7 @@ final class FirstPass : ASTVisitor
 		if (bc.type2.typeIdentifierPart is null ||
 			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
-		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
+		auto lookup = () @trusted { return Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit); } ();
 		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
 
@@ -237,8 +239,8 @@ final class FirstPass : ASTVisitor
 			return;
 		SemanticSymbol* symbol = allocateSemanticSymbol(idt,
 			CompletionKind.aliasName, symbolFile, currentScope.endLocation);
-		Type t = Mallocator.instance.make!Type;
-		t.type2 = cast() bc.type2;
+		Type t = () @trusted { return Mallocator.instance.make!Type; } ();
+        () @trusted { t.type2 = cast() bc.type2; } ();
 		addTypeToLookups(symbol.typeLookups, t);
 		symbol.parent = currentSymbol;
 		currentSymbol.addChild(symbol, true);
@@ -264,9 +266,11 @@ final class FirstPass : ASTVisitor
 			if (currentSymbol.acSymbol.kind == CompletionKind.structName
 				|| currentSymbol.acSymbol.kind == CompletionKind.unionName)
 			{
-				structFieldNames.insert(symbol.acSymbol.name);
-				// TODO: remove this cast. See the note on structFieldTypes
-				structFieldTypes.insert(cast() dec.type);
+                () @trusted {
+                    structFieldNames.insert(symbol.acSymbol.name);
+                    // TODO: remove this cast. See the note on structFieldTypes
+                    structFieldTypes.insert(cast() dec.type);
+                } ();
 			}
 		}
 		if (dec.autoDeclaration !is null)
@@ -286,9 +290,11 @@ final class FirstPass : ASTVisitor
 				if (currentSymbol.acSymbol.kind == CompletionKind.structName
 					|| currentSymbol.acSymbol.kind == CompletionKind.unionName)
 				{
-					structFieldNames.insert(symbol.acSymbol.name);
-					// TODO: remove this cast. See the note on structFieldTypes
-					structFieldTypes.insert(null);
+                    () @trusted {
+                        structFieldNames.insert(symbol.acSymbol.name);
+                        // TODO: remove this cast. See the note on structFieldTypes
+                        structFieldTypes.insert(null);
+                    } ();
 				}
 			}
 		}
@@ -337,16 +343,17 @@ final class FirstPass : ASTVisitor
 		{
 			return;
 		}
-		currentSymbol.typeLookups.insert(Mallocator.instance.make!TypeLookup(
-			internString(dec.identifier.text), TypeLookupKind.aliasThis));
+        auto _ = () @trusted { return Mallocator.instance.make!TypeLookup(internString(dec.identifier.text), TypeLookupKind.aliasThis); } ();
+		currentSymbol.typeLookups.insert(_);
 	}
 
 	override void visit(const Declaration dec)
 	{
-		if (dec.attributeDeclaration !is null
-			&& isProtection(dec.attributeDeclaration.attribute.attribute.type))
+        auto ad = () @trusted { return dec.attributeDeclaration; } ();
+		if (ad !is null
+			&& isProtection(ad.attribute.attribute.type))
 		{
-			protection.addScope(dec.attributeDeclaration.attribute.attribute.type);
+			protection.addScope(ad.attribute.attribute.type);
 			return;
 		}
 		IdType p;
@@ -361,15 +368,15 @@ final class FirstPass : ASTVisitor
 			if (dec.declarations.length > 0)
 			{
 				protection.beginScope();
-				dec.accept(this);
+                () @trusted { dec.accept(this); } ();
 				protection.endScope();
 			}
 			else
-				dec.accept(this);
+                () @trusted { dec.accept(this); } ();
 			protection.endLocal();
 		}
 		else
-			dec.accept(this);
+            () @trusted { dec.accept(this); } ();
 	}
 
 	override void visit(const Module mod)
@@ -377,7 +384,7 @@ final class FirstPass : ASTVisitor
 		rootSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
 			symbolFile);
 		currentSymbol = rootSymbol;
-		moduleScope = semanticAllocator.make!Scope(0, uint.max);
+		moduleScope = () @trusted { return semanticAllocator.make!Scope(0, uint.max); } ();
 		currentScope = moduleScope;
 		auto objectLocation = cache.resolveImportLocation("object");
 		if (objectLocation is null)
@@ -390,9 +397,11 @@ final class FirstPass : ASTVisitor
 			currentSymbol.addChild(objectImport, true);
 			currentScope.addSymbol(objectImport.acSymbol, false);
 		}
-		foreach (s; builtinSymbols[])
-			currentScope.addSymbol(s, false);
-		mod.accept(this);
+        () @trusted {
+            foreach (s; builtinSymbols[])
+                currentScope.addSymbol(s, false);
+        } ();
+        () @trusted { mod.accept(this); } ();
 	}
 
 	override void visit(const EnumDeclaration dec)
@@ -417,7 +426,7 @@ final class FirstPass : ASTVisitor
 		if (dec.enumBody !is null)
 		{
 			pushScope(dec.enumBody.startLocation, dec.enumBody.endLocation);
-			dec.enumBody.accept(this);
+            () @trusted { dec.enumBody.accept(this); } ();
 			popScope();
 		}
 
@@ -433,7 +442,7 @@ final class FirstPass : ASTVisitor
 		rootSymbol.acSymbol.name = internString(parts.length ? parts[$ - 1].text : null);
 	}
 
-	override void visit(const StructBody structBody)
+	override void visit(const StructBody structBody) @trusted
 	{
 		import std.algorithm : move;
 
@@ -500,7 +509,7 @@ final class FirstPass : ASTVisitor
 						auto s = currentScope.getSymbolsByName(ip);
 						if (s.length == 0)
 						{
-							currentImportSymbol = symbolAllocator.make!DSymbol(ip, kind);
+                            () @trusted { currentImportSymbol = symbolAllocator.make!DSymbol(ip, kind); } ();
 							currentScope.addSymbol(currentImportSymbol, true);
 							if (last)
 							{
@@ -517,7 +526,7 @@ final class FirstPass : ASTVisitor
 						auto s = currentImportSymbol.getPartsByName(ip);
 						if (s.length == 0)
 						{
-							auto sym = symbolAllocator.make!DSymbol(ip, kind);
+							auto sym = () @trusted { return symbolAllocator.make!DSymbol(ip, kind); } ();
 							currentImportSymbol.addChild(sym, true);
 							currentImportSymbol = sym;
 							if (last)
@@ -548,7 +557,7 @@ final class FirstPass : ASTVisitor
 				currentScope.addSymbol(renameSymbol.acSymbol, false);
 			}
 			if (entry !is null)
-				entry.dependencies.insert(modulePath);
+                () @trusted { entry.dependencies.insert(modulePath); } ();
 		}
 		if (importDeclaration.importBindings is null) return;
 		if (importDeclaration.importBindings.singleImport.identifierChain is null) return;
@@ -563,8 +572,7 @@ final class FirstPass : ASTVisitor
 
 		foreach (bind; importDeclaration.importBindings.importBinds)
 		{
-			TypeLookup* lookup = Mallocator.instance.make!TypeLookup(
-				TypeLookupKind.selectiveImport);
+			TypeLookup* lookup = () @trusted { return Mallocator.instance.make!TypeLookup(TypeLookupKind.selectiveImport); } ();
 
 			immutable bool isRenamed = bind.right != tok!"";
 
@@ -576,11 +584,11 @@ final class FirstPass : ASTVisitor
 
 			if (isRenamed)
 			{
-				lookup.breadcrumbs.insert(internString(bind.right.text));
+                () @trusted { lookup.breadcrumbs.insert(internString(bind.right.text)); } ();
 				importSymbol.acSymbol.location = bind.left.index;
 				importSymbol.acSymbol.altFile = symbolFile;
 			}
-			lookup.breadcrumbs.insert(internString(bind.left.text));
+            () @trusted { lookup.breadcrumbs.insert(internString(bind.left.text)); } ();
 
 			importSymbol.acSymbol.qualifier = SymbolQualifier.selectiveImport;
 			importSymbol.typeLookups.insert(lookup);
@@ -590,7 +598,7 @@ final class FirstPass : ASTVisitor
 		}
 
 		if (entry !is null)
-			entry.dependencies.insert(modulePath);
+            () @trusted { entry.dependencies.insert(modulePath); } ();
 	}
 
 	// Create scope for block statements
@@ -600,7 +608,7 @@ final class FirstPass : ASTVisitor
 		{
 			pushScope(blockStatement.startLocation, blockStatement.endLocation);
 			scope(exit) popScope();
-			visit (blockStatement.declarationsAndStatements);
+            () @trusted { visit (blockStatement.declarationsAndStatements); } ();
 		}
 	}
 
@@ -609,7 +617,7 @@ final class FirstPass : ASTVisitor
 	override void visit(const ConditionalDeclaration conditionalDecl)
 	{
 		if (conditionalDecl.compileCondition !is null)
-			visit(conditionalDecl.compileCondition);
+            () @trusted { visit(conditionalDecl.compileCondition); } ();
 
 		if (conditionalDecl.trueDeclarations.length)
 		{
@@ -638,7 +646,7 @@ final class FirstPass : ASTVisitor
 		if (tme.mixinTemplateName.symbol is null)
 			return;
 		const Symbol sym = tme.mixinTemplateName.symbol;
-		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate);
+		auto lookup = () @trusted { return Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate); } ();
 
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
@@ -654,14 +662,14 @@ final class FirstPass : ASTVisitor
 		{
 			SemanticSymbol* symbol = allocateSemanticSymbol(tme.identifier.text,
 				CompletionKind.aliasName, symbolFile, tme.identifier.index);
-			Type tp = Mallocator.instance.make!Type;
-			tp.type2 = Mallocator.instance.make!Type2;
+			Type tp = () @trusted { return Mallocator.instance.make!Type; } ();
+			tp.type2 = () @trusted { return Mallocator.instance.make!Type2; } ();
 			TypeIdentifierPart root;
 			TypeIdentifierPart current;
 			foreach(ioti; sym.identifierOrTemplateChain.identifiersOrTemplateInstances)
 			{
 				TypeIdentifierPart old = current;
-				current = Mallocator.instance.make!TypeIdentifierPart;
+				current = () @trusted { return Mallocator.instance.make!TypeIdentifierPart; } ();
 				if (old)
 				{
 					old.typeIdentifierPart = current;
@@ -670,7 +678,7 @@ final class FirstPass : ASTVisitor
 				{
 					root = current;
 				}
-				current.identifierOrTemplateInstance = cast() ioti;
+                () @trusted { current.identifierOrTemplateInstance = cast() ioti; } ();
 			}
 			tp.type2.typeIdentifierPart = root;
 			addTypeToLookups(symbol.typeLookups, tp);
@@ -693,14 +701,14 @@ final class FirstPass : ASTVisitor
 			pushScope(feStatement.startIndex, bs.endLocation);
 			scope(exit) popScope();
 			feExpression = feStatement.low.items[$ - 1];
-			feStatement.accept(this);
+            () @trusted { feStatement.accept(this); } ();
 			feExpression = null;
 		}
 		else
 		{
 			const ubyte o1 = foreachTypeIndexOfInterest;
 			const ubyte o2 = foreachTypeIndex;
-			feStatement.accept(this);
+            () @trusted { feStatement.accept(this); } ();
 			foreachTypeIndexOfInterest = o1;
 			foreachTypeIndex = o2;
 		}
@@ -710,7 +718,7 @@ final class FirstPass : ASTVisitor
 	{
 		foreachTypeIndex = 0;
 		foreachTypeIndexOfInterest = cast(ubyte)(feTypeList.items.length - 1);
-		feTypeList.accept(this);
+        () @trusted { feTypeList.accept(this); } ();
 	}
 
 	override void visit(const ForeachType feType)
@@ -746,7 +754,7 @@ final class FirstPass : ASTVisitor
 			if (symbol.typeLookups.empty && ifs.expression !is null)
 				populateInitializer(symbol, ifs.expression, false);
 		}
-		ifs.accept(this);
+        () @trusted { ifs.accept(this); } ();
 	}
 
 	override void visit(const WithStatement withStatement)
@@ -763,17 +771,17 @@ final class FirstPass : ASTVisitor
 			scope(exit) popSymbol();
 
 			populateInitializer(currentSymbol, withStatement.expression, false);
-			withStatement.accept(this);
+            () @trusted { withStatement.accept(this); } ();
 
 		}
 		else
-			withStatement.accept(this);
+            () @trusted { withStatement.accept(this); } ();
 	}
 
 	override void visit(const ArgumentList list)
 	{
-		auto visitor = scoped!(ArgumentListVisitor)(this);
-		visitor.visit(list);
+		scope visitor = new ArgumentListVisitor(this);
+        () @trusted { visitor.visit(list); } ();
 	}
 
 	alias visit = ASTVisitor.visit;
@@ -826,7 +834,7 @@ private:
 	{
 		assert (startLocation < uint.max);
 		assert (endLocation < uint.max || endLocation == size_t.max);
-		Scope* s = semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation);
+		Scope* s = () @trusted { return semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation); } ();
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
@@ -840,8 +848,7 @@ private:
 	void pushFunctionScope(const FunctionBody functionBody,
 		IAllocator semanticAllocator, size_t scopeBegin)
 	{
-		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin,
-			cast(uint) functionBody.endLocation);
+		Scope* s = () @trusted { return semanticAllocator.make!Scope(cast(uint) scopeBegin, cast(uint) functionBody.endLocation); } ();
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
@@ -881,7 +888,7 @@ private:
 		if ((kind == CompletionKind.unionName || kind == CompletionKind.structName) &&
 			dec.name == tok!"")
 		{
-			dec.accept(this);
+            () @trusted { dec.accept(this); } ();
 			return;
 		}
 		pushSymbol(dec.name.text, kind, symbolFile, dec.name.index);
@@ -908,7 +915,7 @@ private:
 		protection.beginScope();
 		scope (exit) protection.endScope();
 		processTemplateParameters(currentSymbol, dec.templateParameters);
-		dec.accept(this);
+        () @trusted { dec.accept(this); } ();
 	}
 
 	void visitConstructor(size_t location, const Parameters parameters,
@@ -933,7 +940,7 @@ private:
 				location + 4); // 4 == "this".length
 			scope(exit) popScope();
 			currentSymbol = symbol;
-			functionBody.accept(this);
+            () @trusted { functionBody.accept(this); } ();
 			currentSymbol = currentSymbol.parent;
 		}
 	}
@@ -957,7 +964,7 @@ private:
 			pushFunctionScope(functionBody, semanticAllocator, location + 4); // 4 == "this".length
 			scope(exit) popScope();
 			currentSymbol = symbol;
-			functionBody.accept(this);
+            () @trusted { functionBody.accept(this); } ();
 			currentSymbol = currentSymbol.parent;
 		}
 	}
@@ -977,7 +984,7 @@ private:
 				if (p.type !is null)
 					addTypeToLookups(parameter.typeLookups, p.type);
 				parameter.parent = currentSymbol;
-				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
+                () @trusted { currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name); } ();
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
 			}
@@ -1056,14 +1063,12 @@ private:
 
 				if (p.templateTupleParameter !is null)
 				{
-					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
-						istring(name), TypeLookupKind.varOrFunType);
+					TypeLookup* tl = () @trusted { return Mallocator.instance.make!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
 					templateParameter.typeLookups.insert(tl);
 				}
 				else if (p.templateTypeParameter && kind == CompletionKind.typeTmpParam)
 				{
-					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
-						istring(name), TypeLookupKind.varOrFunType);
+					TypeLookup* tl = () @trusted { return Mallocator.instance.make!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
 					templateParameter.typeLookups.insert(tl);
 				}
 
@@ -1097,10 +1102,10 @@ private:
 	}
 
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
-		bool appendForeach = false)
+		bool appendForeach = false) @trusted
 	{
 		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.initializer);
-		auto visitor = scoped!(InitializerVisitor)(lookup, appendForeach, this);
+		scope visitor = new InitializerVisitor(lookup, appendForeach, this);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
 	}
@@ -1111,29 +1116,28 @@ private:
 	{
 		assert (symbolAllocator !is null);
 	}
-	body
+	do
 	{
-		DSymbol* acSymbol = make!DSymbol(symbolAllocator, istring(name), kind);
+		DSymbol* acSymbol = () @trusted { return make!DSymbol(symbolAllocator, istring(name), kind); } ();
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
 		symbolsAllocated++;
-		return semanticAllocator.make!SemanticSymbol(acSymbol);
+		return () @trusted { return semanticAllocator.make!SemanticSymbol(acSymbol); } ();
 	}
 
 	void addTypeToLookups(ref UnrolledList!(TypeLookup*, Mallocator, false) lookups,
 		const Type type, TypeLookup* l = null)
 	{
-		auto lookup = l !is null ? l : Mallocator.instance.make!TypeLookup(
-			TypeLookupKind.varOrFunType);
+		auto lookup = l !is null ? l : () @trusted { return Mallocator.instance.make!TypeLookup(TypeLookupKind.varOrFunType); } ();
 		auto t2 = type.type2;
 		if (t2.type !is null)
 			addTypeToLookups(lookups, t2.type, lookup);
 		else if (t2.superOrThis is tok!"this")
-			lookup.breadcrumbs.insert(internString("this"));
+			() @trusted { lookup.breadcrumbs.insert(internString("this")); } ();
 		else if (t2.superOrThis is tok!"super")
-			lookup.breadcrumbs.insert(internString("super"));
+			() @trusted { lookup.breadcrumbs.insert(internString("super")); } ();
 		else if (t2.builtinType !is tok!"")
-			lookup.breadcrumbs.insert(getBuiltinTypeName(t2.builtinType));
+			() @trusted { lookup.breadcrumbs.insert(getBuiltinTypeName(t2.builtinType)); } ();
 		else if (t2.typeIdentifierPart !is null)
 			writeIotcTo(t2.typeIdentifierPart, lookup.breadcrumbs);
 		else
@@ -1148,11 +1152,11 @@ private:
 			if (suffix.star != tok!"")
 				continue;
 			else if (suffix.type)
-				lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME); } ();
 			else if (suffix.array)
-				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME); } ();
 			else if (suffix.star != tok!"")
-				lookup.breadcrumbs.insert(POINTER_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(POINTER_SYMBOL_NAME); } ();
 			else if (suffix.delegateOrFunction != tok!"")
 			{
 				import std.array : appender;
@@ -1161,8 +1165,8 @@ private:
 				istring callTip = istring(app.data);
 				// Insert the call tip and THEN the "function" string because
 				// the breadcrumbs are processed in reverse order
-				lookup.breadcrumbs.insert(callTip);
-				lookup.breadcrumbs.insert(FUNCTION_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(callTip); } ();
+				() @trusted { lookup.breadcrumbs.insert(FUNCTION_SYMBOL_NAME); } ();
 			}
 		}
 		if (l is null)
@@ -1264,12 +1268,12 @@ struct ProtectionStack
 		while (!stack.empty && stack.back == tok!":")
 		{
 			assert(stack.length >= 2);
-			stack.popBack();
-			stack.popBack();
+			() @trusted { stack.popBack(); } ();
+			() @trusted { stack.popBack(); } ();
 		}
 		assert(stack.length == stack[].walkLength());
 		assert(!stack.empty && stack.back == tok!"{", to!string(stack[].map!(a => str(a)).joiner(", ")));
-		stack.popBack();
+		() @trusted { stack.popBack(); } ();
 	}
 
 	void beginLocal(const IdType t)
@@ -1285,7 +1289,7 @@ struct ProtectionStack
 
 		assert(!stack.empty && stack.back != tok!":" && stack.back != tok!"{",
 				to!string(stack[].map!(a => str(a)).joiner(", ")));
-		stack.popBack();
+		() @trusted { stack.popBack(); } ();
 	}
 
 	void addScope(const IdType t)
@@ -1295,12 +1299,12 @@ struct ProtectionStack
 		if (!stack.empty && stack.back == tok!":")
 		{
 			assert(stack.length >= 2);
-			stack.popBack();
+			() @trusted { stack.popBack(); } ();
 			assert(isProtection(stack.back));
-			stack.popBack();
+			() @trusted { stack.popBack(); } ();
 		}
-		stack.insertBack(t);
-		stack.insertBack(tok!":");
+		() @trusted { stack.insertBack(t); } ();
+		() @trusted { stack.insertBack(tok!":"); } ();
 	}
 
 private:
@@ -1312,8 +1316,10 @@ void formatNode(A, T)(ref A appender, const T node)
 {
 	if (node is null)
 		return;
-	auto f = scoped!(Formatter!(A*))(&appender);
-	f.format(node);
+    () @trusted {
+        scope f = new Formatter!(A*)(&appender);
+        f.format(node);
+    } ();
 }
 
 private:
@@ -1330,15 +1336,15 @@ void writeIotcTo(T)(const TypeIdentifierPart tip, ref T output) nothrow
 	if (!tip.identifierOrTemplateInstance)
 		return;
 	if (tip.identifierOrTemplateInstance.identifier != tok!"")
-		output.insert(internString(tip.identifierOrTemplateInstance.identifier.text));
+        () @trusted { output.insert(internString(tip.identifierOrTemplateInstance.identifier.text)); } ();
 	else
-		output.insert(internString(tip.identifierOrTemplateInstance.templateInstance.identifier.text));
+        () @trusted { output.insert(internString(tip.identifierOrTemplateInstance.templateInstance.identifier.text)); } ();
 
 	// the indexer of a TypeIdentifierPart means either that there's
 	// a static array dimension or that a type is selected in a type list.
 	// we can only handle the first case since dsymbol does not process templates yet.
 	if (tip.indexer)
-		output.insert(ARRAY_SYMBOL_NAME);
+        () @trusted { output.insert(ARRAY_SYMBOL_NAME); } ();
 
 	if (tip.typeIdentifierPart)
 		writeIotcTo(tip.typeIdentifierPart, output);
@@ -1357,7 +1363,7 @@ void writeIotcTo(T)(const IdentifierOrTemplateChain iotc, ref T output) nothrow
 {
 	import std.algorithm : each;
 
-	byIdentifier(iotc).each!(a => output.insert(internString(a)));
+    () @trusted { byIdentifier(iotc).each!(a => output.insert(internString(a))); } ();
 }
 
 static istring convertChainToImportPath(const IdentifierChain ic)
@@ -1393,10 +1399,10 @@ class InitializerVisitor : ASTVisitor
 	override void visit(const IdentifierOrTemplateInstance ioti)
 	{
 		if (on && ioti.identifier != tok!"")
-			lookup.breadcrumbs.insert(internString(ioti.identifier.text));
+			() @trusted { lookup.breadcrumbs.insert(internString(ioti.identifier.text)); } ();
 		else if (on && ioti.templateInstance.identifier != tok!"")
-			lookup.breadcrumbs.insert(internString(ioti.templateInstance.identifier.text));
-		ioti.accept(this);
+			() @trusted { lookup.breadcrumbs.insert(internString(ioti.templateInstance.identifier.text)); } ();
+		() @trusted { ioti.accept(this); } ();
 	}
 
 	override void visit(const PrimaryExpression primary)
@@ -1405,76 +1411,76 @@ class InitializerVisitor : ASTVisitor
 		// the prefix '*' so that that the second pass can tell the difference
 		// between "int.abc" and "10.abc".
 		if (on && primary.basicType != tok!"")
-			lookup.breadcrumbs.insert(internString(str(primary.basicType.type)));
+			() @trusted { lookup.breadcrumbs.insert(internString(str(primary.basicType.type))); } ();
 		if (on) switch (primary.primary.type)
 		{
 		case tok!"identifier":
-			lookup.breadcrumbs.insert(internString(primary.primary.text));
+			() @trusted { lookup.breadcrumbs.insert(internString(primary.primary.text)); } ();
 			break;
 		case tok!"doubleLiteral":
-			lookup.breadcrumbs.insert(DOUBLE_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(DOUBLE_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"floatLiteral":
-			lookup.breadcrumbs.insert(FLOAT_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(FLOAT_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"idoubleLiteral":
-			lookup.breadcrumbs.insert(IDOUBLE_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(IDOUBLE_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"ifloatLiteral":
-			lookup.breadcrumbs.insert(IFLOAT_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(IFLOAT_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"intLiteral":
-			lookup.breadcrumbs.insert(INT_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(INT_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"longLiteral":
-			lookup.breadcrumbs.insert(LONG_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(LONG_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"realLiteral":
-			lookup.breadcrumbs.insert(REAL_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(REAL_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"irealLiteral":
-			lookup.breadcrumbs.insert(IREAL_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(IREAL_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"uintLiteral":
-			lookup.breadcrumbs.insert(UINT_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(UINT_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"ulongLiteral":
-			lookup.breadcrumbs.insert(ULONG_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(ULONG_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"characterLiteral":
-			lookup.breadcrumbs.insert(CHAR_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(CHAR_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"dstringLiteral":
-			lookup.breadcrumbs.insert(DSTRING_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(DSTRING_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"stringLiteral":
-			lookup.breadcrumbs.insert(STRING_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(STRING_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"wstringLiteral":
-			lookup.breadcrumbs.insert(WSTRING_LITERAL_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(WSTRING_LITERAL_SYMBOL_NAME); } ();
 			break;
 		case tok!"false":
 		case tok!"true":
-			lookup.breadcrumbs.insert(BOOL_VALUE_SYMBOL_NAME);
+			() @trusted { lookup.breadcrumbs.insert(BOOL_VALUE_SYMBOL_NAME); } ();
 			break;
 		default:
 			break;
 		}
-		primary.accept(this);
+		() @trusted { primary.accept(this); } ();
 	}
 
 	override void visit(const IndexExpression expr)
 	{
-		expr.unaryExpression.accept(this);
+		() @trusted { expr.unaryExpression.accept(this); } ();
 		foreach (index; expr.indexes)
 			if (index.high is null)
-				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME); } ();
 	}
 
 	override void visit(const Initializer initializer)
 	{
 		on = true;
-		initializer.accept(this);
+		() @trusted { initializer.accept(this); } ();
 		on = false;
 	}
 
@@ -1485,12 +1491,12 @@ class InitializerVisitor : ASTVisitor
 		if (ai.arrayMemberInitializations)
 		{
 			if (ai.arrayMemberInitializations.length)
-				ai.arrayMemberInitializations[0].accept(this);
+				() @trusted { ai.arrayMemberInitializations[0].accept(this); } ();
 			else
-				lookup.breadcrumbs.insert(VOID_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(VOID_SYMBOL_NAME); } ();
 
 		}
-		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
+		() @trusted { lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME); } ();
 	}
 
 	override void visit(const ArrayLiteral al)
@@ -1499,11 +1505,11 @@ class InitializerVisitor : ASTVisitor
 		if (al.argumentList)
 		{
 			if (al.argumentList.items.length)
-				al.argumentList.items[0].accept(this);
+				() @trusted { al.argumentList.items[0].accept(this); } ();
 			else
-				lookup.breadcrumbs.insert(VOID_SYMBOL_NAME);
+				() @trusted { lookup.breadcrumbs.insert(VOID_SYMBOL_NAME); } ();
 		}
-		lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME);
+		() @trusted { lookup.breadcrumbs.insert(ARRAY_LITERAL_SYMBOL_NAME); } ();
 	}
 
 	// Skip it
@@ -1512,8 +1518,8 @@ class InitializerVisitor : ASTVisitor
 	override void visit(const NewExpression ne)
 	{
 		if (ne.newAnonClassExpression)
-			lowerNewAnonToNew((cast() ne));
-		ne.accept(this);
+			() @trusted { lowerNewAnonToNew((cast() ne)); } ();
+		() @trusted { ne.accept(this); } ();
 	}
 
 	private void lowerNewAnonToNew(NewExpression ne)
@@ -1521,15 +1527,17 @@ class InitializerVisitor : ASTVisitor
 		import std.format : format;
 
 		// here we follow DMDFE naming style
-		__gshared size_t anonIndex;
-		const idt = istring("__anonclass%d".format(++anonIndex));
+        const idt = () @trusted {
+            __gshared size_t anonIndex;
+            return istring("__anonclass%d".format(++anonIndex));
+        } ();
 
 		// the goal is to replace it so we null the field
 		NewAnonClassExpression nace = ne.newAnonClassExpression;
 		ne.newAnonClassExpression = null;
 
-		// Lower the AnonClass body to a standard ClassDeclaration and visit it.
-		ClassDeclaration cd = theAllocator.make!(ClassDeclaration);
+		// Lower the AnonClass do to a standard ClassDeclaration and visit it.
+		ClassDeclaration cd = () @trusted { return theAllocator.make!(ClassDeclaration); } ();
 		cd.name = Token(tok!"identifier", idt, 1, 1, nace.structBody.startLocation - idt.length);
 		cd.baseClassList = nace.baseClassList;
 		cd.structBody = nace.structBody;
@@ -1537,35 +1545,35 @@ class InitializerVisitor : ASTVisitor
 
 		// Change the NewAnonClassExpression to a standard NewExpression using
 		// the ClassDeclaration created in previous step
-		ne.type = theAllocator.make!(Type);
-		ne.type.type2 = theAllocator.make!(Type2);
-		ne.type.type2.typeIdentifierPart = theAllocator.make!(TypeIdentifierPart);
-		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.make!(IdentifierOrTemplateInstance);
+		ne.type = () @trusted { return theAllocator.make!(Type); } ();
+		ne.type.type2 = () @trusted { return theAllocator.make!(Type2); } ();
+		ne.type.type2.typeIdentifierPart = () @trusted { return theAllocator.make!(TypeIdentifierPart); } ();
+		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance = () @trusted { return theAllocator.make!(IdentifierOrTemplateInstance); } ();
 		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier = cd.name;
 		ne.arguments = nace.constructorArguments;
 	}
 
 	override void visit(const ArgumentList list)
 	{
-		auto visitor = scoped!(ArgumentListVisitor)(fp);
-		visitor.visit(list);
+		scope visitor = new ArgumentListVisitor(fp);
+        () @trusted { visitor.visit(list); } ();
 	}
 
 	override void visit(const Expression expression)
 	{
 		on = true;
-		expression.accept(this);
+        () @trusted { expression.accept(this); } ();
 		if (appendForeach)
-			lookup.breadcrumbs.insert(internString("foreach"));
+            () @trusted { lookup.breadcrumbs.insert(internString("foreach")); } ();
 		on = false;
 	}
 
 	override void visit(const ExpressionNode expression)
 	{
 		on = true;
-		expression.accept(this);
+        () @trusted { expression.accept(this); } ();
 		if (appendForeach)
-			lookup.breadcrumbs.insert(internString("foreach"));
+            () @trusted { lookup.breadcrumbs.insert(internString("foreach")); } ();
 		on = false;
 	}
 

@@ -33,6 +33,8 @@ import dparse.rollback_allocator;
 import stdx.allocator;
 import std.typecons;
 
+@safe:
+
 /**
  * Used by autocompletion.
  */
@@ -43,19 +45,18 @@ ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
 	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
 		parseAllocator, cursorPosition);
 
-	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
-		symbolAllocator, true, &cache);
+	scope first = () @trusted { return new FirstPass(m, internString("stdin"), symbolAllocator, symbolAllocator, true, &cache); } ();
 	first.run();
 
 	secondPass(first.rootSymbol, first.moduleScope, cache);
 	auto r = first.rootSymbol.acSymbol;
-	typeid(SemanticSymbol).destroy(first.rootSymbol);
+    () @trusted { typeid(SemanticSymbol).destroy(first.rootSymbol); } ();
 	return ScopeSymbolPair(r, first.moduleScope);
 }
 
 struct ScopeSymbolPair
 {
-	void destroy()
+	void destroy() @trusted
 	{
 		typeid(DSymbol).destroy(symbol);
 		typeid(Scope).destroy(scope_);
@@ -77,12 +78,12 @@ struct ScopeSymbolPair
 Module parseModuleSimple(const(Token)[] tokens, string fileName, RollbackAllocator* parseAllocator)
 {
 	assert (parseAllocator !is null);
-	auto parser = scoped!SimpleParser();
+	scope parser = new SimpleParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
 	parser.messageFunction = &doesNothing;
 	parser.allocator = parseAllocator;
-	return parser.parseModule();
+    return () @trusted { return parser.parseModule(); } ();
 }
 
 private:
@@ -90,13 +91,13 @@ private:
 Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
 	RollbackAllocator* parseAllocator, size_t cursorPosition)
 {
-	auto parser = scoped!AutocompleteParser();
+	scope parser = new AutocompleteParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
 	parser.messageFunction = &doesNothing;
 	parser.allocator = parseAllocator;
 	parser.cursorPosition = cursorPosition;
-	return parser.parseModule();
+    return () @trusted { return parser.parseModule(); } ();
 }
 
 class AutocompleteParser : Parser
@@ -107,7 +108,7 @@ class AutocompleteParser : Parser
 			return null;
 		if (current.index > cursorPosition)
 		{
-			BlockStatement bs = allocator.make!(BlockStatement);
+			BlockStatement bs = () @trusted { return allocator.make!(BlockStatement); } ();
 			bs.startLocation = current.index;
 			skipBraces();
 			bs.endLocation = tokens[index - 1].index;
@@ -119,7 +120,7 @@ class AutocompleteParser : Parser
 		if (tokens[index - 1].index < cursorPosition)
 		{
 			abandonBookmark(b);
-			BlockStatement bs = allocator.make!BlockStatement();
+			BlockStatement bs = () @trusted { return allocator.make!BlockStatement(); } ();
 			bs.startLocation = start;
 			bs.endLocation = tokens[index - 1].index;
 			return bs;
@@ -127,7 +128,7 @@ class AutocompleteParser : Parser
 		else
 		{
 			goToBookmark(b);
-			return super.parseBlockStatement();
+			return () @trusted { return super.parseBlockStatement(); } ();
 		}
 	}
 
@@ -139,10 +140,10 @@ class SimpleParser : Parser
 {
 	override Unittest parseUnittest()
 	{
-		expect(tok!"unittest");
+        () @trusted { expect(tok!"unittest"); } ();
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return allocator.make!Unittest;
+		return () @trusted { return allocator.make!Unittest; } ();
 	}
 
 	override MissingFunctionBody parseMissingFunctionBody()
@@ -160,7 +161,7 @@ class SimpleParser : Parser
 			advance();
 		else
 			return null;
-		return allocator.make!MissingFunctionBody;
+		return () @trusted { return allocator.make!MissingFunctionBody; } ();
 	}
 
 	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
@@ -175,7 +176,7 @@ class SimpleParser : Parser
 			if (currentIs(tok!"{"))
 				skipBraces();
 		}
-		return allocator.make!SpecifiedFunctionBody;
+		return () @trusted { return allocator.make!SpecifiedFunctionBody; } ();
 	}
 
 	/**

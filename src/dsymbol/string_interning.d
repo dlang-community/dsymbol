@@ -21,18 +21,20 @@ module dsymbol.string_interning;
 import std.traits : Unqual;
 import dparse.lexer;
 
+@safe:
+
 /// Obsolete, use `istring` constructor instead
 istring internString(string s) nothrow @nogc @safe
 {
 	return istring(s);
 }
 
-static this()
+static this() @trusted
 {
 	stringCache = StringCache(StringCache.defaultBucketCount);
 }
 
-static ~this()
+static ~this() @trusted
 {
 	destroy(stringCache);
 }

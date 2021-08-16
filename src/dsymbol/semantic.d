@@ -25,6 +25,8 @@ import containers.unrolledlist;
 import dsymbol.type_lookup;
 import stdx.allocator.mallocator : Mallocator;
 
+@safe:
+
 enum ResolutionFlags : ubyte
 {
 	inheritance = 0b0000_0001,
@@ -54,7 +56,7 @@ public:
 		this.acSymbol = acSymbol;
 	}
 
-	~this()
+	~this() @trusted
 	{
 		import stdx.allocator.mallocator : Mallocator;
 		import stdx.allocator : dispose;
@@ -103,7 +105,7 @@ Type argptrType;
  */
 Type argumentsType;
 
-static this()
+static this() @trusted
 {
 	import dsymbol.string_interning : internString;
 	import stdx.allocator : make;
@@ -134,7 +136,7 @@ static this()
 	argumentsType.typeSuffixes[0] = argumentsTypeSuffix;
 }
 
-static ~this()
+static ~this() @trusted
 {
 	import stdx.allocator : dispose;
 	import stdx.allocator.mallocator : Mallocator;

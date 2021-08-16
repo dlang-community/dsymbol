@@ -35,6 +35,8 @@ import std.experimental.logger;
 import dparse.ast;
 import dparse.lexer;
 
+@safe:
+
 void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCache cache)
 {
 	with (CompletionKind) final switch (currentSymbol.acSymbol.kind)
@@ -106,7 +108,7 @@ in
 	assert(acSymbol.kind == CompletionKind.importSymbol);
 	assert(acSymbol.symbolFile !is null);
 }
-body
+do
 {
 	DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
@@ -114,12 +116,12 @@ body
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.make!DeferredSymbol(acSymbol); } ();
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
-			typeLookups.clear();
-			cache.deferredSymbols.insert(deferred);
+            () @trusted { typeLookups.clear(); } ();
+			() @trusted { cache.deferredSymbols.insert(deferred); } ();
 		}
 		else
 		{
@@ -146,8 +148,8 @@ body
 	{
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
-			cache.deferredSymbols.insert(deferred);
+			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.make!DeferredSymbol(acSymbol); } ();
+            () @trusted { cache.deferredSymbols.insert(deferred); } ();
 		}
 		else
 		{
@@ -158,14 +160,14 @@ body
 }
 
 void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
-	ref ModuleCache cache, UnrolledList!(DSymbol*, Mallocator, false)* imports)
+	ref ModuleCache cache, UnrolledList!(DSymbol*, Mallocator, false)* imports) @trusted
 in
 {
 	if (imports !is null)
 		foreach (i; imports.opSlice())
 			assert(i.kind == CompletionKind.importSymbol);
 }
-body
+do
 {
 	// The left-most suffix
 	DSymbol* suffix;
@@ -183,27 +185,27 @@ body
 		if (back == POINTER_SYMBOL_NAME)
 		{
 			lastSuffix.isPointer = true;
-			lookup.breadcrumbs.popBack();
+            () @trusted { lookup.breadcrumbs.popBack(); } ();
 			continue;
 		}
 		if (!isArr && !isAssoc && !isFunction)
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
 			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
-		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
+		lastSuffix = () @trusted { return cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix); } ();
 		lastSuffix.qualifier = qualifier;
 		lastSuffix.ownType = true;
 		if (isFunction)
 		{
-			lookup.breadcrumbs.popBack();
+            () @trusted { lookup.breadcrumbs.popBack(); } ();
 			lastSuffix.callTip = lookup.breadcrumbs.back();
 		}
 		else
-			lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
+            () @trusted { lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false); } ();
 
 		if (suffix is null)
 			suffix = lastSuffix;
-		lookup.breadcrumbs.popBack();
+        () @trusted { lookup.breadcrumbs.popBack(); } ();
 	}
 
 	UnrolledList!(DSymbol*, Mallocator, false) remainingImports;
@@ -325,7 +327,7 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			continue;
 
 		baseClass = symbols[0];
-		lookup.breadcrumbs.popFront();
+        () @trusted { lookup.breadcrumbs.popFront(); } ();
 		foreach (part; lookup.breadcrumbs[])
 		{
 			symbols = baseClass.getPartsByName(part);
@@ -334,14 +336,12 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			baseClass = symbols[0];
 		}
 
-		DSymbol* imp = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
-			CompletionKind.importSymbol, baseClass);
+		DSymbol* imp = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, baseClass); } ();
 		symbol.addChild(imp, true);
 		symbolScope.addSymbol(imp, false);
 		if (baseClass.kind == CompletionKind.className)
 		{
-			auto s = cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME,
-				CompletionKind.variableName, baseClass);
+			auto s = () @trusted { return cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass); } ();
 			symbolScope.addSymbol(s, true);
 		}
 	}
@@ -358,8 +358,7 @@ void resolveAliasThis(DSymbol* symbol,
 		auto parts = symbol.getPartsByName(aliasThis.breadcrumbs.front);
 		if (parts.length == 0 || parts[0].type is null)
 			continue;
-		DSymbol* s = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
-			CompletionKind.importSymbol, parts[0].type);
+		DSymbol* s = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, parts[0].type); } ();
 		symbol.addChild(s, true);
 		auto symbolScope = moduleScope.getScopeByCursor(s.location);
 		if (symbolScope !is null)
@@ -380,7 +379,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 		if (symbols.length == 0)
 			continue;
 		auto currentSymbol = symbols[0];
-		mix.breadcrumbs.popFront();
+        () @trusted { mix.breadcrumbs.popFront(); } ();
 		foreach (m; mix.breadcrumbs[])
 		{
 			auto s = currentSymbol.getPartsByName(m);
@@ -394,8 +393,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 		}
 		if (currentSymbol !is null)
 		{
-			auto i = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
-				CompletionKind.importSymbol, currentSymbol);
+			auto i = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, currentSymbol); } ();
 			i.ownType = false;
 			symbol.addChild(i, true);
 		}
@@ -446,7 +444,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		else
 		if (crumb == ARRAY_LITERAL_SYMBOL_NAME)
 		{
-			auto arr = cache.symbolAllocator.make!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol);
+			auto arr = () @trusted { return cache.symbolAllocator.make!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol); } ();
 			arr.qualifier = SymbolQualifier.array;
 			currentSymbol = arr;
 		}

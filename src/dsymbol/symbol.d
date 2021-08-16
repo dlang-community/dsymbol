@@ -34,6 +34,8 @@ public import dsymbol.string_interning;
 
 import std.range : isOutputRange;
 
+@safe:
+
 /**
  * Identifies the kind of the item in an identifier completion list
  */
@@ -159,7 +161,7 @@ struct DSymbol
 		this.type = type;
 	}
 
-	~this()
+	~this() @trusted
 	{
 		foreach (ref part; parts[])
 		{
@@ -193,7 +195,7 @@ struct DSymbol
 	/**
 	 * Gets all parts whose name matches the given string.
 	 */
-	inout(DSymbol)*[] getPartsByName(istring name) inout
+	inout(DSymbol)*[] getPartsByName(istring name) inout @trusted
 	{
 		auto app = appender!(DSymbol*[])();
 		HashSet!size_t visited;
@@ -201,7 +203,7 @@ struct DSymbol
 		return cast(typeof(return)) app.data;
 	}
 
-	inout(DSymbol)* getFirstPartNamed(this This)(istring name) inout
+	inout(DSymbol)* getFirstPartNamed(this This)(istring name) inout @trusted
 	{
 		auto app = appender!(DSymbol*[])();
 		HashSet!size_t visited;
@@ -214,7 +216,7 @@ struct DSymbol
 	 * the `name` argument is not null. Stores results in `app`.
 	 */
 	void getParts(OR)(istring name, ref OR app, ref HashSet!size_t visited,
-			bool onlyOne = false) inout
+			bool onlyOne = false) inout @trusted
 		if (isOutputRange!(OR, DSymbol*))
 	{
 		import std.algorithm.iteration : filter;
@@ -288,7 +290,7 @@ struct DSymbol
 	/**
 	 * Returns: a range over this symbol's parts and publicly visible imports
 	 */
-	inout(DSymbol)*[] opSlice(this This)() inout
+	inout(DSymbol)*[] opSlice(this This)() inout @trusted
 	{
 		auto app = appender!(DSymbol*[])();
 		HashSet!size_t visited;
@@ -302,7 +304,7 @@ struct DSymbol
 		parts.insert(SymbolOwnership(symbol, owns));
 	}
 
-	void addChildren(R)(R symbols, bool owns)
+	void addChildren(R)(R symbols, bool owns) @trusted
 	{
 		foreach (symbol; symbols)
 		{
@@ -324,7 +326,7 @@ struct DSymbol
 	 * Updates the type field based on the mappings contained in the given
 	 * collection.
 	 */
-	void updateTypes(ref UpdatePairCollection collection)
+	void updateTypes(ref UpdatePairCollection collection) @trusted
 	{
 		auto r = collection.equalRange(UpdatePair(type, null));
 		if (!r.empty)
@@ -457,7 +459,7 @@ struct UpdatePair
 
 alias UpdatePairCollection = TTree!(UpdatePair, Mallocator, false, "a < b", false);
 
-void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results)
+void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results) @trusted
 {
 	results.insert(UpdatePair(oldSymbol, newSymbol));
 	foreach (part; oldSymbol.parts[])

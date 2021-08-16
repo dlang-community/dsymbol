@@ -5,6 +5,8 @@ import std.datetime;
 import containers.openhashset;
 import containers.unrolledlist;
 
+@safe:
+
 /**
  * Module cache entry
  */
@@ -25,7 +27,7 @@ struct CacheEntry
 	~this()
 	{
 		if (symbol !is null)
-			typeid(DSymbol).destroy(symbol);
+            () @trusted { typeid(DSymbol).destroy(symbol); } ();
 	}
 
 pure nothrow @nogc @safe:

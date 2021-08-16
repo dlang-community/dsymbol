@@ -8,6 +8,8 @@ import dsymbol.string_interning;
 import dsymbol.symbol;
 import stdx.allocator.mallocator;
 
+@safe:
+
 /**
  * Symbols for the built in types
  */
@@ -283,10 +285,10 @@ static ~this()
 	destroy(enumSymbols);
 
 	foreach (sym; symbolsMadeHere[])
-		destroy(*sym);
+        () @trusted { destroy(*sym); } ();
 
-	destroy(symbolsMadeHere);
-	destroy(rba);
+	() @trusted { destroy(symbolsMadeHere); } ();
+	() @trusted { destroy(rba); } ();
 }
 
 private RollbackAllocator rba;
@@ -294,15 +296,15 @@ private HashSet!(DSymbol*) symbolsMadeHere;
 
 private DSymbol* makeSymbol(string s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.make!DSymbol(istring(s), kind, type);
+	auto sym = () @trusted { return rba.make!DSymbol(istring(s), kind, type); } ();
 	sym.ownType = false;
-	symbolsMadeHere.insert(sym);
+    () @trusted { symbolsMadeHere.insert(sym); } ();
 	return sym;
 }
 private DSymbol* makeSymbol(istring s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.make!DSymbol(s, kind, type);
+	auto sym = () @trusted { return rba.make!DSymbol(s, kind, type); } ();
 	sym.ownType = false;
-	symbolsMadeHere.insert(sym);
+    () @trusted { symbolsMadeHere.insert(sym); } ();
 	return sym;
 }

@@ -27,6 +27,8 @@ import std.algorithm : canFind, any;
 import std.experimental.logger;
 import stdx.allocator.mallocator : Mallocator;
 
+@safe:
+
 /**
  * Contains symbols and supports lookup of symbols by cursor position.
  */
@@ -46,7 +48,7 @@ struct Scope
 		this.endLocation = end;
 	}
 
-	~this()
+	~this() @trusted
 	{
 		foreach (child; children[])
 			typeid(Scope).destroy(child);
@@ -83,7 +85,7 @@ struct Scope
 	 *     all symbols in the scope containing the cursor position, as well as
 	 *     the symbols in parent scopes of that scope.
 	 */
-	DSymbol*[] getSymbolsInCursorScope(size_t cursorPosition)
+	DSymbol*[] getSymbolsInCursorScope(size_t cursorPosition) @trusted
 	{
 		import std.array : array;
 		import std.algorithm.iteration : map;
@@ -128,7 +130,7 @@ struct Scope
 	 * Returns:
 	 *     all symbols in this scope or parent scopes with the given name
 	 */
-	inout(DSymbol)*[] getSymbolsByName(istring name) inout
+	inout(DSymbol)*[] getSymbolsByName(istring name) inout @trusted
 	{
 		import std.array : array, appender;
 		import std.algorithm.iteration : map;

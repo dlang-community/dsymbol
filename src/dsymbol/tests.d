@@ -9,6 +9,8 @@ import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
 import std.typecons : scoped;
 
+@safe:
+
 /**
  * Parses `source`, caches its symbols and compares the the cache content
  * with the `results`.
@@ -537,8 +539,7 @@ ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref Mo
 	RollbackAllocator rba;
 	Module m = parseModule(tokens, filename, &rba);
 
-	auto first = scoped!FirstPass(m, internString(filename),
-			theAllocator, theAllocator, true, &cache);
+	scope first = new FirstPass(m, internString(filename), theAllocator, theAllocator, true, &cache);
 	first.run();
 
 	secondPass(first.rootSymbol, first.moduleScope, cache);
