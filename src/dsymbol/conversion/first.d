@@ -66,7 +66,7 @@ import std.typecons;
 	 */
 	this(const Module mod, istring symbolFile, IAllocator symbolAllocator,
 		IAllocator semanticAllocator, bool includeParameterSymbols,
-		ModuleCache* cache, CacheEntry* entry = null)
+		ModuleCache* cache, CacheEntry* entry = null) nothrow
 	in
 	{
 		assert(mod);

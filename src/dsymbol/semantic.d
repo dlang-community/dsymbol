@@ -51,7 +51,7 @@ public:
 	 * Params:
 	 *    name = the name
 	 */
-	this(DSymbol* acSymbol)
+	this(DSymbol* acSymbol) nothrow
 	{
 		this.acSymbol = acSymbol;
 	}

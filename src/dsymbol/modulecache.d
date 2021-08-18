@@ -73,7 +73,7 @@ struct ModuleCache
 
 	@disable this();
 
-	this(IAllocator symbolAllocator)
+	this(IAllocator symbolAllocator) nothrow
 	{
 		this.symbolAllocator = symbolAllocator;
 	}
