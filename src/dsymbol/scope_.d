@@ -25,7 +25,7 @@ import containers.ttree;
 import containers.unrolledlist;
 import std.algorithm : canFind, any;
 import std.experimental.logger;
-import stdx.allocator.mallocator : Mallocator;
+import stdx.allocator.gc_allocator : GCAllocator;
 
 /**
  * Contains symbols and supports lookup of symbols by cursor position.
@@ -223,7 +223,9 @@ struct Scope
 	Scope* parent;
 
 	/// Child scopes
-	UnrolledList!(Scope*, Mallocator, false) children;
+	alias ChildrenAllocator = GCAllocator; // NOTE using `Mallocator` here fails when analysing Phobos
+	alias Children = UnrolledList!(Scope*, ChildrenAllocator);
+	Children children;
 
 	/// Start location of this scope in bytes
 	uint startLocation;
@@ -251,5 +253,5 @@ struct Scope
 
 private:
 	/// Symbols contained in this scope
-	TTree!(SymbolOwnership, Mallocator, true, "a.opCmp(b) < 0", false) _symbols;
+	TTree!(SymbolOwnership, GCAllocator, true, "a.opCmp(b) < 0") _symbols; // NOTE using `Mallocator` here fails when analysing Phobos
 }

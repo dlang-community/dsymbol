@@ -36,7 +36,8 @@ import stdx.allocator;
 import stdx.allocator.building_blocks.allocator_list;
 import stdx.allocator.building_blocks.region;
 import stdx.allocator.building_blocks.null_allocator;
-import stdx.allocator.mallocator;
+import stdx.allocator.mallocator : Mallocator;
+import stdx.allocator.gc_allocator : GCAllocator;
 import std.conv;
 import dparse.ast;
 import std.datetime;
@@ -60,6 +61,8 @@ bool existanceCheck(A)(A path)
 	warning("Cannot cache modules in ", path, " because it does not exist");
 	return false;
 }
+
+alias DeferredSymbolsAllocator = GCAllocator; // NOTE using `Mallocator` here fails when analysing Phobos as `free(): invalid pointer`
 
 /**
  * Caches pre-parsed module information.
@@ -123,11 +126,11 @@ struct ModuleCache
 					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.data.startsWith(cacheEntry.path.data)))
 					{
 						deferredSymbols.remove(deferredSymbol);
-						Mallocator.instance.dispose(deferredSymbol);
+						DeferredSymbolsAllocator.instance.dispose(deferredSymbol);
 					}
 
 					cache.remove(cacheEntry);
-					Mallocator.instance.dispose(cacheEntry);
+					CacheAllocator.instance.dispose(cacheEntry);
 				}
 			}
 		}
@@ -139,9 +142,9 @@ struct ModuleCache
 	void clear()
 	{
 		foreach (entry; cache[])
-			Mallocator.instance.dispose(entry);
+			CacheAllocator.instance.dispose(entry);
 		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.dispose(symbol);
+			DeferredSymbolsAllocator.instance.dispose(symbol);
 
 		// TODO: This call to deallocateAll is a workaround for issues of
 		// CAllocatorImpl and GCAllocator not interacting well.
@@ -193,7 +196,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		CacheEntry* newEntry = Mallocator.instance.make!CacheEntry();
+		CacheEntry* newEntry = CacheAllocator.instance.make!CacheEntry();
 
 		auto semanticAllocator = scoped!(ASTAllocator);
 		import dparse.rollback_allocator:RollbackAllocator;
@@ -230,7 +233,7 @@ struct ModuleCache
 				upstream => upstream.symbol.updateTypes(updatePairs));
 
 			// Remove the old symbol.
-			cache.remove(oldEntry, entry => Mallocator.instance.dispose(entry));
+			cache.remove(oldEntry, entry => CacheAllocator.instance.dispose(entry));
 		}
 
 		cache.insert(newEntry);
@@ -248,7 +251,7 @@ struct ModuleCache
 	 */
 	void resolveDeferredTypes(istring location)
 	{
-		UnrolledList!(DeferredSymbol*) temp;
+		DeferredSymbols temp;
 		temp.insert(deferredSymbols[]);
 		deferredSymbols.clear();
 		foreach (deferred; temp[])
@@ -269,7 +272,7 @@ struct ModuleCache
 				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
 					this, &deferred.imports);
 			}
-			Mallocator.instance.dispose(deferred);
+			DeferredSymbolsAllocator.instance.dispose(deferred);
 		}
 	}
 
@@ -354,7 +357,8 @@ struct ModuleCache
 
 	IAllocator symbolAllocator;
 
-	UnrolledList!(DeferredSymbol*) deferredSymbols;
+	alias DeferredSymbols = UnrolledList!(DeferredSymbol*, DeferredSymbolsAllocator);
+	DeferredSymbols deferredSymbols;
 
 	/// Count of autocomplete symbols that have been allocated
 	uint symbolsAllocated;
@@ -429,7 +433,9 @@ private:
 	}
 
 	// Mapping of file paths to their cached symbols.
-	TTree!(CacheEntry*) cache;
+	alias CacheAllocator = GCAllocator; // NOTE using `Mallocator` here fails when analysing Phobos as `Segmentation fault (core dumped)`
+	alias Cache = TTree!(CacheEntry*, CacheAllocator);
+	Cache cache;
 
 	HashSet!(immutable(char)*) recursionGuard;
 
