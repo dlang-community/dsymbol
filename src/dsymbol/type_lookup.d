@@ -22,12 +22,12 @@ enum TypeLookupKind : ubyte
  */
 struct TypeLookup
 {
-	this(TypeLookupKind kind)
+	this(TypeLookupKind kind) nothrow
 	{
 		this.kind = kind;
 	}
 
-	this(istring name, TypeLookupKind kind)
+	this(istring name, TypeLookupKind kind) nothrow
 	{
 		breadcrumbs.insert(name);
 		this.kind = kind;
