@@ -28,6 +28,7 @@ import dsymbol.type_lookup;
 import dsymbol.deferred;
 import dsymbol.import_;
 import dsymbol.modulecache;
+import dsymbol.makex;
 import containers.unrolledlist;
 import stdx.allocator;
 import stdx.allocator.mallocator;
@@ -116,7 +117,7 @@ do
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.make!DeferredSymbol(acSymbol); } ();
+			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.makeX!DeferredSymbol(acSymbol); } ();
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
@@ -148,7 +149,7 @@ do
 	{
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.make!DeferredSymbol(acSymbol); } ();
+			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.makeX!DeferredSymbol(acSymbol); } ();
             () @trusted { cache.deferredSymbols.insert(deferred); } ();
 		}
 		else
@@ -192,7 +193,7 @@ do
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
 			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
-		lastSuffix = () @trusted { return cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix); } ();
+		lastSuffix = () @trusted { return cache.symbolAllocator.makeX!DSymbol(back, CompletionKind.dummy, lastSuffix); } ();
 		lastSuffix.qualifier = qualifier;
 		lastSuffix.ownType = true;
 		if (isFunction)
@@ -281,7 +282,7 @@ do
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.instance.make!DeferredSymbol(suffix);
+			auto deferred = Mallocator.instance.makeX!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -295,7 +296,7 @@ do
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.instance.make!DeferredSymbol(symbol);
+		auto deferred = Mallocator.instance.makeX!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);
@@ -336,12 +337,12 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocat
 			baseClass = symbols[0];
 		}
 
-		DSymbol* imp = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, baseClass); } ();
+		DSymbol* imp = () @trusted { return cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, baseClass); } ();
 		symbol.addChild(imp, true);
 		symbolScope.addSymbol(imp, false);
 		if (baseClass.kind == CompletionKind.className)
 		{
-			auto s = () @trusted { return cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass); } ();
+			auto s = () @trusted { return cache.symbolAllocator.makeX!DSymbol(SUPER_SYMBOL_NAME, CompletionKind.variableName, baseClass); } ();
 			symbolScope.addSymbol(s, true);
 		}
 	}
@@ -358,7 +359,7 @@ void resolveAliasThis(DSymbol* symbol,
 		auto parts = symbol.getPartsByName(aliasThis.breadcrumbs.front);
 		if (parts.length == 0 || parts[0].type is null)
 			continue;
-		DSymbol* s = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, parts[0].type); } ();
+		DSymbol* s = () @trusted { return cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, parts[0].type); } ();
 		symbol.addChild(s, true);
 		auto symbolScope = moduleScope.getScopeByCursor(s.location);
 		if (symbolScope !is null)
@@ -393,7 +394,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 		}
 		if (currentSymbol !is null)
 		{
-			auto i = () @trusted { return cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, currentSymbol); } ();
+			auto i = () @trusted { return cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME, CompletionKind.importSymbol, currentSymbol); } ();
 			i.ownType = false;
 			symbol.addChild(i, true);
 		}
@@ -444,7 +445,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		else
 		if (crumb == ARRAY_LITERAL_SYMBOL_NAME)
 		{
-			auto arr = () @trusted { return cache.symbolAllocator.make!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol); } ();
+			auto arr = () @trusted { return cache.symbolAllocator.makeX!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol); } ();
 			arr.qualifier = SymbolQualifier.array;
 			currentSymbol = arr;
 		}

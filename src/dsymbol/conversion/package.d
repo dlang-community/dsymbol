@@ -26,6 +26,7 @@ import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.semantic;
+import dsymbol.makex;
 import dparse.ast;
 import dparse.lexer;
 import dparse.parser;
@@ -108,7 +109,7 @@ class AutocompleteParser : Parser
 			return null;
 		if (current.index > cursorPosition)
 		{
-			BlockStatement bs = () @trusted { return allocator.make!(BlockStatement); } ();
+			BlockStatement bs = () @trusted { return allocator.makeX!(BlockStatement); } ();
 			bs.startLocation = current.index;
 			skipBraces();
 			bs.endLocation = tokens[index - 1].index;
@@ -120,7 +121,7 @@ class AutocompleteParser : Parser
 		if (tokens[index - 1].index < cursorPosition)
 		{
 			abandonBookmark(b);
-			BlockStatement bs = () @trusted { return allocator.make!BlockStatement(); } ();
+			BlockStatement bs = () @trusted { return allocator.makeX!BlockStatement(); } ();
 			bs.startLocation = start;
 			bs.endLocation = tokens[index - 1].index;
 			return bs;
@@ -143,7 +144,7 @@ class SimpleParser : Parser
         () @trusted { expect(tok!"unittest"); } ();
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return () @trusted { return allocator.make!Unittest; } ();
+		return () @trusted { return allocator.makeX!Unittest; } ();
 	}
 
 	override MissingFunctionBody parseMissingFunctionBody()
@@ -161,7 +162,7 @@ class SimpleParser : Parser
 			advance();
 		else
 			return null;
-		return () @trusted { return allocator.make!MissingFunctionBody; } ();
+		return () @trusted { return allocator.makeX!MissingFunctionBody; } ();
 	}
 
 	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
@@ -176,7 +177,7 @@ class SimpleParser : Parser
 			if (currentIs(tok!"{"))
 				skipBraces();
 		}
-		return () @trusted { return allocator.make!SpecifiedFunctionBody; } ();
+		return () @trusted { return allocator.makeX!SpecifiedFunctionBody; } ();
 	}
 
 	/**
