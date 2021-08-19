@@ -28,6 +28,7 @@ import dsymbol.type_lookup;
 import dsymbol.deferred;
 import dsymbol.import_;
 import dsymbol.modulecache;
+import dsymbol.makex;
 import containers.unrolledlist;
 import stdx.allocator;
 import stdx.allocator.mallocator;
@@ -106,7 +107,7 @@ in
 	assert(acSymbol.kind == CompletionKind.importSymbol);
 	assert(acSymbol.symbolFile !is null);
 }
-body
+do
 {
 	DSymbol* moduleSymbol = cache.cacheModule(acSymbol.symbolFile);
 	if (acSymbol.qualifier == SymbolQualifier.selectiveImport)
@@ -165,7 +166,7 @@ in
 		foreach (i; imports.opSlice())
 			assert(i.kind == CompletionKind.importSymbol);
 }
-body
+do
 {
 	// The left-most suffix
 	DSymbol* suffix;
@@ -279,7 +280,7 @@ body
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.instance.make!DeferredSymbol(suffix);
+			auto deferred = Mallocator.instance.makeX!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -293,7 +294,7 @@ body
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.instance.make!DeferredSymbol(symbol);
+		auto deferred = Mallocator.instance.makeX!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);

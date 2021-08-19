@@ -31,6 +31,7 @@ import dsymbol.semantic;
 import dsymbol.symbol;
 import dsymbol.string_interning;
 import dsymbol.deferred;
+import dsymbol.makex;
 import std.algorithm;
 import stdx.allocator;
 import stdx.allocator.building_blocks.allocator_list;
@@ -123,11 +124,11 @@ struct ModuleCache
 					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.data.startsWith(cacheEntry.path.data)))
 					{
 						deferredSymbols.remove(deferredSymbol);
-						Mallocator.instance.dispose(deferredSymbol);
+						Mallocator.instance.disposeX(deferredSymbol);
 					}
 
 					cache.remove(cacheEntry);
-					Mallocator.instance.dispose(cacheEntry);
+					Mallocator.instance.disposeX(cacheEntry);
 				}
 			}
 		}
@@ -139,9 +140,9 @@ struct ModuleCache
 	void clear()
 	{
 		foreach (entry; cache[])
-			Mallocator.instance.dispose(entry);
+			Mallocator.instance.disposeX(entry);
 		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.dispose(symbol);
+			Mallocator.instance.disposeX(symbol);
 
 		// TODO: This call to deallocateAll is a workaround for issues of
 		// CAllocatorImpl and GCAllocator not interacting well.
@@ -193,7 +194,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		CacheEntry* newEntry = Mallocator.instance.make!CacheEntry();
+		CacheEntry* newEntry = Mallocator.instance.makeX!CacheEntry();
 
 		auto semanticAllocator = scoped!(ASTAllocator);
 		import dparse.rollback_allocator:RollbackAllocator;
@@ -230,7 +231,7 @@ struct ModuleCache
 				upstream => upstream.symbol.updateTypes(updatePairs));
 
 			// Remove the old symbol.
-			cache.remove(oldEntry, entry => Mallocator.instance.dispose(entry));
+			cache.remove(oldEntry, entry => Mallocator.instance.disposeX(entry));
 		}
 
 		cache.insert(newEntry);
@@ -253,6 +254,12 @@ struct ModuleCache
 		deferredSymbols.clear();
 		foreach (deferred; temp[])
 		{
+			// TODO remove this
+            if (deferred is null ||
+                deferred.symbol is null ||
+                deferred.symbol.type is null ||
+                deferred.symbol.name.length == 0)
+                return;
 			if (!deferred.imports.empty && !deferred.dependsOn(location))
 			{
 				deferredSymbols.insert(deferred);
@@ -269,7 +276,7 @@ struct ModuleCache
 				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
 					this, &deferred.imports);
 			}
-			Mallocator.instance.dispose(deferred);
+			Mallocator.instance.disposeX(deferred);
 		}
 	}
 

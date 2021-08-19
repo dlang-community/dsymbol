@@ -6,6 +6,7 @@ import dparse.rollback_allocator;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import dsymbol.symbol;
+import dsymbol.makex;
 import stdx.allocator.mallocator;
 
 /**
@@ -294,14 +295,14 @@ private HashSet!(DSymbol*) symbolsMadeHere;
 
 private DSymbol* makeSymbol(string s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.make!DSymbol(istring(s), kind, type);
+	auto sym = rba.makeX!DSymbol(istring(s), kind, type);
 	sym.ownType = false;
 	symbolsMadeHere.insert(sym);
 	return sym;
 }
 private DSymbol* makeSymbol(istring s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.make!DSymbol(s, kind, type);
+	auto sym = rba.makeX!DSymbol(s, kind, type);
 	sym.ownType = false;
 	symbolsMadeHere.insert(sym);
 	return sym;

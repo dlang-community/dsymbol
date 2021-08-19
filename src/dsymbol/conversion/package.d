@@ -26,6 +26,7 @@ import dsymbol.scope_;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.semantic;
+import dsymbol.makex;
 import dparse.ast;
 import dparse.lexer;
 import dparse.parser;

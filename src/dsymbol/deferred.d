@@ -24,6 +24,7 @@ import dsymbol.string_interning;
 import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
+import dsymbol.makex;
 import stdx.allocator;
 import stdx.allocator.mallocator;
 
@@ -35,9 +36,9 @@ struct DeferredSymbol
 	~this()
 	{
 		foreach (l; typeLookups[])
-			Mallocator.instance.dispose(l);
+			Mallocator.instance.disposeX(l);
 		foreach (i; imports[])
-			Mallocator.instance.dispose(i);
+			Mallocator.instance.disposeX(i);
 	}
 
 	bool dependsOn(istring modulePath)

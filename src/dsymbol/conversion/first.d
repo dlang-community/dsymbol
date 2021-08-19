@@ -32,6 +32,7 @@ import dsymbol.semantic;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
+import dsymbol.makex;
 import std.algorithm.iteration : map;
 import stdx.allocator;
 import stdx.allocator.mallocator;
@@ -72,7 +73,7 @@ final class FirstPass : ASTVisitor
 		assert(semanticAllocator);
 		assert(cache);
 	}
-	body
+	do
 	{
 		this.mod = mod;
 		this.symbolFile = symbolFile;
@@ -225,7 +226,7 @@ final class FirstPass : ASTVisitor
 		if (bc.type2.typeIdentifierPart is null ||
 			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
-		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.inherit);
+		auto lookup = Mallocator.instance.makeX!TypeLookup(TypeLookupKind.inherit);
 		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
 
@@ -447,7 +448,7 @@ final class FirstPass : ASTVisitor
 		scope(exit) structFieldNames = move(savedStructFieldNames);
 		scope(exit) structFieldTypes = move(savedStructFieldTypes);
 
-		DSymbol* thisSymbol = make!DSymbol(symbolAllocator, THIS_SYMBOL_NAME,
+		DSymbol* thisSymbol = makeX!DSymbol(symbolAllocator, THIS_SYMBOL_NAME,
 			CompletionKind.variableName, currentSymbol.acSymbol);
 		thisSymbol.location = currentScope.startLocation;
 		thisSymbol.symbolFile = symbolFile;
@@ -1111,7 +1112,7 @@ private:
 	{
 		assert (symbolAllocator !is null);
 	}
-	body
+	do
 	{
 		DSymbol* acSymbol = make!DSymbol(symbolAllocator, istring(name), kind);
 		acSymbol.location = location;
