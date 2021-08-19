@@ -8,10 +8,10 @@ auto makeX(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
     version(safeAlloc)
     {
         import stdx.allocator.gc_allocator : GCAllocator;
-        return make!(T)(GCAllocator.instance, args);
+        return GCAllocator.instance.make!(T)(args);
     }
     else
-        return make!(T)(alloc, args);
+        return alloc.make!(T)(args);
 }
 
 void disposeX(A, T)(auto ref A alloc, auto ref T* p)
