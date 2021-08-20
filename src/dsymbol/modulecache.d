@@ -253,7 +253,7 @@ struct ModuleCache
 		UnrolledList!(DeferredSymbol*) temp;
         import std.stdio;
         writeln("location:", location);
-        writeln("deferredSymbols.length:", deferredSymbols.length);
+        // writeln("deferredSymbols.length:", deferredSymbols.length);
 		temp.insert(deferredSymbols[]);
 		deferredSymbols.clear();
 		foreach (DeferredSymbol* deferred; temp[])
