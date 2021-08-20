@@ -128,7 +128,7 @@ do
 		{
 			immutable size_t breadcrumbCount = typeLookups.front.breadcrumbs.length;
             import std.stdio;
-            writeln("breadcrumbCount:", breadcrumbCount); // NOTE this value is non-deterministic
+            // writeln("breadcrumbCount:", breadcrumbCount); // NOTE this value is non-deterministic
 			assert(breadcrumbCount <= 2 && breadcrumbCount > 0, "Malformed selective import");
 
 			istring symbolName = typeLookups.front.breadcrumbs.front;
