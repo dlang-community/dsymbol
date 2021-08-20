@@ -282,7 +282,7 @@ do
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.instance.makeX!DeferredSymbol(suffix);
+			auto deferred = AllocatorX.instance.makeX!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -296,7 +296,7 @@ do
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.instance.makeX!DeferredSymbol(symbol);
+		auto deferred = AllocatorX.instance.makeX!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);

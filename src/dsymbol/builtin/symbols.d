@@ -7,37 +7,36 @@ import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.makex;
-import stdx.allocator.mallocator;
 
 /**
  * Symbols for the built in types
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) builtinSymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) builtinSymbols;
 
 /**
  * Array properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) arraySymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) arraySymbols;
 
 /**
  * Associative array properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) assocArraySymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) assocArraySymbols;
 
 /**
  * Struct, enum, union, class, and interface properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) aggregateSymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) aggregateSymbols;
 
 /**
  * Class properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) classSymbols;
 
 /**
  * Enum properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) enumSymbols;
+TTree!(DSymbol*, AllocatorX, true, "a < b", false) enumSymbols;
 
 /**
  * Variadic template parameters properties

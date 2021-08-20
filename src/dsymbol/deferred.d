@@ -25,8 +25,6 @@ import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
 import dsymbol.makex;
-import stdx.allocator;
-import stdx.allocator.mallocator;
 
 /**
  * Contains information for deferred type resolution
@@ -36,9 +34,9 @@ struct DeferredSymbol
 	~this()
 	{
 		foreach (l; typeLookups[])
-			Mallocator.instance.disposeX(l);
+			AllocatorX.instance.disposeX(l);
 		foreach (i; imports[])
-			Mallocator.instance.disposeX(i);
+			AllocatorX.instance.disposeX(i);
 	}
 
 	bool dependsOn(istring modulePath)
