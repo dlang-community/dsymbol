@@ -50,3 +50,14 @@ void disposeX(A, T)(auto ref A alloc, auto ref T[] array)
         dispose!(A, T)(alloc, p);
     }
 }
+
+version(safeAlloc)
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    alias AllocatorX = GCAllocator;
+}
+else
+{
+    import stdx.allocator.mallocator : Mallocator;
+    alias AllocatorX = Mallocator;
+}

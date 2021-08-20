@@ -1126,7 +1126,7 @@ private:
 		return () @trusted { return semanticAllocator.makeX!SemanticSymbol(acSymbol); } ();
 	}
 
-	void addTypeToLookups(ref UnrolledList!(TypeLookup*, Mallocator, false) lookups,
+	void addTypeToLookups(ref UnrolledList!(TypeLookup*, AllocatorX, false) lookups,
 		const Type type, TypeLookup* l = null)
 	{
 		auto lookup = l !is null ? l : () @trusted { return Mallocator.instance.makeX!TypeLookup(TypeLookupKind.varOrFunType); } ();
