@@ -23,7 +23,7 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
-import dsymbol.makex : makeX, disposeX;
+import dsymbol.makex : makeX, disposeX, AllocatorX;
 import stdx.allocator.mallocator : Mallocator;
 
 enum ResolutionFlags : ubyte
@@ -76,10 +76,10 @@ public:
 	}
 
 	/// Information used to do type resolution, inheritance, mixins, and alias this
-	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
+	UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups;
 
 	/// Child symbols
-	UnrolledList!(SemanticSymbol*, Mallocator, false) children;
+	UnrolledList!(SemanticSymbol*, AllocatorX, false) children;
 
 	/// Autocompletion symbol
 	DSymbol* acSymbol;
