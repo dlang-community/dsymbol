@@ -117,7 +117,7 @@ do
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.makeX!DeferredSymbol(acSymbol); } ();
+			DeferredSymbol* deferred = () @trusted { return AllocatorX.instance.makeX!DeferredSymbol(acSymbol); } ();
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
@@ -151,7 +151,7 @@ do
 	{
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = () @trusted { return Mallocator.instance.makeX!DeferredSymbol(acSymbol); } ();
+			DeferredSymbol* deferred = () @trusted { return AllocatorX.instance.makeX!DeferredSymbol(acSymbol); } ();
             () @trusted { cache.deferredSymbols.insert(deferred); } ();
 		}
 		else
@@ -284,7 +284,7 @@ do
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.instance.makeX!DeferredSymbol(suffix);
+			auto deferred = AllocatorX.instance.makeX!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -298,7 +298,7 @@ do
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.instance.makeX!DeferredSymbol(symbol);
+		auto deferred = AllocatorX.instance.makeX!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);

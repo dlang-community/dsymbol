@@ -37,7 +37,6 @@ import stdx.allocator;
 import stdx.allocator.building_blocks.allocator_list;
 import stdx.allocator.building_blocks.region;
 import stdx.allocator.building_blocks.null_allocator;
-import stdx.allocator.mallocator;
 import std.conv;
 import dparse.ast;
 import std.datetime;
@@ -49,7 +48,7 @@ import std.experimental.lexer;
 import std.path;
 
 alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 128), Mallocator));
+	n => Region!AllocatorX(1024 * 128), AllocatorX));
 
 @safe:
 
@@ -126,11 +125,11 @@ struct ModuleCache
 					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.data.startsWith(cacheEntry.path.data)))
 					{
 						deferredSymbols.remove(deferredSymbol);
-						Mallocator.instance.disposeX(deferredSymbol);
+						AllocatorX.instance.disposeX(deferredSymbol);
 					}
 
 					cache.remove(cacheEntry);
-					Mallocator.instance.disposeX(cacheEntry);
+					AllocatorX.instance.disposeX(cacheEntry);
 				}
 			}
 		}
@@ -142,9 +141,9 @@ struct ModuleCache
 	void clear() @trusted
 	{
 		foreach (entry; cache[])
-			Mallocator.instance.disposeX(entry);
+			AllocatorX.instance.disposeX(entry);
 		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.disposeX(symbol);
+			AllocatorX.instance.disposeX(symbol);
 
 		// TODO: This call to deallocateAll is a workaround for issues of
 		// CAllocatorImpl and GCAllocator not interacting well.
@@ -182,8 +181,8 @@ struct ModuleCache
 		const(Token)[] tokens;
 		auto parseStringCache = StringCache(fileSize.optimalBucketCount);
 		{
-			ubyte[] source = cast(ubyte[]) Mallocator.instance.allocate(fileSize);
-			scope (exit) Mallocator.instance.deallocate(source);
+			ubyte[] source = cast(ubyte[]) AllocatorX.instance.allocate(fileSize);
+			scope (exit) AllocatorX.instance.deallocate(source);
 			f.rawRead(source);
 			LexerConfig config;
 			config.fileName = cachedLocation;
@@ -196,7 +195,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		CacheEntry* newEntry = Mallocator.instance.makeX!CacheEntry();
+		CacheEntry* newEntry = AllocatorX.instance.makeX!CacheEntry();
 
 		scope semanticAllocator = new ASTAllocator();
 		import dparse.rollback_allocator:RollbackAllocator;
@@ -233,7 +232,7 @@ struct ModuleCache
 				upstream => upstream.symbol.updateTypes(updatePairs));
 
 			// Remove the old symbol.
-			cache.remove(oldEntry, entry => Mallocator.instance.disposeX(entry));
+			cache.remove(oldEntry, entry => AllocatorX.instance.disposeX(entry));
 		}
 
 		cache.insert(newEntry);
@@ -283,7 +282,7 @@ struct ModuleCache
 				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
 					this, &deferred.imports);
 			}
-			Mallocator.instance.disposeX(deferred);
+			AllocatorX.instance.disposeX(deferred);
 		}
 	}
 

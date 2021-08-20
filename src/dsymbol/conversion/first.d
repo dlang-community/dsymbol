@@ -228,7 +228,7 @@ import std.typecons;
 		if (bc.type2.typeIdentifierPart is null ||
 			bc.type2.typeIdentifierPart.identifierOrTemplateInstance is null)
 			return;
-		auto lookup = () @trusted { return Mallocator.instance.makeX!TypeLookup(TypeLookupKind.inherit); } ();
+		auto lookup = () @trusted { return AllocatorX.instance.makeX!TypeLookup(TypeLookupKind.inherit); } ();
 		writeIotcTo(bc.type2.typeIdentifierPart, lookup.breadcrumbs);
 		currentSymbol.typeLookups.insert(lookup);
 
@@ -240,7 +240,7 @@ import std.typecons;
 			return;
 		SemanticSymbol* symbol = allocateSemanticSymbol(idt,
 			CompletionKind.aliasName, symbolFile, currentScope.endLocation);
-		Type t = () @trusted { return Mallocator.instance.makeX!Type; } ();
+		Type t = () @trusted { return AllocatorX.instance.makeX!Type; } ();
         () @trusted { t.type2 = cast() bc.type2; } ();
 		addTypeToLookups(symbol.typeLookups, t);
 		symbol.parent = currentSymbol;
@@ -344,7 +344,7 @@ import std.typecons;
 		{
 			return;
 		}
-        auto _ = () @trusted { return Mallocator.instance.makeX!TypeLookup(internString(dec.identifier.text), TypeLookupKind.aliasThis); } ();
+        auto _ = () @trusted { return AllocatorX.instance.makeX!TypeLookup(internString(dec.identifier.text), TypeLookupKind.aliasThis); } ();
 		currentSymbol.typeLookups.insert(_);
 	}
 
@@ -573,7 +573,7 @@ import std.typecons;
 
 		foreach (bind; importDeclaration.importBindings.importBinds)
 		{
-			TypeLookup* lookup = () @trusted { return Mallocator.instance.makeX!TypeLookup(TypeLookupKind.selectiveImport); } ();
+			TypeLookup* lookup = () @trusted { return AllocatorX.instance.makeX!TypeLookup(TypeLookupKind.selectiveImport); } ();
 
 			immutable bool isRenamed = bind.right != tok!"";
 
@@ -647,7 +647,7 @@ import std.typecons;
 		if (tme.mixinTemplateName.symbol is null)
 			return;
 		const Symbol sym = tme.mixinTemplateName.symbol;
-		auto lookup = () @trusted { return Mallocator.instance.makeX!TypeLookup(TypeLookupKind.mixinTemplate); } ();
+		auto lookup = () @trusted { return AllocatorX.instance.makeX!TypeLookup(TypeLookupKind.mixinTemplate); } ();
 
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
@@ -663,14 +663,14 @@ import std.typecons;
 		{
 			SemanticSymbol* symbol = allocateSemanticSymbol(tme.identifier.text,
 				CompletionKind.aliasName, symbolFile, tme.identifier.index);
-			Type tp = () @trusted { return Mallocator.instance.makeX!Type; } ();
-			tp.type2 = () @trusted { return Mallocator.instance.makeX!Type2; } ();
+			Type tp = () @trusted { return AllocatorX.instance.makeX!Type; } ();
+			tp.type2 = () @trusted { return AllocatorX.instance.makeX!Type2; } ();
 			TypeIdentifierPart root;
 			TypeIdentifierPart current;
 			foreach(ioti; sym.identifierOrTemplateChain.identifiersOrTemplateInstances)
 			{
 				TypeIdentifierPart old = current;
-				current = () @trusted { return Mallocator.instance.makeX!TypeIdentifierPart; } ();
+				current = () @trusted { return AllocatorX.instance.makeX!TypeIdentifierPart; } ();
 				if (old)
 				{
 					old.typeIdentifierPart = current;
@@ -1064,12 +1064,12 @@ private:
 
 				if (p.templateTupleParameter !is null)
 				{
-					TypeLookup* tl = () @trusted { return Mallocator.instance.makeX!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
+					TypeLookup* tl = () @trusted { return AllocatorX.instance.makeX!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
 					templateParameter.typeLookups.insert(tl);
 				}
 				else if (p.templateTypeParameter && kind == CompletionKind.typeTmpParam)
 				{
-					TypeLookup* tl = () @trusted { return Mallocator.instance.makeX!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
+					TypeLookup* tl = () @trusted { return AllocatorX.instance.makeX!TypeLookup(istring(name), TypeLookupKind.varOrFunType); } ();
 					templateParameter.typeLookups.insert(tl);
 				}
 
@@ -1105,7 +1105,7 @@ private:
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
 		bool appendForeach = false) @trusted
 	{
-		auto lookup = Mallocator.instance.makeX!TypeLookup(TypeLookupKind.initializer);
+		auto lookup = AllocatorX.instance.makeX!TypeLookup(TypeLookupKind.initializer);
 		scope visitor = new InitializerVisitor(lookup, appendForeach, this);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
@@ -1129,7 +1129,7 @@ private:
 	void addTypeToLookups(ref UnrolledList!(TypeLookup*, AllocatorX, false) lookups,
 		const Type type, TypeLookup* l = null)
 	{
-		auto lookup = l !is null ? l : () @trusted { return Mallocator.instance.makeX!TypeLookup(TypeLookupKind.varOrFunType); } ();
+		auto lookup = l !is null ? l : () @trusted { return AllocatorX.instance.makeX!TypeLookup(TypeLookupKind.varOrFunType); } ();
 		auto t2 = type.type2;
 		if (t2.type !is null)
 			addTypeToLookups(lookups, t2.type, lookup);
