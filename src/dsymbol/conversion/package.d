@@ -108,7 +108,7 @@ class AutocompleteParser : Parser
 			return null;
 		if (current.index > cursorPosition)
 		{
-			BlockStatement bs = allocator.make!(BlockStatement);
+			BlockStatement bs = allocator.makeX!(BlockStatement);
 			bs.startLocation = current.index;
 			skipBraces();
 			bs.endLocation = tokens[index - 1].index;
@@ -120,7 +120,7 @@ class AutocompleteParser : Parser
 		if (tokens[index - 1].index < cursorPosition)
 		{
 			abandonBookmark(b);
-			BlockStatement bs = allocator.make!BlockStatement();
+			BlockStatement bs = allocator.makeX!BlockStatement();
 			bs.startLocation = start;
 			bs.endLocation = tokens[index - 1].index;
 			return bs;
@@ -143,7 +143,7 @@ class SimpleParser : Parser
 		expect(tok!"unittest");
 		if (currentIs(tok!"{"))
 			skipBraces();
-		return allocator.make!Unittest;
+		return allocator.makeX!Unittest;
 	}
 
 	override MissingFunctionBody parseMissingFunctionBody()
@@ -161,7 +161,7 @@ class SimpleParser : Parser
 			advance();
 		else
 			return null;
-		return allocator.make!MissingFunctionBody;
+		return allocator.makeX!MissingFunctionBody;
 	}
 
 	override SpecifiedFunctionBody parseSpecifiedFunctionBody()
@@ -176,7 +176,7 @@ class SimpleParser : Parser
 			if (currentIs(tok!"{"))
 				skipBraces();
 		}
-		return allocator.make!SpecifiedFunctionBody;
+		return allocator.makeX!SpecifiedFunctionBody;
 	}
 
 	/**

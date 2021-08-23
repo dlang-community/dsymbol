@@ -238,7 +238,7 @@ final class FirstPass : ASTVisitor
 			return;
 		SemanticSymbol* symbol = allocateSemanticSymbol(idt,
 			CompletionKind.aliasName, symbolFile, currentScope.endLocation);
-		Type t = Mallocator.instance.make!Type;
+		Type t = Mallocator.instance.makeX!Type;
 		t.type2 = cast() bc.type2;
 		addTypeToLookups(symbol.typeLookups, t);
 		symbol.parent = currentSymbol;
@@ -338,7 +338,7 @@ final class FirstPass : ASTVisitor
 		{
 			return;
 		}
-		currentSymbol.typeLookups.insert(Mallocator.instance.make!TypeLookup(
+		currentSymbol.typeLookups.insert(Mallocator.instance.makeX!TypeLookup(
 			internString(dec.identifier.text), TypeLookupKind.aliasThis));
 	}
 
@@ -378,7 +378,7 @@ final class FirstPass : ASTVisitor
 		rootSymbol = allocateSemanticSymbol(null, CompletionKind.moduleName,
 			symbolFile);
 		currentSymbol = rootSymbol;
-		moduleScope = semanticAllocator.make!Scope(0, uint.max);
+		moduleScope = semanticAllocator.makeX!Scope(0, uint.max);
 		currentScope = moduleScope;
 		auto objectLocation = cache.resolveImportLocation("object");
 		if (objectLocation is null)
@@ -501,7 +501,7 @@ final class FirstPass : ASTVisitor
 						auto s = currentScope.getSymbolsByName(ip);
 						if (s.length == 0)
 						{
-							currentImportSymbol = symbolAllocator.make!DSymbol(ip, kind);
+							currentImportSymbol = symbolAllocator.makeX!DSymbol(ip, kind);
 							currentScope.addSymbol(currentImportSymbol, true);
 							if (last)
 							{
@@ -518,7 +518,7 @@ final class FirstPass : ASTVisitor
 						auto s = currentImportSymbol.getPartsByName(ip);
 						if (s.length == 0)
 						{
-							auto sym = symbolAllocator.make!DSymbol(ip, kind);
+							auto sym = symbolAllocator.makeX!DSymbol(ip, kind);
 							currentImportSymbol.addChild(sym, true);
 							currentImportSymbol = sym;
 							if (last)
@@ -564,7 +564,7 @@ final class FirstPass : ASTVisitor
 
 		foreach (bind; importDeclaration.importBindings.importBinds)
 		{
-			TypeLookup* lookup = Mallocator.instance.make!TypeLookup(
+			TypeLookup* lookup = Mallocator.instance.makeX!TypeLookup(
 				TypeLookupKind.selectiveImport);
 
 			immutable bool isRenamed = bind.right != tok!"";
@@ -639,7 +639,7 @@ final class FirstPass : ASTVisitor
 		if (tme.mixinTemplateName.symbol is null)
 			return;
 		const Symbol sym = tme.mixinTemplateName.symbol;
-		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.mixinTemplate);
+		auto lookup = Mallocator.instance.makeX!TypeLookup(TypeLookupKind.mixinTemplate);
 
 		writeIotcTo(tme.mixinTemplateName.symbol.identifierOrTemplateChain,
 			lookup.breadcrumbs);
@@ -655,14 +655,14 @@ final class FirstPass : ASTVisitor
 		{
 			SemanticSymbol* symbol = allocateSemanticSymbol(tme.identifier.text,
 				CompletionKind.aliasName, symbolFile, tme.identifier.index);
-			Type tp = Mallocator.instance.make!Type;
-			tp.type2 = Mallocator.instance.make!Type2;
+			Type tp = Mallocator.instance.makeX!Type;
+			tp.type2 = Mallocator.instance.makeX!Type2;
 			TypeIdentifierPart root;
 			TypeIdentifierPart current;
 			foreach(ioti; sym.identifierOrTemplateChain.identifiersOrTemplateInstances)
 			{
 				TypeIdentifierPart old = current;
-				current = Mallocator.instance.make!TypeIdentifierPart;
+				current = Mallocator.instance.makeX!TypeIdentifierPart;
 				if (old)
 				{
 					old.typeIdentifierPart = current;
@@ -827,7 +827,7 @@ private:
 	{
 		assert (startLocation < uint.max);
 		assert (endLocation < uint.max || endLocation == size_t.max);
-		Scope* s = semanticAllocator.make!Scope(cast(uint) startLocation, cast(uint) endLocation);
+		Scope* s = semanticAllocator.makeX!Scope(cast(uint) startLocation, cast(uint) endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
 		currentScope = s;
@@ -841,7 +841,7 @@ private:
 	void pushFunctionScope(const FunctionBody functionBody,
 		IAllocator semanticAllocator, size_t scopeBegin)
 	{
-		Scope* s = semanticAllocator.make!Scope(cast(uint) scopeBegin,
+		Scope* s = semanticAllocator.makeX!Scope(cast(uint) scopeBegin,
 			cast(uint) functionBody.endLocation);
 		s.parent = currentScope;
 		currentScope.children.insert(s);
@@ -1057,13 +1057,13 @@ private:
 
 				if (p.templateTupleParameter !is null)
 				{
-					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
+					TypeLookup* tl = Mallocator.instance.makeX!TypeLookup(
 						istring(name), TypeLookupKind.varOrFunType);
 					templateParameter.typeLookups.insert(tl);
 				}
 				else if (p.templateTypeParameter && kind == CompletionKind.typeTmpParam)
 				{
-					TypeLookup* tl = Mallocator.instance.make!TypeLookup(
+					TypeLookup* tl = Mallocator.instance.makeX!TypeLookup(
 						istring(name), TypeLookupKind.varOrFunType);
 					templateParameter.typeLookups.insert(tl);
 				}
@@ -1100,7 +1100,7 @@ private:
 	void populateInitializer(T)(SemanticSymbol* symbol, const T initializer,
 		bool appendForeach = false)
 	{
-		auto lookup = Mallocator.instance.make!TypeLookup(TypeLookupKind.initializer);
+		auto lookup = Mallocator.instance.makeX!TypeLookup(TypeLookupKind.initializer);
 		auto visitor = scoped!(InitializerVisitor)(lookup, appendForeach, this);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
@@ -1114,17 +1114,17 @@ private:
 	}
 	do
 	{
-		DSymbol* acSymbol = make!DSymbol(symbolAllocator, istring(name), kind);
+		DSymbol* acSymbol = makeX!DSymbol(symbolAllocator, istring(name), kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
 		symbolsAllocated++;
-		return semanticAllocator.make!SemanticSymbol(acSymbol);
+		return semanticAllocator.makeX!SemanticSymbol(acSymbol);
 	}
 
 	void addTypeToLookups(ref UnrolledList!(TypeLookup*, AllocatorX, false) lookups,
 		const Type type, TypeLookup* l = null)
 	{
-		auto lookup = l !is null ? l : Mallocator.instance.make!TypeLookup(
+		auto lookup = l !is null ? l : Mallocator.instance.makeX!TypeLookup(
 			TypeLookupKind.varOrFunType);
 		auto t2 = type.type2;
 		if (t2.type !is null)
@@ -1530,7 +1530,7 @@ class InitializerVisitor : ASTVisitor
 		ne.newAnonClassExpression = null;
 
 		// Lower the AnonClass body to a standard ClassDeclaration and visit it.
-		ClassDeclaration cd = theAllocator.make!(ClassDeclaration);
+		ClassDeclaration cd = theAllocator.makeX!(ClassDeclaration);
 		cd.name = Token(tok!"identifier", idt, 1, 1, nace.structBody.startLocation - idt.length);
 		cd.baseClassList = nace.baseClassList;
 		cd.structBody = nace.structBody;
@@ -1538,10 +1538,10 @@ class InitializerVisitor : ASTVisitor
 
 		// Change the NewAnonClassExpression to a standard NewExpression using
 		// the ClassDeclaration created in previous step
-		ne.type = theAllocator.make!(Type);
-		ne.type.type2 = theAllocator.make!(Type2);
-		ne.type.type2.typeIdentifierPart = theAllocator.make!(TypeIdentifierPart);
-		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.make!(IdentifierOrTemplateInstance);
+		ne.type = theAllocator.makeX!(Type);
+		ne.type.type2 = theAllocator.makeX!(Type2);
+		ne.type.type2.typeIdentifierPart = theAllocator.makeX!(TypeIdentifierPart);
+		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance = theAllocator.makeX!(IdentifierOrTemplateInstance);
 		ne.type.type2.typeIdentifierPart.identifierOrTemplateInstance.identifier = cd.name;
 		ne.arguments = nace.constructorArguments;
 	}
