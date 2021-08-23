@@ -37,6 +37,7 @@ import stdx.allocator;
 import stdx.allocator.building_blocks.allocator_list;
 import stdx.allocator.building_blocks.region;
 import stdx.allocator.building_blocks.null_allocator;
+import stdx.allocator.mallocator;
 import std.conv;
 import dparse.ast;
 import std.datetime;
@@ -193,7 +194,7 @@ struct ModuleCache
 				config, &parseStringCache);
 		}
 
-		CacheEntry* newEntry = AllocatorX.instance.makeX!CacheEntry();
+		CacheEntry* newEntry = Mallocator.instance.makeX!CacheEntry();
 
 		auto semanticAllocator = scoped!(ASTAllocator);
 		import dparse.rollback_allocator:RollbackAllocator;
