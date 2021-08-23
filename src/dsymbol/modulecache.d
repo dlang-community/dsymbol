@@ -254,12 +254,6 @@ struct ModuleCache
 		deferredSymbols.clear();
 		foreach (deferred; temp[])
 		{
-			// TODO remove this
-            if (deferred is null ||
-                deferred.symbol is null ||
-                deferred.symbol.type is null ||
-                deferred.symbol.name.length == 0)
-                return;
 			if (!deferred.imports.empty && !deferred.dependsOn(location))
 			{
 				deferredSymbols.insert(deferred);
