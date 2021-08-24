@@ -40,7 +40,7 @@ struct Scope
 	 *     begin = the beginning byte index
 	 *     end = the ending byte index
 	 */
-	this (uint begin, uint end) nothrow
+	this (uint begin, uint end)
 	{
 		this.startLocation = begin;
 		this.endLocation = end;

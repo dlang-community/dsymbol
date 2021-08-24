@@ -65,7 +65,7 @@ final class FirstPass : ASTVisitor
 	 */
 	this(const Module mod, istring symbolFile, IAllocator symbolAllocator,
 		IAllocator semanticAllocator, bool includeParameterSymbols,
-		ModuleCache* cache, CacheEntry* entry = null) nothrow
+		ModuleCache* cache, CacheEntry* entry = null)
 	in
 	{
 		assert(mod);
