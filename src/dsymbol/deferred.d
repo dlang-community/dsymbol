@@ -34,9 +34,9 @@ struct DeferredSymbol
 	~this()
 	{
 		foreach (l; typeLookups[])
-			Mallocator.instance.disposeX(l);
+			Mallocator.instance.dispose(l);
 		foreach (i; imports[])
-			Mallocator.instance.disposeX(i);
+			Mallocator.instance.dispose(i);
 	}
 
 	bool dependsOn(istring modulePath)

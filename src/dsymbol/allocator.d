@@ -13,7 +13,7 @@ else
     alias Mallocator = stdx.allocator.mallocator.Mallocator;
 }
 
-void disposeX(A, T)(auto ref A alloc, auto ref T* p)
+void dispose(A, T)(auto ref A alloc, auto ref T* p)
 {
     version(useSafeAllocator) {}
     else
@@ -23,7 +23,7 @@ void disposeX(A, T)(auto ref A alloc, auto ref T* p)
     }
 }
 
-void disposeX(A, T)(auto ref A alloc, auto ref T p)
+void dispose(A, T)(auto ref A alloc, auto ref T p)
 if (is(T == class) || is(T == interface))
 {
     version(useSafeAllocator) {}
@@ -34,7 +34,7 @@ if (is(T == class) || is(T == interface))
     }
 }
 
-void disposeX(A, T)(auto ref A alloc, auto ref T[] array)
+void dispose(A, T)(auto ref A alloc, auto ref T[] array)
 {
     version(useSafeAllocator) {}
     else

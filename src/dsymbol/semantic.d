@@ -23,7 +23,7 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
-import dsymbol.allocator : disposeX, Mallocator;
+import dsymbol.allocator : dispose, Mallocator;
 
 enum ResolutionFlags : ubyte
 {
@@ -61,7 +61,7 @@ public:
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
 		foreach (lookup; typeLookups[])
-			Mallocator.instance.disposeX(lookup);
+			Mallocator.instance.dispose(lookup);
 	}
 
 	/**
@@ -134,16 +134,16 @@ static this()
 
 static ~this()
 {
-	disposeX(Mallocator.instance, argumentsType.typeSuffixes[0]);
-	disposeX(Mallocator.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
-	disposeX(Mallocator.instance, argumentsType.type2.typeIdentifierPart);
-	disposeX(Mallocator.instance, argumentsType.type2);
-	disposeX(Mallocator.instance, argptrType.typeSuffixes[0]);
-	disposeX(Mallocator.instance, argptrType.type2);
+	dispose(Mallocator.instance, argumentsType.typeSuffixes[0]);
+	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
+	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart);
+	dispose(Mallocator.instance, argumentsType.type2);
+	dispose(Mallocator.instance, argptrType.typeSuffixes[0]);
+	dispose(Mallocator.instance, argptrType.type2);
 
 	Mallocator.instance.deallocate(argumentsType.typeSuffixes);
 	Mallocator.instance.deallocate(argptrType.typeSuffixes);
 
-	disposeX(Mallocator.instance, argumentsType);
-	disposeX(Mallocator.instance, argptrType);
+	dispose(Mallocator.instance, argumentsType);
+	dispose(Mallocator.instance, argptrType);
 }

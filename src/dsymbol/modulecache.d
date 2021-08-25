@@ -33,7 +33,7 @@ import dsymbol.string_interning;
 import dsymbol.deferred;
 import dsymbol.allocator;
 import std.algorithm;
-import stdx.allocator;
+import stdx.allocator : CAllocatorImpl, IAllocator, make;
 import stdx.allocator.building_blocks.allocator_list;
 import stdx.allocator.building_blocks.region;
 import stdx.allocator.building_blocks.null_allocator;
@@ -123,11 +123,11 @@ struct ModuleCache
 					foreach (deferredSymbol; deferredSymbols[].find!(d => d.symbol.symbolFile.data.startsWith(cacheEntry.path.data)))
 					{
 						deferredSymbols.remove(deferredSymbol);
-						Mallocator.instance.disposeX(deferredSymbol);
+						Mallocator.instance.dispose(deferredSymbol);
 					}
 
 					cache.remove(cacheEntry);
-					Mallocator.instance.disposeX(cacheEntry);
+					Mallocator.instance.dispose(cacheEntry);
 				}
 			}
 		}
@@ -139,9 +139,9 @@ struct ModuleCache
 	void clear()
 	{
 		foreach (entry; cache[])
-			Mallocator.instance.disposeX(entry);
+			Mallocator.instance.dispose(entry);
 		foreach (symbol; deferredSymbols[])
-			Mallocator.instance.disposeX(symbol);
+			Mallocator.instance.dispose(symbol);
 
 		// TODO: This call to deallocateAll is a workaround for issues of
 		// CAllocatorImpl and GCAllocator not interacting well.
@@ -230,7 +230,7 @@ struct ModuleCache
 				upstream => upstream.symbol.updateTypes(updatePairs));
 
 			// Remove the old symbol.
-			cache.remove(oldEntry, entry => Mallocator.instance.disposeX(entry));
+			cache.remove(oldEntry, entry => Mallocator.instance.dispose(entry));
 		}
 
 		cache.insert(newEntry);
@@ -269,7 +269,7 @@ struct ModuleCache
 				resolveTypeFromType(deferred.symbol, deferred.typeLookups.front, null,
 					this, &deferred.imports);
 			}
-			Mallocator.instance.disposeX(deferred);
+			Mallocator.instance.dispose(deferred);
 		}
 	}
 
