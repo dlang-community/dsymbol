@@ -28,10 +28,9 @@ import dsymbol.type_lookup;
 import dsymbol.deferred;
 import dsymbol.import_;
 import dsymbol.modulecache;
-import dsymbol.makex;
+import dsymbol.allocator;
 import containers.unrolledlist;
 import stdx.allocator;
-import stdx.allocator.mallocator;
 import std.experimental.logger;
 import dparse.ast;
 import dparse.lexer;
@@ -100,7 +99,7 @@ void secondPass(SemanticSymbol* currentSymbol, Scope* moduleScope, ref ModuleCac
 	}
 }
 
-void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups,
+void resolveImport(DSymbol* acSymbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,
 	ref ModuleCache cache)
 in
 {
@@ -115,7 +114,7 @@ do
 		if (moduleSymbol is null)
 		{
 		tryAgain:
-			DeferredSymbol* deferred = Mallocator.instance.makeX!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			deferred.typeLookups.insert(typeLookups[]);
 			// Get rid of the old references to the lookups, this new deferred
 			// symbol owns them now
@@ -147,7 +146,7 @@ do
 	{
 		if (moduleSymbol is null)
 		{
-			DeferredSymbol* deferred = Mallocator.instance.makeX!DeferredSymbol(acSymbol);
+			DeferredSymbol* deferred = Mallocator.instance.make!DeferredSymbol(acSymbol);
 			cache.deferredSymbols.insert(deferred);
 		}
 		else
@@ -159,7 +158,7 @@ do
 }
 
 void resolveTypeFromType(DSymbol* symbol, TypeLookup* lookup, Scope* moduleScope,
-	ref ModuleCache cache, UnrolledList!(DSymbol*, AllocatorX, false)* imports)
+	ref ModuleCache cache, UnrolledList!(DSymbol*, Mallocator, false)* imports)
 in
 {
 	if (imports !is null)
@@ -191,7 +190,7 @@ do
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
 			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
-		lastSuffix = cache.symbolAllocator.makeX!DSymbol(back, CompletionKind.dummy, lastSuffix);
+		lastSuffix = cache.symbolAllocator.make!DSymbol(back, CompletionKind.dummy, lastSuffix);
 		lastSuffix.qualifier = qualifier;
 		lastSuffix.ownType = true;
 		if (isFunction)
@@ -207,11 +206,11 @@ do
 		lookup.breadcrumbs.popBack();
 	}
 
-	UnrolledList!(DSymbol*, AllocatorX, false) remainingImports;
+	UnrolledList!(DSymbol*, Mallocator, false) remainingImports;
 
 	DSymbol* currentSymbol;
 
-	void getSymbolFromImports(UnrolledList!(DSymbol*, AllocatorX, false)* importList, istring name)
+	void getSymbolFromImports(UnrolledList!(DSymbol*, Mallocator, false)* importList, istring name)
 	{
 		foreach (im; importList.opSlice())
 		{
@@ -280,7 +279,7 @@ do
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
-			auto deferred = Mallocator.instance.makeX!DeferredSymbol(suffix);
+			auto deferred = Mallocator.instance.make!DeferredSymbol(suffix);
 			// TODO: The scope has ownership of the import information
 			deferred.imports.insert(remainingImports[]);
 			deferred.typeLookups.insert(lookup);
@@ -294,7 +293,7 @@ do
 	}
 	else if (!remainingImports.empty)
 	{
-		auto deferred = Mallocator.instance.makeX!DeferredSymbol(symbol);
+		auto deferred = Mallocator.instance.make!DeferredSymbol(symbol);
 //		info("Deferring type resolution for ", symbol.name);
 		// TODO: The scope has ownership of the import information
 		deferred.imports.insert(remainingImports[]);
@@ -305,7 +304,7 @@ do
 
 private:
 
-void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups,
+void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,
 	Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
@@ -335,13 +334,13 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Allocato
 			baseClass = symbols[0];
 		}
 
-		DSymbol* imp = cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME,
+		DSymbol* imp = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
 			CompletionKind.importSymbol, baseClass);
 		symbol.addChild(imp, true);
 		symbolScope.addSymbol(imp, false);
 		if (baseClass.kind == CompletionKind.className)
 		{
-			auto s = cache.symbolAllocator.makeX!DSymbol(SUPER_SYMBOL_NAME,
+			auto s = cache.symbolAllocator.make!DSymbol(SUPER_SYMBOL_NAME,
 				CompletionKind.variableName, baseClass);
 			symbolScope.addSymbol(s, true);
 		}
@@ -349,7 +348,7 @@ void resolveInheritance(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Allocato
 }
 
 void resolveAliasThis(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -359,7 +358,7 @@ void resolveAliasThis(DSymbol* symbol,
 		auto parts = symbol.getPartsByName(aliasThis.breadcrumbs.front);
 		if (parts.length == 0 || parts[0].type is null)
 			continue;
-		DSymbol* s = cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME,
+		DSymbol* s = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
 			CompletionKind.importSymbol, parts[0].type);
 		symbol.addChild(s, true);
 		auto symbolScope = moduleScope.getScopeByCursor(s.location);
@@ -369,7 +368,7 @@ void resolveAliasThis(DSymbol* symbol,
 }
 
 void resolveMixinTemplates(DSymbol* symbol,
-	ref UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
+	ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups, Scope* moduleScope, ref ModuleCache cache)
 {
 	import std.algorithm : filter;
 
@@ -395,7 +394,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 		}
 		if (currentSymbol !is null)
 		{
-			auto i = cache.symbolAllocator.makeX!DSymbol(IMPORT_SYMBOL_NAME,
+			auto i = cache.symbolAllocator.make!DSymbol(IMPORT_SYMBOL_NAME,
 				CompletionKind.importSymbol, currentSymbol);
 			i.ownType = false;
 			symbol.addChild(i, true);
@@ -403,7 +402,7 @@ void resolveMixinTemplates(DSymbol* symbol,
 	}
 }
 
-void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups,
+void resolveType(DSymbol* symbol, ref UnrolledList!(TypeLookup*, Mallocator, false) typeLookups,
 	Scope* moduleScope, ref ModuleCache cache)
 {
 
@@ -447,7 +446,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		else
 		if (crumb == ARRAY_LITERAL_SYMBOL_NAME)
 		{
-			auto arr = cache.symbolAllocator.makeX!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol);
+			auto arr = cache.symbolAllocator.make!(DSymbol)(ARRAY_LITERAL_SYMBOL_NAME, CompletionKind.dummy, currentSymbol);
 			arr.qualifier = SymbolQualifier.array;
 			currentSymbol = arr;
 		}

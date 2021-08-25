@@ -23,7 +23,7 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
-import dsymbol.makex : makeX, disposeX, AllocatorX;
+import dsymbol.allocator : disposeX, Mallocator;
 
 enum ResolutionFlags : ubyte
 {
@@ -61,7 +61,7 @@ public:
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
 		foreach (lookup; typeLookups[])
-			AllocatorX.instance.disposeX(lookup);
+			Mallocator.instance.disposeX(lookup);
 	}
 
 	/**
@@ -74,10 +74,10 @@ public:
 	}
 
 	/// Information used to do type resolution, inheritance, mixins, and alias this
-	UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups;
+	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
 
 	/// Child symbols
-	UnrolledList!(SemanticSymbol*, AllocatorX, false) children;
+	UnrolledList!(SemanticSymbol*, Mallocator, false) children;
 
 	/// Autocompletion symbol
 	DSymbol* acSymbol;
@@ -110,40 +110,40 @@ static this()
 	// TODO: Replace these with DSymbols
 
 	// _argptr has type void*
-	argptrType = makeX!Type(AllocatorX.instance);
-	argptrType.type2 = makeX!Type2(AllocatorX.instance);
+	argptrType = make!Type(Mallocator.instance);
+	argptrType.type2 = make!Type2(Mallocator.instance);
 	argptrType.type2.builtinType = tok!"void";
-	TypeSuffix argptrTypeSuffix = makeX!TypeSuffix(AllocatorX.instance);
+	TypeSuffix argptrTypeSuffix = make!TypeSuffix(Mallocator.instance);
 	argptrTypeSuffix.star = Token(tok!"*");
-	argptrType.typeSuffixes = cast(TypeSuffix[]) AllocatorX.instance.allocate(TypeSuffix.sizeof);
+	argptrType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
 	argptrType.typeSuffixes[0] = argptrTypeSuffix;
 
 	// _arguments has type TypeInfo[]
-	argumentsType = makeX!Type(AllocatorX.instance);
-	argumentsType.type2 = makeX!Type2(AllocatorX.instance);
-	argumentsType.type2.typeIdentifierPart = makeX!TypeIdentifierPart(AllocatorX.instance);
-	IdentifierOrTemplateInstance i = makeX!IdentifierOrTemplateInstance(AllocatorX.instance);
+	argumentsType = make!Type(Mallocator.instance);
+	argumentsType.type2 = make!Type2(Mallocator.instance);
+	argumentsType.type2.typeIdentifierPart = make!TypeIdentifierPart(Mallocator.instance);
+	IdentifierOrTemplateInstance i = make!IdentifierOrTemplateInstance(Mallocator.instance);
 	i.identifier.text = internString("TypeInfo");
 	i.identifier.type = tok!"identifier";
 	argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance = i;
-	TypeSuffix argumentsTypeSuffix = makeX!TypeSuffix(AllocatorX.instance);
+	TypeSuffix argumentsTypeSuffix = make!TypeSuffix(Mallocator.instance);
 	argumentsTypeSuffix.array = true;
-	argumentsType.typeSuffixes = cast(TypeSuffix[]) AllocatorX.instance.allocate(TypeSuffix.sizeof);
+	argumentsType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
 	argumentsType.typeSuffixes[0] = argumentsTypeSuffix;
 }
 
 static ~this()
 {
-	disposeX(AllocatorX.instance, argumentsType.typeSuffixes[0]);
-	disposeX(AllocatorX.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
-	disposeX(AllocatorX.instance, argumentsType.type2.typeIdentifierPart);
-	disposeX(AllocatorX.instance, argumentsType.type2);
-	disposeX(AllocatorX.instance, argptrType.typeSuffixes[0]);
-	disposeX(AllocatorX.instance, argptrType.type2);
+	disposeX(Mallocator.instance, argumentsType.typeSuffixes[0]);
+	disposeX(Mallocator.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
+	disposeX(Mallocator.instance, argumentsType.type2.typeIdentifierPart);
+	disposeX(Mallocator.instance, argumentsType.type2);
+	disposeX(Mallocator.instance, argptrType.typeSuffixes[0]);
+	disposeX(Mallocator.instance, argptrType.type2);
 
-	AllocatorX.instance.deallocate(argumentsType.typeSuffixes);
-	AllocatorX.instance.deallocate(argptrType.typeSuffixes);
+	Mallocator.instance.deallocate(argumentsType.typeSuffixes);
+	Mallocator.instance.deallocate(argptrType.typeSuffixes);
 
-	disposeX(AllocatorX.instance, argumentsType);
-	disposeX(AllocatorX.instance, argptrType);
+	disposeX(Mallocator.instance, argumentsType);
+	disposeX(Mallocator.instance, argptrType);
 }

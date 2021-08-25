@@ -21,7 +21,7 @@ module dsymbol.scope_;
 import dsymbol.symbol;
 import dsymbol.import_;
 import dsymbol.builtin.names;
-import dsymbol.makex;
+import dsymbol.allocator;
 import containers.ttree;
 import containers.unrolledlist;
 import std.algorithm : canFind, any;
@@ -223,7 +223,7 @@ struct Scope
 	Scope* parent;
 
 	/// Child scopes
-	UnrolledList!(Scope*, AllocatorX, false) children;
+	UnrolledList!(Scope*, Mallocator, false) children;
 
 	/// Start location of this scope in bytes
 	uint startLocation;
@@ -251,5 +251,5 @@ struct Scope
 
 private:
 	/// Symbols contained in this scope
-	TTree!(SymbolOwnership, AllocatorX, true, "a.opCmp(b) < 0", false) _symbols;
+	TTree!(SymbolOwnership, Mallocator, true, "a.opCmp(b) < 0", false) _symbols;
 }

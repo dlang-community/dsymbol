@@ -27,7 +27,7 @@ import containers.hashset;
 import dparse.lexer;
 import std.bitmanip;
 
-import dsymbol.makex;
+import dsymbol.allocator;
 import dsymbol.builtin.names;
 public import dsymbol.string_interning;
 
@@ -336,7 +336,7 @@ struct DSymbol
 	 * Symbols that compose this symbol, such as enum members, class variables,
 	 * methods, parameters, etc.
 	 */
-	private TTree!(SymbolOwnership, AllocatorX, true, "a < b", false) parts;
+	private TTree!(SymbolOwnership, Mallocator, true, "a < b", false) parts;
 
 	/**
 	 * DSymbol's name
@@ -454,7 +454,7 @@ struct UpdatePair
 	DSymbol* newSymbol;
 }
 
-alias UpdatePairCollection = TTree!(UpdatePair, AllocatorX, false, "a < b", false);
+alias UpdatePairCollection = TTree!(UpdatePair, Mallocator, false, "a < b", false);
 
 void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results)
 {

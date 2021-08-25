@@ -6,37 +6,38 @@ import dparse.rollback_allocator;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import dsymbol.symbol;
-import dsymbol.makex;
+import dsymbol.allocator;
+import stdx.allocator : make;
 
 /**
  * Symbols for the built in types
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) builtinSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) builtinSymbols;
 
 /**
  * Array properties
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) arraySymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) arraySymbols;
 
 /**
  * Associative array properties
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) assocArraySymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) assocArraySymbols;
 
 /**
  * Struct, enum, union, class, and interface properties
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) aggregateSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) aggregateSymbols;
 
 /**
  * Class properties
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) classSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
 
 /**
  * Enum properties
  */
-TTree!(DSymbol*, AllocatorX, true, "a < b", false) enumSymbols;
+TTree!(DSymbol*, Mallocator, true, "a < b", false) enumSymbols;
 
 /**
  * Variadic template parameters properties
@@ -294,14 +295,14 @@ private HashSet!(DSymbol*) symbolsMadeHere;
 
 private DSymbol* makeSymbol(string s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.makeX!DSymbol(istring(s), kind, type);
+	auto sym = rba.make!DSymbol(istring(s), kind, type);
 	sym.ownType = false;
 	symbolsMadeHere.insert(sym);
 	return sym;
 }
 private DSymbol* makeSymbol(istring s, CompletionKind kind, DSymbol* type = null)
 {
-	auto sym = rba.makeX!DSymbol(s, kind, type);
+	auto sym = rba.make!DSymbol(s, kind, type);
 	sym.ownType = false;
 	symbolsMadeHere.insert(sym);
 	return sym;

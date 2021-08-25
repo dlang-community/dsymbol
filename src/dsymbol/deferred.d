@@ -24,7 +24,7 @@ import dsymbol.string_interning;
 import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
-import dsymbol.makex;
+import dsymbol.allocator;
 
 /**
  * Contains information for deferred type resolution
@@ -34,9 +34,9 @@ struct DeferredSymbol
 	~this()
 	{
 		foreach (l; typeLookups[])
-			AllocatorX.instance.disposeX(l);
+			Mallocator.instance.disposeX(l);
 		foreach (i; imports[])
-			AllocatorX.instance.disposeX(i);
+			Mallocator.instance.disposeX(i);
 	}
 
 	bool dependsOn(istring modulePath)
@@ -50,7 +50,7 @@ struct DeferredSymbol
 	/// The symbol that needs its type resolved
 	DSymbol* symbol;
 	/// The imports that were in scope for the symbol's declaration'
-	UnrolledList!(DSymbol*, AllocatorX, false) imports;
+	UnrolledList!(DSymbol*, Mallocator, false) imports;
 	/// The type lookup information
-	UnrolledList!(TypeLookup*, AllocatorX, false) typeLookups;
+	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
 }
