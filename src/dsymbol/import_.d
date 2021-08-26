@@ -18,10 +18,6 @@
 
 module dsymbol.import_;
 
-import containers.unrolledlist;
-import dsymbol.string_interning;
-import std.typecons;
-
 /**
  * Import information
  */

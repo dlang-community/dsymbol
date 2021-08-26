@@ -36,7 +36,7 @@ import std.algorithm.iteration : map;
 import stdx.allocator;
 import stdx.allocator.gc_allocator : GCAllocator;
 import std.experimental.logger;
-import std.typecons;
+import std.typecons : Rebindable;
 
 /**
  * First Pass handles the following:
@@ -775,7 +775,7 @@ final class FirstPass : ASTVisitor
 
 	override void visit(const ArgumentList list)
 	{
-		auto visitor = scoped!(ArgumentListVisitor)(this);
+		scope visitor = new ArgumentListVisitor(this);
 		visitor.visit(list);
 	}
 
@@ -1103,7 +1103,7 @@ private:
 		bool appendForeach = false)
 	{
 		auto lookup = TypeLookupsAllocator.instance.make!TypeLookup(TypeLookupKind.initializer);
-		auto visitor = scoped!(InitializerVisitor)(lookup, appendForeach, this);
+		scope visitor = new InitializerVisitor(lookup, appendForeach, this);
 		symbol.typeLookups.insert(lookup);
 		visitor.visit(initializer);
 	}
@@ -1315,7 +1315,7 @@ void formatNode(A, T)(ref A appender, const T node)
 {
 	if (node is null)
 		return;
-	auto f = scoped!(Formatter!(A*))(&appender);
+	scope f = new Formatter!(A*)(&appender);
 	f.format(node);
 }
 
@@ -1550,7 +1550,7 @@ class InitializerVisitor : ASTVisitor
 
 	override void visit(const ArgumentList list)
 	{
-		auto visitor = scoped!(ArgumentListVisitor)(fp);
+		scope visitor = new ArgumentListVisitor(fp);
 		visitor.visit(list);
 	}
 

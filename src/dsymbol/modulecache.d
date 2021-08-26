@@ -160,7 +160,6 @@ struct ModuleCache
 	DSymbol* cacheModule(string location)
 	{
 		import std.stdio : File;
-		import std.typecons : scoped;
 
 		assert (location !is null);
 
@@ -198,13 +197,13 @@ struct ModuleCache
 
 		CacheEntry* newEntry = CacheAllocator.instance.make!CacheEntry();
 
-		auto semanticAllocator = scoped!(ASTAllocator);
+		scope semanticAllocator = new ASTAllocator();
 		import dparse.rollback_allocator:RollbackAllocator;
 		RollbackAllocator parseAllocator;
 		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
 
 		assert (symbolAllocator);
-		auto first = scoped!FirstPass(m, cachedLocation, symbolAllocator,
+		scope first = new FirstPass(m, cachedLocation, symbolAllocator,
 			semanticAllocator, false, &this, newEntry);
 		first.run();
 

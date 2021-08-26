@@ -31,7 +31,6 @@ import dparse.lexer;
 import dparse.parser;
 import dparse.rollback_allocator;
 import stdx.allocator;
-import std.typecons;
 
 /**
  * Used by autocompletion.
@@ -43,7 +42,7 @@ ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
 	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),
 		parseAllocator, cursorPosition);
 
-	auto first = scoped!FirstPass(m, internString("stdin"), symbolAllocator,
+	scope first = new FirstPass(m, internString("stdin"), symbolAllocator,
 		symbolAllocator, true, &cache);
 	first.run();
 
@@ -77,7 +76,7 @@ struct ScopeSymbolPair
 Module parseModuleSimple(const(Token)[] tokens, string fileName, RollbackAllocator* parseAllocator)
 {
 	assert (parseAllocator !is null);
-	auto parser = scoped!SimpleParser();
+	scope parser = new SimpleParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
 	parser.messageFunction = &doesNothing;
@@ -90,7 +89,7 @@ private:
 Module parseModuleForAutocomplete(const(Token)[] tokens, string fileName,
 	RollbackAllocator* parseAllocator, size_t cursorPosition)
 {
-	auto parser = scoped!AutocompleteParser();
+	scope parser = new AutocompleteParser();
 	parser.fileName = fileName;
 	parser.tokens = tokens;
 	parser.messageFunction = &doesNothing;
