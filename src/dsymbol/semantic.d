@@ -24,6 +24,7 @@ import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
 import stdx.allocator.mallocator : Mallocator;
+import stdx.allocator.gc_allocator : GCAllocator;
 
 enum ResolutionFlags : ubyte
 {
@@ -31,6 +32,9 @@ enum ResolutionFlags : ubyte
 	type = 0b0000_0010,
 	mixinTemplates = 0b0000_0100,
 }
+
+alias TypeLookupsAllocator = GCAllocator; // NOTE using `Mallocator` here fails when analysing Phobos as: `munmap_chunk(): invalid pointer`
+alias TypeLookups = UnrolledList!(TypeLookup*, TypeLookupsAllocator);
 
 /**
  * Intermediate form between DSymbol and the AST classes. Stores enough
@@ -56,13 +60,12 @@ public:
 
 	~this()
 	{
-		import stdx.allocator.mallocator : Mallocator;
 		import stdx.allocator : dispose;
 
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
 		foreach (lookup; typeLookups[])
-			Mallocator.instance.dispose(lookup);
+			TypeLookupsAllocator.instance.dispose(lookup);
 	}
 
 	/**
@@ -75,10 +78,10 @@ public:
 	}
 
 	/// Information used to do type resolution, inheritance, mixins, and alias this
-	UnrolledList!(TypeLookup*, Mallocator, false) typeLookups;
+	TypeLookups typeLookups;
 
 	/// Child symbols
-	UnrolledList!(SemanticSymbol*, Mallocator, false) children;
+	UnrolledList!(SemanticSymbol*, GCAllocator) children; // NOTE using `Mallocator` here fails when analysing Phobos
 
 	/// Autocompletion symbol
 	DSymbol* acSymbol;
@@ -103,52 +106,51 @@ Type argptrType;
  */
 Type argumentsType;
 
+alias GlobalsAllocator = Mallocator;
+
 static this()
 {
 	import dsymbol.string_interning : internString;
 	import stdx.allocator : make;
-	import stdx.allocator.mallocator : Mallocator;
 
 	// TODO: Replace these with DSymbols
 
 	// _argptr has type void*
-	argptrType = make!Type(Mallocator.instance);
-	argptrType.type2 = make!Type2(Mallocator.instance);
+	argptrType = GlobalsAllocator.instance.make!Type();
+	argptrType.type2 = GlobalsAllocator.instance.make!Type2();
 	argptrType.type2.builtinType = tok!"void";
-	TypeSuffix argptrTypeSuffix = make!TypeSuffix(Mallocator.instance);
+	TypeSuffix argptrTypeSuffix = GlobalsAllocator.instance.make!TypeSuffix();
 	argptrTypeSuffix.star = Token(tok!"*");
-	argptrType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
+	argptrType.typeSuffixes = cast(TypeSuffix[]) GlobalsAllocator.instance.allocate(TypeSuffix.sizeof);
 	argptrType.typeSuffixes[0] = argptrTypeSuffix;
 
 	// _arguments has type TypeInfo[]
-	argumentsType = make!Type(Mallocator.instance);
-	argumentsType.type2 = make!Type2(Mallocator.instance);
-	argumentsType.type2.typeIdentifierPart = make!TypeIdentifierPart(Mallocator.instance);
-	IdentifierOrTemplateInstance i = make!IdentifierOrTemplateInstance(Mallocator.instance);
+	argumentsType = GlobalsAllocator.instance.make!Type();
+	argumentsType.type2 = GlobalsAllocator.instance.make!Type2();
+	argumentsType.type2.typeIdentifierPart = GlobalsAllocator.instance.make!TypeIdentifierPart();
+	IdentifierOrTemplateInstance i = GlobalsAllocator.instance.make!IdentifierOrTemplateInstance();
 	i.identifier.text = internString("TypeInfo");
 	i.identifier.type = tok!"identifier";
 	argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance = i;
-	TypeSuffix argumentsTypeSuffix = make!TypeSuffix(Mallocator.instance);
+	TypeSuffix argumentsTypeSuffix = GlobalsAllocator.instance.make!TypeSuffix();
 	argumentsTypeSuffix.array = true;
-	argumentsType.typeSuffixes = cast(TypeSuffix[]) Mallocator.instance.allocate(TypeSuffix.sizeof);
+	argumentsType.typeSuffixes = cast(TypeSuffix[]) GlobalsAllocator.instance.allocate(TypeSuffix.sizeof);
 	argumentsType.typeSuffixes[0] = argumentsTypeSuffix;
 }
 
 static ~this()
 {
 	import stdx.allocator : dispose;
-	import stdx.allocator.mallocator : Mallocator;
+	GlobalsAllocator.instance.dispose(argumentsType.typeSuffixes[0]);
+	GlobalsAllocator.instance.dispose(argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
+	GlobalsAllocator.instance.dispose(argumentsType.type2.typeIdentifierPart);
+	GlobalsAllocator.instance.dispose(argumentsType.type2);
+	GlobalsAllocator.instance.dispose(argptrType.typeSuffixes[0]);
+	GlobalsAllocator.instance.dispose(argptrType.type2);
 
-	dispose(Mallocator.instance, argumentsType.typeSuffixes[0]);
-	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
-	dispose(Mallocator.instance, argumentsType.type2.typeIdentifierPart);
-	dispose(Mallocator.instance, argumentsType.type2);
-	dispose(Mallocator.instance, argptrType.typeSuffixes[0]);
-	dispose(Mallocator.instance, argptrType.type2);
+	GlobalsAllocator.instance.deallocate(argumentsType.typeSuffixes);
+	GlobalsAllocator.instance.deallocate(argptrType.typeSuffixes);
 
-	Mallocator.instance.deallocate(argumentsType.typeSuffixes);
-	Mallocator.instance.deallocate(argptrType.typeSuffixes);
-
-	dispose(Mallocator.instance, argumentsType);
-	dispose(Mallocator.instance, argptrType);
+	GlobalsAllocator.instance.dispose(argumentsType);
+	GlobalsAllocator.instance.dispose(argptrType);
 }

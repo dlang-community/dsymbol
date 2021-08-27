@@ -18,10 +18,10 @@
 
 module dsymbol.symbol;
 
-import stdx.allocator;
-import stdx.allocator.mallocator : Mallocator;
 import std.array;
 
+import stdx.allocator.mallocator : Mallocator;
+import stdx.allocator.gc_allocator : GCAllocator;
 import containers.ttree;
 import containers.unrolledlist;
 import containers.slist;
@@ -337,7 +337,9 @@ struct DSymbol
 	 * Symbols that compose this symbol, such as enum members, class variables,
 	 * methods, parameters, etc.
 	 */
-	private TTree!(SymbolOwnership, Mallocator, true, "a < b", false) parts;
+	alias PartsAllocator = GCAllocator; // NOTE using `Mallocator` here fails when analysing Phobos
+	alias Parts = TTree!(SymbolOwnership, PartsAllocator, true, "a < b");
+	private Parts parts;
 
 	/**
 	 * DSymbol's name
@@ -455,7 +457,8 @@ struct UpdatePair
 	DSymbol* newSymbol;
 }
 
-alias UpdatePairCollection = TTree!(UpdatePair, Mallocator, false, "a < b", false);
+alias UpdatePairCollectionAllocator = Mallocator;
+alias UpdatePairCollection = TTree!(UpdatePair, UpdatePairCollectionAllocator, false, "a < b");
 
 void generateUpdatePairs(DSymbol* oldSymbol, DSymbol* newSymbol, ref UpdatePairCollection results)
 {

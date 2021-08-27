@@ -6,37 +6,39 @@ import dparse.rollback_allocator;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import dsymbol.symbol;
-import stdx.allocator.mallocator;
+import stdx.allocator.mallocator : Mallocator;
+
+alias SymbolsAllocator = Mallocator;
 
 /**
  * Symbols for the built in types
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) builtinSymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") builtinSymbols;
 
 /**
  * Array properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) arraySymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") arraySymbols;
 
 /**
  * Associative array properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) assocArraySymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") assocArraySymbols;
 
 /**
  * Struct, enum, union, class, and interface properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) aggregateSymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") aggregateSymbols;
 
 /**
  * Class properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) classSymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") classSymbols;
 
 /**
  * Enum properties
  */
-TTree!(DSymbol*, Mallocator, true, "a < b", false) enumSymbols;
+TTree!(DSymbol*, SymbolsAllocator, true, "a < b") enumSymbols;
 
 /**
  * Variadic template parameters properties

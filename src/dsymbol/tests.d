@@ -7,7 +7,6 @@ import dsymbol.conversion, dsymbol.conversion.first, dsymbol.conversion.second;
 import dsymbol.semantic, dsymbol.string_interning, dsymbol.builtin.names;
 import std.file, std.path, std.format;
 import std.stdio : writeln, stdout;
-import std.typecons : scoped;
 
 /**
  * Parses `source`, caches its symbols and compares the the cache content
@@ -537,7 +536,7 @@ ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref Mo
 	RollbackAllocator rba;
 	Module m = parseModule(tokens, filename, &rba);
 
-	auto first = scoped!FirstPass(m, internString(filename),
+	scope first = new FirstPass(m, internString(filename),
 			theAllocator, theAllocator, true, &cache);
 	first.run();
 
