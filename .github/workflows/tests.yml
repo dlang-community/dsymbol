@@ -1,9 +1,11 @@
-name: learn-github-actions
-on: [push, pull-request]
+name: CI
+
+on: [push, pull_request]
+
 jobs:
-  old-travis-tests:
+  main:
     name: Tests from travis-ci
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         libdparse-version: [min, max]
