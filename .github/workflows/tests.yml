@@ -5,11 +5,17 @@ on: [push, pull_request]
 jobs:
   main:
     name: Build and test
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        dc: [dmd-latest, ldc-latest]
         libdparse-version: [min, max]
-        dc: [dmd-latest, ldc-latest, dmd-2.088.0, ldc-1.17.0]
+        include:
+        - { os: ubuntu-latest, dc: dmd-2.088.0, libdparse-version: min }
+        - { os: ubuntu-latest, dc: ldc-1.17.0, libdparse-version: min }
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v2
 
@@ -20,13 +26,15 @@ jobs:
           
       - name: Build
         env:
+          DC: ${{matrix.dc}}
           LIBDPARSE_VERSION: ${{ matrix.libdparse-version }}
         run: |
           git submodule update --init --recursive
-          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release --compiler=${DC}
+          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release
 
       - name: Test
         env:
+          DC: ${{matrix.dc}}
           LIBDPARSE_VERSION: ${{ matrix.libdparse-version }}
         run: |
-          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test --compiler=${DC}
+          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test
