@@ -9,14 +9,19 @@ jobs:
     strategy:
       matrix:
         libdparse-version: [min, max]
-        dcompiler: [dmd-latest, ldc-latest, dmd-2.088.0, ldc-1.17.0]
+        dc: [dmd-latest, ldc-latest, dmd-2.088.0, ldc-1.17.0]
     steps:
       - uses: actions/checkout@v2
-      - uses: dlang-community/setup-dlang@v1
+
+      - name: Prepare compiler
+        uses: dlang-community/setup-dlang@v1
         with:
-          compiler: ${{ matrix.dcompiler }}
-      - env:
+          compiler: ${{ matrix.dc }}
+          
+      - name: 'Build and test with ${{ matrix.libdparse-version }} libdparse version'
+        env:
           LIBDPARSE_VERSION: ${{ matrix.libdparse-version }}
-      - run: git submodule update --init --recursive
-      - run: dmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release --compiler=${DC}
-      - run: rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test --compiler=${DC}
+        run: |
+          git submodule update --init --recursive
+          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release --compiler=${DC}
+          rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test --compiler=${DC}
