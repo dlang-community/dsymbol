@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   main:
-    name: Tests from travis-ci
+    name: Build and test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,10 +18,15 @@ jobs:
         with:
           compiler: ${{ matrix.dc }}
           
-      - name: 'Build and test with ${{ matrix.libdparse-version }} libdparse version'
+      - name: Build
         env:
           LIBDPARSE_VERSION: ${{ matrix.libdparse-version }}
         run: |
           git submodule update --init --recursive
           rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub build --build=release --compiler=${DC}
+
+      - name: Test
+        env:
+          LIBDPARSE_VERSION: ${{ matrix.libdparse-version }}
+        run: |
           rdmd ./d-test-utils/test_with_package.d $LIBDPARSE_VERSION libdparse -- dub test --compiler=${DC}
