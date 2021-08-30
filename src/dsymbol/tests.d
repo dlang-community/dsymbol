@@ -54,6 +54,7 @@ void expectSymbolsAndTypes(const string source, const string[][] results,
 			i++;
 		}
 	}
+	enforce!AssertError(i == results.length, "too many expected results, %s is left".format(results[i .. $]), file, line);
 }
 
 @system unittest
