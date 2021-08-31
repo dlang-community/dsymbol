@@ -276,7 +276,7 @@ struct ModuleCache
 	/**
 	 * Make sure our cache is still valid
 	 */
-	void ensureCacheValidity()
+	void ensureCacheValidity(bool skipStd = false, bool skipDubPackages = false)
 	{
 		import std.string;
 
@@ -287,15 +287,15 @@ struct ModuleCache
 			// skip std/dub packages
 			version (Windows)
 			{
-				if (indexOf(path, "src\\druntime") != -1) continue;
-				if (indexOf(path, "src\\phobos") != -1) continue;
-				if (indexOf(path, "dub\\packages") != -1) continue;
+				if (skipStd && indexOf(path, "src\\druntime") != -1) continue;
+				if (skipStd && indexOf(path, "src\\phobos") != -1) continue;
+				if (skipDubPackages && indexOf(path, "dub\\packages") != -1) continue;
 			}
 			else version (linux)
 			{
-			    if (indexOf(path, "src/druntime") != -1) continue;
-			    if (indexOf(path, "src/phobos") != -1) continue;
-			    if (indexOf(path, "dub/packages") != -1) continue;
+			    if (skipStd && indexOf(path, "src/druntime") != -1) continue;
+			    if (skipStd && indexOf(path, "src/phobos") != -1) continue;
+			    if (skipDubPackages && indexOf(path, "dub/packages") != -1) continue;
 			}
 			cacheModule(path);
 		}
