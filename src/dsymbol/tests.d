@@ -529,16 +529,16 @@ unittest
 	assert(C.type.callTip == "A**");
 	assert(D.type.callTip == "A[]");
 	assert(E.type.callTip == "A*[]");
-	assert(F.type.callTip == "A*aa*");
-	assert(G.type.callTip == "A**aa*");
+	assert(F.type.callTip == "A[...]");
+	assert(G.type.callTip == "A*[...]");
 
 	assert(H.type.callTip == "int*");
 	assert(I.type.callTip == "int[]");
-	assert(J.type.callTip == "int*aa*");
+	assert(J.type.callTip == "int[...]");
 
 	assert(K.type.callTip == "APTR");
 
-	assert(L.type.callTip == "A*[]*aa*[]*");
+	assert(L.type.callTip == "A*[][...][]*");
 }
 
 
