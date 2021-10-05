@@ -188,8 +188,6 @@ do
 			callTip ~= b;
 	}
 
-	bool isLastPointer = lookup.breadcrumbs.empty ? false : lookup.breadcrumbs.back == POINTER_SYMBOL_NAME;
-	
 	while (!lookup.breadcrumbs.empty)
 	{
 		auto back = lookup.breadcrumbs.back;
@@ -212,6 +210,7 @@ do
 		else if (isPointer)
 		{
 			lastSuffix.callTip = istring(callTip);
+			lastSuffix.isPointer = true;
 		}
 		else
 		{
@@ -296,9 +295,56 @@ do
 		symbol.ownType = true;
 		
 		// if that's a pointer, then add the symbols since we built a new one
-		if (isLastPointer)
+		if (lastSuffix.isPointer)
 		{
-			lastSuffix.addChildren(currentSymbol.parts[], false);
+			// add symbols based on what pointer is pointing to
+			bool isPtr = false;
+			bool ptrType = false;
+			bool ptrArray = false;
+			bool ptrAA = false;
+
+			auto index = callTip.length;
+			while(index--)
+			{
+		        auto c = callTip[index];
+		        if (c == '*')
+		            isPtr = true;
+		        else
+		        {
+		            if ((c == ')') && isPtr)
+		            {
+		                break;
+		            }
+		            else if (c == ']' && isPtr)
+		            {
+		            	if(c > 1)
+		            	{
+		            		if(callTip[index -1] == '[') 
+		            		{
+		            			ptrArray = true;
+		            			break;
+		            		}
+		            		if(callTip[index -1] == '.') 
+		            		{
+		            			ptrAA = true;
+		            			break;
+		            		}
+		            	}
+		            }
+		            else
+		            {
+		            	ptrType = true;
+		            	break;
+		            }
+		        }
+			}
+
+			if (ptrType)
+				lastSuffix.addChildren(currentSymbol.parts[], false);
+			else if (ptrArray)
+				lastSuffix.addChildren(arraySymbols[], false);
+			else if (ptrAA)
+				lastSuffix.addChildren(assocArraySymbols[], false);
 		}
 		
 		if (currentSymbol is null && !remainingImports.empty)
