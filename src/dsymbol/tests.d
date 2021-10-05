@@ -497,6 +497,8 @@ unittest
 
 		A value; A* ptr = &value; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;
 
+		A*[][int][]* complex;
+
 		// alias test
 		APTR aptr = &value;
 
@@ -520,9 +522,9 @@ unittest
 
 	auto K = pair.symbol.getFirstPartNamed(internString("aptr"));
 
+	auto L = pair.symbol.getFirstPartNamed(internString("complex"));
 
-	writeln(A.type.callTip);
-	assert(A.type.callTip == "A");
+	assert(A.type.callTip == "Aa");
 	assert(B.type.callTip == "A*");
 	assert(C.type.callTip == "A**");
 	assert(D.type.callTip == "A[]");
@@ -535,6 +537,8 @@ unittest
 	assert(J.type.callTip == "int*aa*");
 
 	assert(K.type.callTip == "APTR");
+
+	assert(L.type.callTip == "A*[]*aa*[]*");
 }
 
 
