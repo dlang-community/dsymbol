@@ -193,7 +193,7 @@ do
 		immutable bool isFunction = back == FUNCTION_SYMBOL_NAME;
 		if (back == POINTER_SYMBOL_NAME)
 		{
-			if(lastSuffix)
+			if (lastSuffix)
 				lastSuffix.isPointer = true;
 			lookup.breadcrumbs.popBack();
 			continue;
