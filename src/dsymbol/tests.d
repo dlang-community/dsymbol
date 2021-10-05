@@ -501,8 +501,8 @@ unittest
 	auto F = pair.symbol.getFirstPartNamed(internString("map"));
 	auto G = pair.symbol.getFirstPartNamed(internString("mapptr"));
 
-	assert(A.type.callTip == ""); // empty because it's not a pointer/array/associativearray
-								  // we only process symbols with suffixes
+	// empty because it's not a pointer/array/aa
+	assert(A.type.callTip == "");
 	assert(B.type.callTip == "A*");
 	assert(C.type.callTip == "A**");
 	assert(D.type.callTip == "A*arr*");
