@@ -319,16 +319,16 @@ do
 		            {
 		            	if(c > 1)
 		            	{
-							// TODO: if we ever put the length for static array
-							// this will need to be updated to support that
+		            		// TODO: if we ever put the length for static array
+		            		// this will need to be updated to support that
 		            		if(callTip[index -1] == '[') 
 		            		{
 		            			ptrArray = true;
 		            			break;
 		            		}
-							
-							// TODO: if we ever put the type name for AA
-							// this will need to be updated to support that
+
+		            		// TODO: if we ever put the type name for AA
+		            		// this will need to be updated to support that
 		            		if(callTip[index -1] == '.') 
 		            		{
 		            			ptrAA = true;
