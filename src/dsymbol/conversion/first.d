@@ -1119,6 +1119,7 @@ private:
 		DSymbol* acSymbol = SymbolAllocator.instance.make!DSymbol(istring(name), kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
+		acSymbol.callTip = istring(name);
 		symbolsAllocated++;
 		return SymbolAllocator.instance.make!SemanticSymbol(acSymbol); // NOTE using semanticAllocator here breaks when analysing phobos as: `Segmentation fault (core dumped)‘’
 	}
