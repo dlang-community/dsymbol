@@ -484,6 +484,34 @@ unittest
 	assert(a.data.ptr == b.data.ptr);
 }
 
+// this is for testing if breadcrumbs are properly generating the calltip
+// we only process symbols with suffixes (ptr, array, aa)
+unittest
+{
+	ModuleCache cache = ModuleCache(theAllocator);
+
+	writeln("Running pointer tests...");
+	auto source = q{ struct A {int a;} A value; A* ptr = &a; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;};
+	auto pair = generateAutocompleteTrees(source, cache);
+	auto A = pair.symbol.getFirstPartNamed(internString("value"));
+	auto B = pair.symbol.getFirstPartNamed(internString("ptr"));
+	auto C = pair.symbol.getFirstPartNamed(internString("ptrptr"));
+	auto D = pair.symbol.getFirstPartNamed(internString("arr"));
+	auto E = pair.symbol.getFirstPartNamed(internString("arrptr"));
+	auto F = pair.symbol.getFirstPartNamed(internString("map"));
+	auto G = pair.symbol.getFirstPartNamed(internString("mapptr"));
+
+	assert(A.type.callTip == ""); // empty because it's not a pointer/array/associativearray
+								  // we only process symbols with suffixes
+	assert(B.type.callTip == "A*");
+	assert(C.type.callTip == "A**");
+	assert(D.type.callTip == "A*arr*");
+	assert(E.type.callTip == "A**arr*");
+	assert(F.type.callTip == "A*aa*");
+	assert(G.type.callTip == "A**aa*");
+}
+
+
 private StringCache stringCache = void;
 static this()
 {
