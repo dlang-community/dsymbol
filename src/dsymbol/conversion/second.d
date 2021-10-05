@@ -250,7 +250,6 @@ do
 	size_t i = 0;
 	foreach (part; lookup.breadcrumbs[])
 	{
-		if(part == "*") continue;
 		if (i == 0)
 		{
 			if (moduleScope is null)
