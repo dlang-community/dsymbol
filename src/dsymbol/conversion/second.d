@@ -213,6 +213,7 @@ do
 			lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
 			lastSuffix.callTip = istring(callTip);
 		}
+
 		if (suffix is null)
 			suffix = lastSuffix;
 		lookup.breadcrumbs.popBack();
@@ -301,10 +302,17 @@ do
 	}
 	else if (currentSymbol !is null)
 	{
-		// symbol found, set the calltip
-		currentSymbol.callTip = istring(callTip);
-		symbol.type = currentSymbol;
-		symbol.ownType = false;
+		// create a copy of the symbol so we can edit the calltip 
+		// without affecting non-owning symbol references
+		// TODO: find ways to make this cleaner, ideally this should not be needed 
+		auto cpy = SymbolAllocator.instance.make!DSymbol(currentSymbol.name, currentSymbol.kind, currentSymbol.type);
+		cpy.qualifier = currentSymbol.qualifier;
+		cpy.ownType = currentSymbol.ownType;
+		cpy.addChildren(currentSymbol.parts[], false);
+		cpy.callTip = istring(callTip);
+
+		symbol.type = cpy;
+		symbol.ownType = true;
 	}
 	else if (!remainingImports.empty)
 	{
