@@ -491,8 +491,14 @@ unittest
 	ModuleCache cache = ModuleCache(theAllocator);
 
 	writeln("Running calltip tests...");
-	auto source = q{ struct A {int a;}
-		A value; A* ptr = &a; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;
+	auto source = q{ 
+		struct A {int a;}
+		alias APTR = A*;
+
+		A value; A* ptr = &value; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;
+
+		// alias test
+		APTR aptr = &value;
 
 		// builtin type test
 		int* intptr;
@@ -512,18 +518,23 @@ unittest
 	auto I = pair.symbol.getFirstPartNamed(internString("intarr"));
 	auto J = pair.symbol.getFirstPartNamed(internString("intaa"));
 
-	// empty because it's not a pointer/array/aa
-	assert(A.type.callTip == "");
+	auto K = pair.symbol.getFirstPartNamed(internString("aptr"));
+
+
+	writeln(A.type.callTip);
+	assert(A.type.callTip == "A");
 	assert(B.type.callTip == "A*");
 	assert(C.type.callTip == "A**");
-	assert(D.type.callTip == "A*arr*");
-	assert(E.type.callTip == "A**arr*");
+	assert(D.type.callTip == "A[]");
+	assert(E.type.callTip == "A*[]");
 	assert(F.type.callTip == "A*aa*");
 	assert(G.type.callTip == "A**aa*");
 
 	assert(H.type.callTip == "int*");
-	assert(I.type.callTip == "int*arr*");
+	assert(I.type.callTip == "int[]");
 	assert(J.type.callTip == "int*aa*");
+
+	assert(K.type.callTip == "APTR");
 }
 
 
