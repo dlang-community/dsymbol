@@ -195,13 +195,6 @@ do
 		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
 		immutable bool isFunction = back == FUNCTION_SYMBOL_NAME;
 		immutable bool isPointer = back == POINTER_SYMBOL_NAME;
-		if (back == POINTER_SYMBOL_NAME)
-		{
-			if (lastSuffix)
-				lastSuffix.isPointer = true;
-			lookup.breadcrumbs.popBack();
-			continue;
-		}
 		if (!isArr && !isAssoc && !isFunction && !isPointer)
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
