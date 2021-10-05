@@ -174,9 +174,9 @@ do
 	DSymbol* lastSuffix;
 
 	// Create symbols for the type suffixes such as array and
-	// associative array and pointers
+	// associative array
 
-	// If breadcrumbs, then we need to construct the callTip
+	// Build calltip, for the symbol
 	string callTip;
 	foreach (b; lookup.breadcrumbs[])
 	{
@@ -189,8 +189,14 @@ do
 		immutable bool isArr = back == ARRAY_SYMBOL_NAME;
 		immutable bool isAssoc = back == ASSOC_ARRAY_SYMBOL_NAME;
 		immutable bool isFunction = back == FUNCTION_SYMBOL_NAME;
-		immutable bool isPointer = back == POINTER_SYMBOL_NAME;
-		if (!isArr && !isAssoc && !isFunction && !isPointer)
+		if (back == POINTER_SYMBOL_NAME)
+		{
+			if(lastSuffix)
+				lastSuffix.isPointer = true;
+			lookup.breadcrumbs.popBack();
+			continue;
+		}
+		if (!isArr && !isAssoc && !isFunction)
 			break;
 		immutable qualifier = isAssoc ? SymbolQualifier.assocArray :
 			(isFunction ? SymbolQualifier.func : SymbolQualifier.array);
@@ -206,9 +212,7 @@ do
 		{
 			lastSuffix.addChildren(isArr ? arraySymbols[] : assocArraySymbols[], false);
 			lastSuffix.callTip = istring(callTip);
-			lastSuffix.isPointer = isPointer;
 		}
-
 		if (suffix is null)
 			suffix = lastSuffix;
 		lookup.breadcrumbs.popBack();
@@ -243,6 +247,7 @@ do
 	size_t i = 0;
 	foreach (part; lookup.breadcrumbs[])
 	{
+		if(part == "*") continue;
 		if (i == 0)
 		{
 			if (moduleScope is null)
@@ -296,6 +301,8 @@ do
 	}
 	else if (currentSymbol !is null)
 	{
+		// symbol found, set the calltip
+		currentSymbol.callTip = istring(callTip);
 		symbol.type = currentSymbol;
 		symbol.ownType = false;
 	}
