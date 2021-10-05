@@ -182,6 +182,8 @@ do
 	{
 		if(b == ARRAY_SYMBOL_NAME)
 			callTip ~= "[]";
+		else if( b == ASSOC_ARRAY_SYMBOL_NAME)
+			callTip ~= "[...]";
 		else
 			callTip ~= b;
 	}
