@@ -180,7 +180,10 @@ do
 	string callTip;
 	foreach (b; lookup.breadcrumbs[])
 	{
-		callTip ~= b;
+		if(b == ARRAY_SYMBOL_NAME)
+			callTip ~= "[]";
+		else
+			callTip ~= b;
 	}
 
 	bool isPointer = lookup.breadcrumbs.empty ? false : lookup.breadcrumbs.back == POINTER_SYMBOL_NAME;
