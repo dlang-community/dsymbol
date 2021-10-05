@@ -186,7 +186,7 @@ do
 			callTip ~= b;
 	}
 
-	bool isPointer = lookup.breadcrumbs.empty ? false : lookup.breadcrumbs.back == POINTER_SYMBOL_NAME;
+	bool isLastPointer = lookup.breadcrumbs.empty ? false : lookup.breadcrumbs.back == POINTER_SYMBOL_NAME;
 	
 	while (!lookup.breadcrumbs.empty)
 	{
@@ -212,6 +212,10 @@ do
 		{
 			lookup.breadcrumbs.popBack();
 			lastSuffix.callTip = lookup.breadcrumbs.back();
+		}
+		else if (isPointer)
+		{
+			lastSuffix.callTip = istring(callTip);
 		}
 		else
 		{
@@ -294,6 +298,13 @@ do
 		suffix.ownType = false;
 		symbol.type = lastSuffix;
 		symbol.ownType = true;
+		
+		// if that's a pointer, then add the symbols since we built a new one
+		if (isLastPointer)
+		{
+			lastSuffix.addChildren(currentSymbol.parts[], false);
+		}
+		
 		if (currentSymbol is null && !remainingImports.empty)
 		{
 //			info("Deferring type resolution for ", symbol.name);
@@ -306,25 +317,8 @@ do
 	}
 	else if (currentSymbol !is null)
 	{
-		if (isPointer)
-		{
-			// create a copy of the symbol so we can edit the calltip 
-			// without affecting non-owning symbol references
-			// TODO: find ways to make this cleaner, ideally this should not be needed 
-			auto cpy = SymbolAllocator.instance.make!DSymbol(currentSymbol.name, currentSymbol.kind, currentSymbol.type);
-			cpy.qualifier = currentSymbol.qualifier;
-			cpy.ownType = currentSymbol.ownType;
-			cpy.addChildren(currentSymbol.parts[], false);
-			cpy.callTip = istring(callTip);
-
-			symbol.type = cpy;
-			symbol.ownType = true;
-		}
-		else
-		{
-			symbol.type = currentSymbol;
-			symbol.ownType = false;
-		}
+		symbol.type = currentSymbol;
+		symbol.ownType = false;
 	}
 	else if (!remainingImports.empty)
 	{
