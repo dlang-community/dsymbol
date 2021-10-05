@@ -490,7 +490,7 @@ unittest
 {
 	ModuleCache cache = ModuleCache(theAllocator);
 
-	writeln("Running pointer tests...");
+	writeln("Running calltip tests...");
 	auto source = q{ struct A {int a;} A value; A* ptr = &a; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;};
 	auto pair = generateAutocompleteTrees(source, cache);
 	auto A = pair.symbol.getFirstPartNamed(internString("value"));
