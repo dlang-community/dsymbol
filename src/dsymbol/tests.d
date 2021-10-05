@@ -524,7 +524,7 @@ unittest
 
 	auto L = pair.symbol.getFirstPartNamed(internString("complex"));
 
-	assert(A.type.callTip == "Aa");
+	assert(A.type.callTip == "A");
 	assert(B.type.callTip == "A*");
 	assert(C.type.callTip == "A**");
 	assert(D.type.callTip == "A[]");
