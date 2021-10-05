@@ -491,7 +491,14 @@ unittest
 	ModuleCache cache = ModuleCache(theAllocator);
 
 	writeln("Running calltip tests...");
-	auto source = q{ struct A {int a;} A value; A* ptr = &a; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;};
+	auto source = q{ struct A {int a;}
+		A value; A* ptr = &a; A** ptrptr = &ptr; A[] arr; A*[] arrptr; A[int] map; A*[int] mapptr;
+
+		// builtin type test
+		int* intptr;
+		int[] intarr;
+		int[int] intaa;
+	};
 	auto pair = generateAutocompleteTrees(source, cache);
 	auto A = pair.symbol.getFirstPartNamed(internString("value"));
 	auto B = pair.symbol.getFirstPartNamed(internString("ptr"));
@@ -501,6 +508,10 @@ unittest
 	auto F = pair.symbol.getFirstPartNamed(internString("map"));
 	auto G = pair.symbol.getFirstPartNamed(internString("mapptr"));
 
+	auto H = pair.symbol.getFirstPartNamed(internString("intptr"));
+	auto I = pair.symbol.getFirstPartNamed(internString("intarr"));
+	auto J = pair.symbol.getFirstPartNamed(internString("intaa"));
+
 	// empty because it's not a pointer/array/aa
 	assert(A.type.callTip == "");
 	assert(B.type.callTip == "A*");
@@ -509,6 +520,10 @@ unittest
 	assert(E.type.callTip == "A**arr*");
 	assert(F.type.callTip == "A*aa*");
 	assert(G.type.callTip == "A**aa*");
+
+	assert(H.type.callTip == "int*");
+	assert(I.type.callTip == "int*arr*");
+	assert(J.type.callTip == "int*aa*");
 }
 
 
