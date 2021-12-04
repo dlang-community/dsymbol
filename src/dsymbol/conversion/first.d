@@ -1119,6 +1119,7 @@ private:
 		DSymbol* acSymbol = SymbolAllocator.instance.make!DSymbol(istring(name), kind);
 		acSymbol.location = location;
 		acSymbol.symbolFile = symbolFile;
+		acSymbol.callTip = istring(name);
 		symbolsAllocated++;
 		return SymbolAllocator.instance.make!SemanticSymbol(acSymbol); // NOTE using semanticAllocator here breaks when analysing phobos as: `Segmentation fault (core dumped)‘’
 	}
@@ -1148,9 +1149,7 @@ private:
 
 		foreach (suffix; type.typeSuffixes)
 		{
-			if (suffix.star != tok!"")
-				continue;
-			else if (suffix.type)
+			if (suffix.type)
 				lookup.breadcrumbs.insert(ASSOC_ARRAY_SYMBOL_NAME);
 			else if (suffix.array)
 				lookup.breadcrumbs.insert(ARRAY_SYMBOL_NAME);
