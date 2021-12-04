@@ -263,7 +263,7 @@ do
 					currentSymbol = symbols[0];
 				else
 				{
-					// we can resolve the type, so it's either enum/auto or a template
+					// we can't resolve the type, so it's either enum/auto or a template
 					// let's handle that
 
 					// if there was known suffix, it's the type, use that
