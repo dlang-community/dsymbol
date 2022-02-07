@@ -148,7 +148,9 @@ class SimpleParser : Parser
 	{
 		// Unlike many of the other parsing functions, it is valid and expected
 		// for this one to return `null` on valid code. Returning `null` in
-		// this function means that we are looking at a SpecifiedFunctionBody.
+		// this function means that we are looking at a SpecifiedFunctionBody
+		// or ShortenedFunctionBody.
+		//
 		// The super-class will handle re-trying with the correct parsing
 		// function.
 
@@ -175,6 +177,24 @@ class SimpleParser : Parser
 				skipBraces();
 		}
 		return allocator.make!SpecifiedFunctionBody;
+	}
+
+	override ShortenedFunctionBody parseShortenedFunctionBody()
+	{
+		skipContracts();
+		if (currentIs(tok!"=>"))
+		{
+			while (!currentIs(tok!";") && moreTokens)
+			{
+				if (currentIs(tok!"{")) // potential function literal
+					skipBraces();
+				else
+					advance();
+			}
+			if (moreTokens)
+				advance();
+		}
+		return allocator.make!ShortenedFunctionBody;
 	}
 
 	/**
