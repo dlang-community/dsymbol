@@ -24,8 +24,8 @@ import dsymbol.string_interning;
 import dsymbol.import_;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
-import stdx.allocator : dispose;
-import stdx.allocator.mallocator : Mallocator;
+import std.experimental.allocator : dispose;
+import std.experimental.allocator.mallocator : Mallocator;
 import dsymbol.semantic : TypeLookups, TypeLookupsAllocator;
 
 alias ImportsAllocator = Mallocator;

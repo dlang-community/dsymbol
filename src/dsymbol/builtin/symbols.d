@@ -6,7 +6,7 @@ import dparse.rollback_allocator;
 import dsymbol.builtin.names;
 import dsymbol.string_interning;
 import dsymbol.symbol;
-import stdx.allocator.mallocator : Mallocator;
+import std.experimental.allocator.mallocator : Mallocator;
 
 alias SymbolsAllocator = Mallocator;
 

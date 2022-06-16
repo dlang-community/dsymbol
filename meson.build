@@ -7,7 +7,6 @@
 project_soversion = '0'
 
 pkgc = import('pkgconfig')
-allocator_dep = dependency('stdx-allocator', version: '>= 2.77.5', fallback: ['stdx-allocator', 'allocator_dep'])
 dparse_dep = dependency('dparse', version: '>= 0.9.0', fallback: ['dparse', 'dparse_dep'])
 dcontainers_dep = dependency('dcontainers', version: '>= 0.8.0', fallback: ['dcontainers', 'dcontainers_dep'])
 
@@ -43,13 +42,13 @@ dsymbol_lib = library('dsymbol',
         install: true,
         version: meson.project_version(),
         soversion: project_soversion,
-        dependencies: [allocator_dep, dparse_dep, dcontainers_dep]
+        dependencies: [dparse_dep, dcontainers_dep]
 )
 
 pkgc.generate(name: 'dsymbol',
               libraries: [dsymbol_lib],
               subdirs: 'd/dsymbol',
-              requires: ['stdx-allocator', 'dparse', 'dcontainers'],
+              requires: ['dparse', 'dcontainers'],
               version: meson.project_version(),
               description: 'Library for lexing and parsing D source code.'
 )
@@ -58,7 +57,7 @@ pkgc.generate(name: 'dsymbol',
 dsymbol_dep = declare_dependency(
     link_with: [dsymbol_lib],
     include_directories: [src_dir],
-    dependencies: [allocator_dep, dparse_dep, dcontainers_dep]
+    dependencies: [dparse_dep, dcontainers_dep]
 )
 
 #
@@ -73,7 +72,7 @@ endif
 dsymbol_test_exe = executable('test_dsymbol',
     [dsymbol_src],
     include_directories: [src_dir],
-    dependencies: [allocator_dep, dparse_dep, dcontainers_dep],
+    dependencies: [dparse_dep, dcontainers_dep],
     d_unittest: true,
     link_args: extra_args
 )

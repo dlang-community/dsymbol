@@ -30,13 +30,13 @@ import dparse.ast;
 import dparse.lexer;
 import dparse.parser;
 import dparse.rollback_allocator;
-import stdx.allocator;
+import std.experimental.allocator;
 
 /**
  * Used by autocompletion.
  */
 ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
-	IAllocator symbolAllocator, RollbackAllocator* parseAllocator,
+	RCIAllocator symbolAllocator, RollbackAllocator* parseAllocator,
 	size_t cursorPosition, ref ModuleCache cache)
 {
 	Module m = parseModuleForAutocomplete(tokens, internString("stdin"),

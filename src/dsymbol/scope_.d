@@ -25,7 +25,7 @@ import containers.ttree;
 import containers.unrolledlist;
 import std.algorithm : canFind, any;
 import std.experimental.logger;
-import stdx.allocator.gc_allocator : GCAllocator;
+import std.experimental.allocator.gc_allocator : GCAllocator;
 
 /**
  * Contains symbols and supports lookup of symbols by cursor position.

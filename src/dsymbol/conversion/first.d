@@ -33,8 +33,8 @@ import dsymbol.string_interning;
 import dsymbol.symbol;
 import dsymbol.type_lookup;
 import std.algorithm.iteration : map;
-import stdx.allocator;
-import stdx.allocator.gc_allocator : GCAllocator;
+import std.experimental.allocator;
+import std.experimental.allocator.gc_allocator : GCAllocator;
 import std.experimental.logger;
 import std.typecons : Rebindable;
 
@@ -65,14 +65,14 @@ final class FirstPass : ASTVisitor
 	 *     includeParameterSymbols = include parameter symbols as children of
 	 *         function decalarations and constructors
 	 */
-	this(const Module mod, istring symbolFile, IAllocator symbolAllocator,
-		IAllocator semanticAllocator, bool includeParameterSymbols,
-		ModuleCache* cache, CacheEntry* entry = null)
+	this(const Module mod, istring symbolFile, RCIAllocator symbolAllocator,
+         RCIAllocator semanticAllocator, bool includeParameterSymbols,
+         ModuleCache* cache, CacheEntry* entry = null)
 	in
 	{
 		assert(mod);
-		assert(symbolAllocator);
-		assert(semanticAllocator);
+		assert(!symbolAllocator.isNull);
+		assert(!semanticAllocator.isNull);
 		assert(cache);
 	}
 	do
@@ -788,7 +788,7 @@ final class FirstPass : ASTVisitor
 	SemanticSymbol* rootSymbol;
 
 	/// Allocator used for symbol allocation
-	IAllocator symbolAllocator;
+	RCIAllocator symbolAllocator;
 
 	/// Number of symbols allocated
 	uint symbolsAllocated;
@@ -841,7 +841,7 @@ private:
 	}
 
 	void pushFunctionScope(const FunctionBody functionBody,
-		IAllocator semanticAllocator, size_t scopeBegin)
+		RCIAllocator semanticAllocator, size_t scopeBegin)
 	{
 		Scope* s = ScopeAllocator.instance.make!Scope(cast(uint) scopeBegin,
 			cast(uint) functionBody.endLocation);
@@ -1112,7 +1112,7 @@ private:
 		istring symbolFile, size_t location = 0)
 	in
 	{
-		assert (symbolAllocator !is null);
+		assert (!symbolAllocator.isNull);
 	}
 	do
 	{
@@ -1209,7 +1209,7 @@ private:
 
 	const Module mod;
 
-	IAllocator semanticAllocator;
+	RCIAllocator semanticAllocator;
 
 	Rebindable!(const ExpressionNode) feExpression;
 

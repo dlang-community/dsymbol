@@ -32,12 +32,12 @@ import dsymbol.symbol;
 import dsymbol.string_interning;
 import dsymbol.deferred;
 import std.algorithm;
-import stdx.allocator;
-import stdx.allocator.building_blocks.allocator_list;
-import stdx.allocator.building_blocks.region;
-import stdx.allocator.building_blocks.null_allocator;
-import stdx.allocator.mallocator : Mallocator;
-import stdx.allocator.gc_allocator : GCAllocator;
+import std.experimental.allocator;
+import std.experimental.allocator.building_blocks.allocator_list;
+import std.experimental.allocator.building_blocks.region;
+import std.experimental.allocator.building_blocks.null_allocator;
+import std.experimental.allocator.mallocator : Mallocator;
+import std.experimental.allocator.gc_allocator : GCAllocator;
 import std.conv;
 import dparse.ast;
 import std.datetime;
@@ -48,8 +48,7 @@ import std.file;
 import std.experimental.lexer;
 import std.path;
 
-alias ASTAllocator = CAllocatorImpl!(AllocatorList!(
-	n => Region!Mallocator(1024 * 128), Mallocator));
+alias SemanticAllocator = AllocatorList!(n => Region!Mallocator(1024 * 128), Mallocator);
 
 /**
  * Returns: true if a file exists at the given path.
@@ -74,7 +73,7 @@ struct ModuleCache
 
 	@disable this();
 
-	this(IAllocator symbolAllocator)
+	this(RCIAllocator symbolAllocator)
 	{
 		this.symbolAllocator = symbolAllocator;
 	}
@@ -197,14 +196,14 @@ struct ModuleCache
 
 		CacheEntry* newEntry = CacheAllocator.instance.make!CacheEntry();
 
-		scope semanticAllocator = new ASTAllocator();
+		scope semanticAllocator = new SemanticAllocator();
 		import dparse.rollback_allocator:RollbackAllocator;
 		RollbackAllocator parseAllocator;
 		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
 
-		assert (symbolAllocator);
+		assert (!symbolAllocator.isNull);
 		scope first = new FirstPass(m, cachedLocation, symbolAllocator,
-			semanticAllocator, false, &this, newEntry);
+									semanticAllocator.allocatorObject, false, &this, newEntry);
 		first.run();
 
 		secondPass(first.rootSymbol, first.moduleScope, this);
@@ -354,7 +353,7 @@ struct ModuleCache
 		return cache[];
 	}
 
-	IAllocator symbolAllocator;
+	RCIAllocator symbolAllocator;
 
 	alias DeferredSymbols = UnrolledList!(DeferredSymbol*, DeferredSymbolsAllocator);
 	DeferredSymbols deferredSymbols;
