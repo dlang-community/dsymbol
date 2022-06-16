@@ -23,8 +23,8 @@ import dparse.ast;
 import dparse.lexer;
 import containers.unrolledlist;
 import dsymbol.type_lookup;
-import stdx.allocator.mallocator : Mallocator;
-import stdx.allocator.gc_allocator : GCAllocator;
+import std.experimental.allocator.mallocator : Mallocator;
+import std.experimental.allocator.gc_allocator : GCAllocator;
 
 enum ResolutionFlags : ubyte
 {
@@ -60,7 +60,7 @@ public:
 
 	~this()
 	{
-		import stdx.allocator : dispose;
+		import std.experimental.allocator : dispose;
 
 		foreach (child; children[])
 			typeid(SemanticSymbol).destroy(child);
@@ -111,7 +111,7 @@ alias GlobalsAllocator = Mallocator;
 static this()
 {
 	import dsymbol.string_interning : internString;
-	import stdx.allocator : make;
+	import std.experimental.allocator : make;
 
 	// TODO: Replace these with DSymbols
 
@@ -140,7 +140,7 @@ static this()
 
 static ~this()
 {
-	import stdx.allocator : dispose;
+	import std.experimental.allocator : dispose;
 	GlobalsAllocator.instance.dispose(argumentsType.typeSuffixes[0]);
 	GlobalsAllocator.instance.dispose(argumentsType.type2.typeIdentifierPart.identifierOrTemplateInstance);
 	GlobalsAllocator.instance.dispose(argumentsType.type2.typeIdentifierPart);

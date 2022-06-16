@@ -20,8 +20,8 @@ module dsymbol.symbol;
 
 import std.array;
 
-import stdx.allocator.mallocator : Mallocator;
-import stdx.allocator.gc_allocator : GCAllocator;
+import std.experimental.allocator.mallocator : Mallocator;
+import std.experimental.allocator.gc_allocator : GCAllocator;
 import containers.ttree;
 import containers.unrolledlist;
 import containers.slist;
