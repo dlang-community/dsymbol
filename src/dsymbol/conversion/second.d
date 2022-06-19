@@ -446,7 +446,8 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
 			
-			if (i == 0 && currentSymbol !is null && currentSymbol.type !is null)
+			// check if the type was already known
+			if (i == bl-2 && currentSymbol !is null && currentSymbol.type !is null)
 			{
 				if (moduleScope.hasSymbolRecursive(currentSymbol.type))
 					break;
