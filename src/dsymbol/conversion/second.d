@@ -434,15 +434,17 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 	size_t i = 0;
 
 	auto crumbs = lookup.breadcrumbs[];
+	auto bl = lookup.breadcrumbs.length;
 	foreach (crumb; crumbs)
 	{
-		if (i == 0)
+		// if the function has a crumb, then it is a templated function, we can use that to guess the its Type
+		if (i == 0 || (i > 0 && bl > 1))
 		{
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
 
 			if (currentSymbol is null)
-				return;
+				continue;
 		}
 		else
 		if (crumb == ARRAY_LITERAL_SYMBOL_NAME)
@@ -508,9 +510,9 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 			currentSymbol = currentSymbol.getFirstPartNamed(crumb);
 		}
 		++i;
-		if (currentSymbol is null)
-			return;
 	}
+	if (currentSymbol is null)
+		return;
 	typeSwap(currentSymbol);
 	symbol.type = currentSymbol;
 	symbol.ownType = false;
