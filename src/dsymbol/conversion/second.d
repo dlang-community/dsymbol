@@ -435,10 +435,11 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 
 	auto crumbs = lookup.breadcrumbs[];
 	auto bl = lookup.breadcrumbs.length;
+	bool shouldSkip = lookup.breadcrumbs.back == ARRAY_LITERAL_SYMBOL_NAME || lookup.breadcrumbs.back == ARRAY_SYMBOL_NAME;
 	foreach (crumb; crumbs)
 	{
 		// if the function has a crumb, then it is a templated function, we can use that to guess the its Type
-		if (i == 0 || (i > 0 && bl > 1))
+		if (i == 0 || (!shouldSkip && (i > 0 && bl > 1)))
 		{
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
