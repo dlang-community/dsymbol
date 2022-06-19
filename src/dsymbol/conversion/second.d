@@ -449,7 +449,9 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 			if (currentSymbol is null)
 				continue;
 			else if (currentSymbol.type is null)
-				break; // this is a fully resolved type (casting)!	
+				break; // this is a fully resolved type (casting)!
+			else if (currentSymbol.type.name == "void")
+				return; // it's void, no need to continue
 		}
 		else
 		if (crumb == ARRAY_LITERAL_SYMBOL_NAME)
