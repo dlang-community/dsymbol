@@ -441,7 +441,7 @@ void resolveTypeFromInitializer(DSymbol* symbol, TypeLookup* lookup,
 		bool resolveTypeFromCrumb = !isArray && (i > 0 && bl > 1);
 		
 		// if the function has a crumb, then it could be a templated function or a cast, we can use that to guess the its Type
-		if (i == 0 || (!shouldSkip && (i > 0 && bl > 1)))
+		if (i == 0 || (!isArray && (i > 0 && bl > 1)))
 		{
 			currentSymbol = moduleScope.getFirstSymbolByNameAndCursor(
 				symbolNameToTypeName(crumb), symbol.location);
