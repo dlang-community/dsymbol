@@ -48,7 +48,7 @@ import std.file;
 import std.experimental.lexer;
 import std.path;
 
-alias SemanticAllocator = AllocatorList!(n => Region!Mallocator(1024 * 128), Mallocator);
+alias ASTAllocator = AllocatorList!(n => Region!Mallocator(1024 * 128), Mallocator);
 
 /**
  * Returns: true if a file exists at the given path.
@@ -196,7 +196,7 @@ struct ModuleCache
 
 		CacheEntry* newEntry = CacheAllocator.instance.make!CacheEntry();
 
-		scope semanticAllocator = new SemanticAllocator();
+		scope semanticAllocator = new ASTAllocator();
 		import dparse.rollback_allocator:RollbackAllocator;
 		RollbackAllocator parseAllocator;
 		Module m = parseModuleSimple(tokens[], cachedLocation, &parseAllocator);
