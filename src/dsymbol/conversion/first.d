@@ -152,6 +152,7 @@ final class FirstPass : ASTVisitor
 			pushFunctionScope(dec.functionBody, semanticAllocator,
 					dec.name.index + dec.name.text.length);
 			scope (exit) popScope();
+            includeParameterSymbols = true;
 			processParameters(currentSymbol, dec.returnType,
 					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
 			dec.functionBody.accept(this);
@@ -981,6 +982,9 @@ private:
 					addTypeToLookups(parameter.typeLookups, p.type);
 				parameter.parent = currentSymbol;
 				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
+
+                currentSymbol.acSymbol.functionArguments ~= parameter.acSymbol;
+
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
 			}

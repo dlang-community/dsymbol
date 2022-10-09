@@ -375,9 +375,15 @@ struct DSymbol
 	/**
 	 * Names of function arguments
 	 */
+	// TODO: remove since we have function arguments
 	UnrolledList!(istring) argNames;
 
 	private uint _location;
+
+    /**
+     * Function argument symbols
+	 */
+	DSymbol*[] functionArguments;
 
 	/**
 	 * DSymbol location
