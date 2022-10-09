@@ -973,6 +973,7 @@ private:
 		processTemplateParameters(symbol, templateParameters);
 		if (includeParameterSymbols && parameters !is null)
 		{
+			currentSymbol.acSymbol.functionArguments.reserve(parameters.parameters.length);
 			foreach (const Parameter p; parameters.parameters)
 			{
 				SemanticSymbol* parameter = allocateSemanticSymbol(
