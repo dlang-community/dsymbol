@@ -380,10 +380,10 @@ struct DSymbol
 
 	private uint _location;
 
-    /**
-     * Function argument symbols
+	/**
+	 * Function parameter symbols
 	 */
-	DSymbol*[] functionArguments;
+	DSymbol*[] functionParameters;
 
 	/**
 	 * DSymbol location

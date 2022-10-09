@@ -203,7 +203,7 @@ struct ModuleCache
 
 		assert (!symbolAllocator.isNull);
 		scope first = new FirstPass(m, cachedLocation, symbolAllocator,
-									semanticAllocator.allocatorObject, false, &this, newEntry);
+									semanticAllocator.allocatorObject, &this, newEntry);
 		first.run();
 
 		secondPass(first.rootSymbol, first.moduleScope, this);

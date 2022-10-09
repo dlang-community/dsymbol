@@ -62,11 +62,9 @@ final class FirstPass : ASTVisitor
 	 *     symbolFile = path to the file being converted
 	 *     symbolAllocator = allocator used for the auto-complete symbols
 	 *     semanticAllocator = allocator used for semantic symbols
-	 *     includeParameterSymbols = include parameter symbols as children of
-	 *         function decalarations and constructors
 	 */
 	this(const Module mod, istring symbolFile, RCIAllocator symbolAllocator,
-         RCIAllocator semanticAllocator, bool includeParameterSymbols,
+         RCIAllocator semanticAllocator,
          ModuleCache* cache, CacheEntry* entry = null)
 	in
 	{
@@ -81,7 +79,6 @@ final class FirstPass : ASTVisitor
 		this.symbolFile = symbolFile;
 		this.symbolAllocator = symbolAllocator;
 		this.semanticAllocator = semanticAllocator;
-		this.includeParameterSymbols = includeParameterSymbols;
 		this.entry = entry;
 		this.cache = cache;
 	}
@@ -152,18 +149,14 @@ final class FirstPass : ASTVisitor
 			pushFunctionScope(dec.functionBody, semanticAllocator,
 					dec.name.index + dec.name.text.length);
 			scope (exit) popScope();
-            includeParameterSymbols = true;
 			processParameters(currentSymbol, dec.returnType,
 					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
 			dec.functionBody.accept(this);
 		}
 		else
 		{
-			immutable ips = includeParameterSymbols;
-			includeParameterSymbols = false;
 			processParameters(currentSymbol, dec.returnType,
 					currentSymbol.acSymbol.name, dec.parameters, dec.templateParameters);
-			includeParameterSymbols = ips;
 		}
 	}
 
@@ -971,9 +964,9 @@ private:
 		const TemplateParameters templateParameters)
 	{
 		processTemplateParameters(symbol, templateParameters);
-		if (includeParameterSymbols && parameters !is null)
+		if (parameters !is null)
 		{
-			currentSymbol.acSymbol.functionArguments.reserve(parameters.parameters.length);
+			currentSymbol.acSymbol.functionParameters.reserve(parameters.parameters.length);
 			foreach (const Parameter p; parameters.parameters)
 			{
 				SemanticSymbol* parameter = allocateSemanticSymbol(
@@ -984,7 +977,7 @@ private:
 				parameter.parent = currentSymbol;
 				currentSymbol.acSymbol.argNames.insert(parameter.acSymbol.name);
 
-                currentSymbol.acSymbol.functionArguments ~= parameter.acSymbol;
+				currentSymbol.acSymbol.functionParameters ~= parameter.acSymbol;
 
 				currentSymbol.addChild(parameter, true);
 				currentScope.addSymbol(parameter.acSymbol, false);
@@ -1013,7 +1006,7 @@ private:
 
 	void processTemplateParameters(SemanticSymbol* symbol, const TemplateParameters templateParameters)
 	{
-		if (includeParameterSymbols && templateParameters !is null
+		if (templateParameters !is null
 				&& templateParameters.templateParameterList !is null)
 		{
 			foreach (const TemplateParameter p; templateParameters.templateParameterList.items)
@@ -1222,7 +1215,6 @@ private:
 
 	ModuleCache* cache;
 
-	bool includeParameterSymbols;
 	bool skipBaseClassesOfNewAnon;
 
 	ubyte foreachTypeIndexOfInterest;

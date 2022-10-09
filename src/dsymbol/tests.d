@@ -538,7 +538,7 @@ ScopeSymbolPair generateAutocompleteTrees(string source, string filename, ref Mo
 	Module m = parseModule(tokens, filename, &rba);
 
 	scope first = new FirstPass(m, internString(filename),
-			theAllocator, theAllocator, true, &cache);
+			theAllocator, theAllocator, &cache);
 	first.run();
 
 	secondPass(first.rootSymbol, first.moduleScope, cache);
