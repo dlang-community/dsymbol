@@ -193,8 +193,12 @@ class SimpleParser : Parser
 			}
 			if (moreTokens)
 				advance();
+			return allocator.make!ShortenedFunctionBody;
 		}
-		return allocator.make!ShortenedFunctionBody;
+		else
+		{
+			return null;
+		}
 	}
 
 	/**
