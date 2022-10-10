@@ -43,7 +43,7 @@ ScopeSymbolPair generateAutocompleteTrees(const(Token)[] tokens,
 		parseAllocator, cursorPosition);
 
 	scope first = new FirstPass(m, internString("stdin"), symbolAllocator,
-		symbolAllocator, true, &cache);
+		symbolAllocator, &cache);
 	first.run();
 
 	secondPass(first.rootSymbol, first.moduleScope, cache);
